@@ -1,0 +1,14 @@
+:root{
+  /* 4px base; 2px half-step exists for table chrome only */
+  --space-0:0;--space-0-5:2px;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;
+  --space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;
+  --space-16:64px;--space-20:80px;--space-24:96px;
+  /* radii — tight, near-square. Pills only for status chips. */
+  --radius-none:0;--radius-xs:3px;--radius-sm:5px;--radius-md:8px;--radius-lg:12px;--radius-pill:999px;
+  /* borders */
+  --border-width:1px;--border-width-strong:2px;
+  /* layout */
+  --layout-max:1440px;--layout-gutter:24px;--layout-sidebar:236px;--layout-header:60px;
+  --row-height:56px;--row-height-dense:44px;
+  --focus-ring-width:2px;--focus-ring-offset:2px;
+}

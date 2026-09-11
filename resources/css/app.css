@@ -1,0 +1,21 @@
+@import './design-system/fonts.css';
+@import './design-system/colors.css';
+@import './design-system/typography.css';
+@import './design-system/spacing.css';
+@import './design-system/elevation.css';
+@import './design-system/motion.css';
+@import './design-system/base.css';
+@import './afmc.css';
+
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}

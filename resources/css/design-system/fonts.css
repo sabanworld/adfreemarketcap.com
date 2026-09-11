@@ -1,0 +1,6 @@
+/* Webfonts. No brand binaries were provided, so these are the nearest Google Fonts
+   matches, loaded from the Google Fonts CDN. Replace with self-hosted @font-face
+   rules + local files if licensed binaries become available.
+   Icon font: Material Symbols Rounded (substituted set — see readme ICONOGRAPHY). */
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block");
