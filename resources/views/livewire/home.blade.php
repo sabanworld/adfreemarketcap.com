@@ -103,21 +103,14 @@
     </div>
 
     <div class="afmc-card">
-        <div class="afmc-table-wrap">
+        <div class="afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('Cryptocurrency prices by market cap') }}" tabindex="0">
             <table class="afmc-table {{ $dense ? 'afmc-table--dense' : '' }}">
                 <thead>
                     <tr>
-                        <th style="width:38px"></th>
-                        <th class="{{ $sort === 'rank' ? 'is-sorted' : '' }}" style="width:48px">
-                            <button type="button" wire:click="sortBy('rank')">#
-                                @if ($sort === 'rank')
-                                    <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
-                                @endif
-                            </button>
-                        </th>
-                        <th class="{{ $sort === 'name' ? 'is-sorted' : '' }}">
+                        <th class="is-sticky is-sticky--watch hide-narrow" style="width:38px;left:0"></th>
+                        <th class="is-sticky is-sticky--name {{ $sort === 'name' || $sort === 'rank' ? 'is-sorted' : '' }}" style="left:38px">
                             <button type="button" wire:click="sortBy('name')">{{ __('Name') }}
-                                @if ($sort === 'name')
+                                @if ($sort === 'name' || $sort === 'rank')
                                     <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
                                 @endif
                             </button>
@@ -129,7 +122,7 @@
                                 @endif
                             </button>
                         </th>
-                        <th class="is-right {{ $sort === 'percent_change_1h' ? 'is-sorted' : '' }}">
+                        <th class="is-right hide-narrow {{ $sort === 'percent_change_1h' ? 'is-sorted' : '' }}">
                             <button type="button" wire:click="sortBy('percent_change_1h')">1h</button>
                         </th>
                         <th class="is-right {{ $sort === 'percent_change_24h' ? 'is-sorted' : '' }}">
@@ -144,7 +137,7 @@
                         <th class="is-right {{ $sort === 'volume_24h' ? 'is-sorted' : '' }}">
                             <button type="button" wire:click="sortBy('volume_24h')">{{ __('Volume (24h)') }}</button>
                         </th>
-                        <th class="is-right">{{ __('Last 7 days') }}</th>
+                        <th class="is-right hide-narrow">{{ __('Last 7 days') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -154,31 +147,33 @@
                             $spark = $display->sparkline($coin->sparkline_7d);
                         @endphp
                         <tr wire:key="coin-{{ $coin->id }}">
-                            <td>
+                            <td class="is-sticky is-sticky--watch hide-narrow" style="left:0">
                                 <livewire:watch-toggle :coin="$coin" :key="'home-watch-'.$coin->id" />
                             </td>
-                            <td class="is-muted">{{ $coin->rank ?? '—' }}</td>
-                            <td>
-                                <x-afmc.coin-identity
-                                    :name="$coin->name"
-                                    :symbol="$coin->symbol"
-                                    :image="$coin->image_url"
-                                    :href="route('coins.show', $coin)"
-                                />
+                            <td class="is-sticky is-sticky--name" style="left:38px">
+                                <span class="afmc-table__namecell">
+                                    <span data-afmc-rankcell class="afmc-table__rank">{{ $coin->rank ?? '—' }}</span>
+                                    <x-afmc.coin-identity
+                                        :name="$coin->name"
+                                        :symbol="$coin->symbol"
+                                        :image="$coin->image_url"
+                                        :href="route('coins.show', $coin)"
+                                    />
+                                </span>
                             </td>
                             <td class="is-right">{{ MarketNumberFormatter::money($coin->price !== null ? (float) $coin->price : null, 8) }}</td>
-                            <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_1h, '1h')" size="sm" /></td>
+                            <td class="is-right hide-narrow"><x-afmc.price-change :value="$display->change($coin->percent_change_1h, '1h')" size="sm" /></td>
                             <td class="is-right"><x-afmc.price-change :value="$change24" size="sm" /></td>
                             <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_7d, '7d')" size="sm" /></td>
                             <td class="is-right">{{ MarketNumberFormatter::money($coin->market_cap !== null ? (float) $coin->market_cap : null) }}</td>
                             <td class="is-right">{{ MarketNumberFormatter::money($coin->volume_24h !== null ? (float) $coin->volume_24h : null) }}</td>
-                            <td class="is-right">
+                            <td class="is-right hide-narrow">
                                 <x-afmc.sparkline :data="$spark" :up="($change24 ?? 0) >= 0" />
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" style="height:auto;padding:var(--space-8);text-align:center;color:var(--text-faint);font:var(--type-body-sm)">
+                            <td colspan="9" style="height:auto;padding:var(--space-8);text-align:center;color:var(--text-faint);font:var(--type-body-sm)">
                                 {{ __('No coins yet. Run php artisan marketdata:sync') }}
                             </td>
                         </tr>
@@ -214,7 +209,7 @@
             <div>
                 <h2 class="afmc-pledge__statement">{{ __('No ads. No paid rankings. No sponsored listings.') }}</h2>
                 <p class="afmc-pledge__detail">
-                    {{ __('This site is paid for out of the creator\'s own pocket. Nobody can pay to appear, to move up, or to lose a risk flag. The picks below are companies our creator uses or holds a stake in. Each card names the relationship, and none of them are paid placements.') }}
+                    {{ __('This site is paid for out of the creator\'s own pocket. Nobody can pay to appear, to move up, or to lose a risk flag. The picks below are companies our creator uses or has a strategic partnership with. Each card names the relationship, and none of them are paid placements.') }}
                 </p>
             </div>
         </div>
@@ -241,45 +236,31 @@
     <section id="picks" style="margin-top:var(--space-10)">
         <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:var(--space-3);gap:var(--space-3);flex-wrap:wrap">
             <h2 style="margin:0;font:var(--type-h2)">{{ __('Picks, not ads') }}</h2>
-            <span style="font:var(--type-body-sm);color:var(--text-faint)">{{ __('Companies we like · any stake is disclosed') }}</span>
+            <span style="font:var(--type-body-sm);color:var(--text-faint)">{{ __('Companies we like · any partnership is disclosed') }}</span>
         </div>
         <div class="afmc-grid afmc-grid--picks">
-            <article class="afmc-pick">
-                <div class="afmc-pick__head">
-                    <span class="afmc-pick__kind">{{ __('Hardware') }}</span>
-                    <span class="afmc-pick__badge">{{ __('We use this') }}</span>
-                </div>
-                <h3 class="afmc-pick__title">Trezor</h3>
-                <p class="afmc-pick__note">{{ __('Hardware wallet for long-term custody, and what our creator keeps his own coins on.') }}</p>
-                <div class="afmc-pick__foot">
-                    <span>trezor.io</span>
-                    <x-afmc.icon name="arrow_outward" size="16px" />
-                </div>
-            </article>
-            <article class="afmc-pick">
-                <div class="afmc-pick__head">
-                    <span class="afmc-pick__kind">{{ __('Swap') }}</span>
-                    <span class="afmc-pick__badge">{{ __('We use this') }}</span>
-                </div>
-                <h3 class="afmc-pick__title">ChangeNOW</h3>
-                <p class="afmc-pick__note">{{ __('Non-custodial swaps when a CEX account is the wrong tool.') }}</p>
-                <div class="afmc-pick__foot">
-                    <span>changenow.io</span>
-                    <x-afmc.icon name="arrow_outward" size="16px" />
-                </div>
-            </article>
-            <article class="afmc-pick">
-                <div class="afmc-pick__head">
-                    <span class="afmc-pick__kind">{{ __('Mining') }}</span>
-                    <span class="afmc-pick__badge afmc-pick__badge--warn">{{ __('Creator is a partner') }}</span>
-                </div>
-                <h3 class="afmc-pick__title">Rigly</h3>
-                <p class="afmc-pick__note">{{ __('Bitcoin mining marketplace. Our creator holds shares in it, which is why this card carries a partner badge.') }}</p>
-                <div class="afmc-pick__foot">
-                    <span>rigly.io</span>
-                    <x-afmc.icon name="arrow_outward" size="16px" />
-                </div>
-            </article>
+            @foreach (config('picks') as $pick)
+                @php
+                    $isPartner = $pick['relationship'] === 'partner';
+                @endphp
+                <a
+                    class="afmc-pick"
+                    href="{{ $pick['url'] }}"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                >
+                    <div class="afmc-pick__head">
+                        <span class="afmc-pick__kind">{{ __($pick['kind']) }}</span>
+                        <span class="afmc-pick__badge{{ $isPartner ? ' afmc-pick__badge--warn' : '' }}">{{ $isPartner ? __('Creator is a partner') : __('We use this') }}</span>
+                    </div>
+                    <h3 class="afmc-pick__title">{{ $pick['name'] }}</h3>
+                    <p class="afmc-pick__note">{{ __($pick['note']) }}</p>
+                    <div class="afmc-pick__foot">
+                        <span>{{ parse_url($pick['url'], PHP_URL_HOST) }}<span class="afmc-visually-hidden">{{ __(', opens in a new tab') }}</span></span>
+                        <x-afmc.icon name="arrow_outward" size="16px" />
+                    </div>
+                </a>
+            @endforeach
         </div>
     </section>
 </main>

@@ -62,17 +62,17 @@
     </div>
 
     <div class="afmc-card">
-        <div class="afmc-table-wrap">
+        <div class="afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('DexScan pairs') }}" tabindex="0">
             <table class="afmc-table afmc-table--dense">
                 <thead>
                     <tr>
-                        <th>{{ __('Pair') }}</th>
+                        <th class="is-sticky is-sticky--name" style="left:0">{{ __('Pair') }}</th>
                         <th class="is-right">{{ __('Price') }}</th>
                         <th class="is-right">24h %</th>
                         <th class="is-right">{{ __('Liquidity') }}</th>
-                        <th class="is-right">{{ __('Volume 24h') }}</th>
-                        <th class="is-right">{{ __('Txns 24h') }}</th>
-                        <th class="is-right">{{ __('Age') }}</th>
+                        <th class="is-right hide-narrow">{{ __('Volume 24h') }}</th>
+                        <th class="is-right hide-narrow">{{ __('Txns 24h') }}</th>
+                        <th class="is-right hide-narrow">{{ __('Age') }}</th>
                         <th class="is-right">{{ __('Contract') }}</th>
                     </tr>
                 </thead>
@@ -92,7 +92,7 @@
                             };
                         @endphp
                         <tr wire:key="dex-{{ $pair->id }}">
-                            <td class="is-wrap">
+                            <td class="is-wrap is-sticky is-sticky--name" style="left:0">
                                 <span style="display:grid;gap:2px">
                                     <span style="font:var(--weight-semibold) var(--text-sm)/1.2 var(--font-sans);color:var(--text-strong)">{{ $pair->pair }}</span>
                                     <span style="font:var(--type-num);font-size:var(--text-2xs);color:var(--text-faint)">{{ $pair->dex }} · {{ $pair->chain }}</span>

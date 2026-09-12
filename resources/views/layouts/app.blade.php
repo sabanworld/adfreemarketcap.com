@@ -18,18 +18,28 @@
 </head>
 <body
     style="min-height:100vh;background:var(--surface-page);color:var(--text-body);margin:0"
-    x-data="{ dark: localStorage.getItem('afmc-theme') === 'dark' }"
+    x-data="{
+        dark: localStorage.getItem('afmc-theme') === 'dark',
+        moreOpen: false,
+        searchOpen: false,
+    }"
     x-effect="
         document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
         localStorage.setItem('afmc-theme', dark ? 'dark' : 'light');
     "
 >
+    <a class="afmc-skip" href="#afmc-main">{{ __('Skip to main content') }}</a>
+
     <x-afmc.header />
     <x-afmc.ticker />
 
-    {{ $slot }}
+    <div id="afmc-main" tabindex="-1" style="outline:none">
+        {{ $slot }}
+    </div>
 
     <x-afmc.footer />
+    <x-afmc.bottom-tab-bar />
+    <x-afmc.nav-drawer />
     <x-afmc.cookie-bar />
 
     @livewireScripts

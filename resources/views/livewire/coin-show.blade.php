@@ -122,24 +122,24 @@
                             {{ __('Exchange markets will appear after the next ticker sync.') }}
                         </p>
                     @else
-                        <div class="afmc-table-wrap">
+                        <div class="afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('Exchange markets') }}" tabindex="0">
                             <table class="afmc-table afmc-table--compact">
                                 <thead>
                                     <tr>
-                                        <th>#</th>
-                                        <th>{{ __('Exchange') }}</th>
+                                        <th class="hide-narrow">#</th>
+                                        <th class="is-sticky is-sticky--name" style="left:0">{{ __('Exchange') }}</th>
                                         <th>{{ __('Pair') }}</th>
                                         <th class="afmc-num">{{ __('Price') }}</th>
-                                        <th class="afmc-num">{{ __('Volume 24h') }}</th>
-                                        <th class="afmc-num">{{ __('Share') }}</th>
+                                        <th class="afmc-num hide-narrow">{{ __('Volume 24h') }}</th>
+                                        <th class="afmc-num hide-narrow">{{ __('Share') }}</th>
                                         <th>{{ __('Trust') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($tickers as $ticker)
                                         <tr @class(['is-muted' => $ticker->is_stale || $ticker->is_anomaly])>
-                                            <td class="afmc-num">{{ $ticker->rank }}</td>
-                                            <td>
+                                            <td class="afmc-num hide-narrow">{{ $ticker->rank }}</td>
+                                            <td class="is-sticky is-sticky--name" style="left:0">
                                                 @if ($ticker->trade_url)
                                                     <a href="{{ $ticker->trade_url }}" rel="noopener noreferrer sponsored" target="_blank" style="color:var(--text-strong);text-decoration:underline;text-underline-offset:2px">
                                                         {{ $ticker->exchange_name }}
@@ -150,8 +150,8 @@
                                             </td>
                                             <td class="afmc-num">{{ $ticker->pair }}</td>
                                             <td class="afmc-num">{{ MarketNumberFormatter::money($ticker->price_usd !== null ? (float) $ticker->price_usd : null, 8) }}</td>
-                                            <td class="afmc-num">{{ MarketNumberFormatter::money($ticker->volume_24h_usd !== null ? (float) $ticker->volume_24h_usd : null) }}</td>
-                                            <td class="afmc-num">{{ $ticker->volume_share_percent !== null ? number_format((float) $ticker->volume_share_percent, 2).'%' : '—' }}</td>
+                                            <td class="afmc-num hide-narrow">{{ MarketNumberFormatter::money($ticker->volume_24h_usd !== null ? (float) $ticker->volume_24h_usd : null) }}</td>
+                                            <td class="afmc-num hide-narrow">{{ $ticker->volume_share_percent !== null ? number_format((float) $ticker->volume_share_percent, 2).'%' : '—' }}</td>
                                             <td>
                                                 <span class="afmc-tag">{{ __($ticker->trustLabel()) }}</span>
                                             </td>
@@ -271,12 +271,12 @@
                             </div>
                         </div>
 
-                        <div class="afmc-table-wrap">
+                        <div class="afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('Bitcoin treasury holders') }}" tabindex="0">
                             <table class="afmc-table afmc-table--compact">
                                 <thead>
                                     <tr>
-                                        <th>#</th>
-                                        <th>{{ __('Entity') }}</th>
+                                        <th class="hide-narrow">#</th>
+                                        <th class="is-sticky is-sticky--name" style="left:0">{{ __('Entity') }}</th>
                                         <th class="afmc-num">{{ __('Holdings') }}</th>
                                         <th class="afmc-num">{{ __('% supply') }}</th>
                                     </tr>
@@ -284,8 +284,8 @@
                                 <tbody>
                                     @foreach ($holders as $holder)
                                         <tr>
-                                            <td class="afmc-num">{{ $holder->rank }}</td>
-                                            <td>
+                                            <td class="afmc-num hide-narrow">{{ $holder->rank }}</td>
+                                            <td class="is-sticky is-sticky--name" style="left:0">
                                                 <div style="font:var(--type-body-sm);color:var(--text-strong)">{{ $holder->name }}</div>
                                                 <div style="font:var(--type-label);color:var(--text-faint)">
                                                     {{ collect([$holder->symbol, $holder->country])->filter()->implode(' · ') }}

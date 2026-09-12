@@ -16,7 +16,7 @@ class LegalPagesTest extends TestCase
     {
         $this->get(route('legal.show', 'imprint'))
             ->assertOk()
-            ->assertSee('Saban Company B.V.', false)
+            ->assertSee('The Saban Company B.V.', false)
             ->assertSee('Besloten vennootschap (B.V.)', false)
             ->assertSee('91125030', false)
             ->assertSee('Jaap Bijzerweg 19', false)
@@ -127,6 +127,45 @@ class LegalPagesTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('The service runs on infrastructure from', false);
+    }
+
+    public function test_picks_link_out_and_match_the_disclosure_page(): void
+    {
+        $home = $this->get(route('home'));
+
+        $home->assertOk();
+        foreach (config('picks') as $pick) {
+            $home->assertSee('href="' . $pick['url'] . '"', false);
+            $home->assertSee($pick['name'], false);
+        }
+        // An outbound link must not hand the destination our referrer or window.
+        $home->assertSee('rel="noopener noreferrer"', false);
+
+        $disclosure = $this->get(route('legal.show', 'disclosure-of-interests'));
+
+        $disclosure->assertOk();
+        $disclosure->assertSee('Trezor (trezor.io): our creator uses this product and has no commercial partnership', false);
+        $disclosure->assertSee('Rigly (rigly.io): our creator has a strategic partnership with this company', false);
+    }
+
+    public function test_a_pick_with_a_partner_relationship_carries_the_partner_badge(): void
+    {
+        config(['picks' => [
+            [
+                'name' => 'Example Mining',
+                'kind' => 'Mining',
+                'url' => 'https://example.test',
+                'note' => 'A pick used only by this test.',
+                'relationship' => 'partner',
+            ],
+        ]]);
+
+        $response = $this->get(route('home'));
+
+        $response->assertOk();
+        $response->assertSee('afmc-pick__badge afmc-pick__badge--warn', false);
+        $response->assertSee('Creator is a partner', false);
+        $response->assertDontSee('We use this', false);
     }
 
     public function test_cookie_policy_lists_every_stored_item_by_name(): void

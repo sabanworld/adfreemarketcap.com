@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'legal_name' => env('COMPANY_LEGAL_NAME', 'Saban Company B.V.'),
+    'legal_name' => env('COMPANY_LEGAL_NAME', 'The Saban Company B.V.'),
 
     'legal_form' => env('COMPANY_LEGAL_FORM', 'Besloten vennootschap (B.V.)'),
 
@@ -51,7 +51,7 @@ return [
     |
     */
 
-    'policies_updated_at' => env('COMPANY_POLICIES_UPDATED_AT', '12 September 2026'),
+    'policies_updated_at' => env('COMPANY_POLICIES_UPDATED_AT', '13 September 2026'),
 
     /*
     |--------------------------------------------------------------------------

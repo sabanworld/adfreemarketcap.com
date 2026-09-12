@@ -50,17 +50,17 @@
                     <h2 class="afmc-card__title">{{ __('Holdings view') }}</h2>
                 </div>
             </div>
-            <div class="afmc-table-wrap">
+            <div class="afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('Watchlist') }}" tabindex="0">
                 <table class="afmc-table">
                     <thead>
                         <tr>
-                            <th style="width:38px"></th>
-                            <th>{{ __('Name') }}</th>
+                            <th class="is-sticky is-sticky--watch hide-narrow" style="width:38px;left:0"></th>
+                            <th class="is-sticky is-sticky--name" style="left:38px">{{ __('Name') }}</th>
                             <th class="is-right">{{ __('Price') }}</th>
                             <th class="is-right">24h %</th>
                             <th class="is-right">7d %</th>
                             <th class="is-right">{{ __('Market cap') }}</th>
-                            <th class="is-right">{{ __('Last 7 days') }}</th>
+                            <th class="is-right hide-narrow">{{ __('Last 7 days') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -70,10 +70,10 @@
                                 $spark = $display->sparkline($coin->sparkline_7d);
                             @endphp
                             <tr wire:key="watch-{{ $coin->id }}">
-                                <td>
+                                <td class="is-sticky is-sticky--watch hide-narrow" style="left:0">
                                     <livewire:watch-toggle :coin="$coin" :key="'watch-toggle-'.$coin->id" />
                                 </td>
-                                <td>
+                                <td class="is-sticky is-sticky--name" style="left:38px">
                                     <x-afmc.coin-identity
                                         :name="$coin->name"
                                         :symbol="$coin->symbol"
@@ -86,7 +86,7 @@
                                 <td class="is-right"><x-afmc.price-change :value="$change24" size="sm" /></td>
                                 <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_7d, '7d')" size="sm" /></td>
                                 <td class="is-right">{{ MarketNumberFormatter::money($coin->market_cap !== null ? (float) $coin->market_cap : null) }}</td>
-                                <td class="is-right"><x-afmc.sparkline :data="$spark" :up="($change24 ?? 0) >= 0" /></td>
+                                <td class="is-right hide-narrow"><x-afmc.sparkline :data="$spark" :up="($change24 ?? 0) >= 0" /></td>
                             </tr>
                         @endforeach
                     </tbody>

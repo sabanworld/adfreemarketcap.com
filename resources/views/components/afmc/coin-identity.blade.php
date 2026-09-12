@@ -21,13 +21,11 @@
     @else
         <span class="afmc-identity__logo afmc-identity__fallback {{ $size === 'lg' ? 'afmc-identity__logo--lg' : '' }}">{{ $initials }}</span>
     @endif
-    <span class="afmc-identity__body">
+    <span data-afmc-coinname class="afmc-identity__body">
         <span class="afmc-identity__name {{ $size === 'lg' ? 'afmc-identity__name--lg' : '' }}">{{ $name }}</span>
-        <span class="afmc-identity__meta">
-            <span class="afmc-identity__symbol">{{ $symbol }}</span>
-            @if ($rank !== null)
-                <span class="afmc-identity__rank">#{{ $rank }}</span>
-            @endif
-        </span>
+        <span class="afmc-identity__symbol">{{ $symbol }}</span>
+        @if ($rank !== null)
+            <span class="afmc-identity__rank">#{{ $rank }}</span>
+        @endif
     </span>
 </{{ $tag }}>

@@ -21,6 +21,7 @@
         <!-- force="true": PHPUnit will not override existing env vars (e.g. from .env) otherwise,
              and RefreshDatabase would migrate/wipe the local app database. -->
         <env name="APP_ENV" value="testing" force="true"/>
+        <env name="ADMIN_MFA_REQUIRED" value="false" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file" force="true"/>
         <env name="BCRYPT_ROUNDS" value="4" force="true"/>
         <env name="BROADCAST_CONNECTION" value="null" force="true"/>
@@ -37,6 +38,7 @@
         <env name="ALTCHA_ENABLED" value="true" force="true"/>
         <env name="ALTCHA_HMAC_SECRET" value="testing-altcha-hmac-secret-key-32b" force="true"/>
         <env name="ALTCHA_HMAC_KEY_SECRET" value="testing-altcha-hmac-key-secret-32b" force="true"/>
+        <env name="COMPANY_LEGAL_NAME" value="The Saban Company B.V." force="true"/>
         <env name="ALTCHA_TESTING_BYPASS" value="test-altcha-bypass-payload" force="true"/>
     </php>
 </phpunit>

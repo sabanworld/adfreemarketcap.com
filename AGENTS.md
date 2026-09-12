@@ -80,7 +80,7 @@ Everything a human reads should sound like a person wrote it: product copy, lega
 
 **Sentence shapes to avoid**
 
-- **Echo clauses that restate the sentence.** Not "Where our creator holds a stake, the link says so"; write "Any stake our creator holds is named on the link itself."
+- **Echo clauses that restate the sentence.** Not "Where our creator has a partnership, the link says so"; write "Any strategic partnership our creator has is named on the link itself."
 - **Terse confirmation fragments as a closer.** Not "Suggested hardware wallet. We use one."; write one sentence that carries the fact.
 - **"Not just X, it's Y"**, "more than just", and other setup-payoff constructions.
 - **Rhetorical questions as openers**, "Let's …", "dive in", "unlock", "seamless", "effortless", "leverage" as a verb, and similar marketing filler.
@@ -107,7 +107,7 @@ Everything a human reads should sound like a person wrote it: product copy, lega
 
 - **Public UI:** Livewire (Filament 5 ships Livewire 4) + Blade + Alpine. Prefer `wire:navigate`, targeted `wire:poll`, and Alpine/Chart.js for local chart/sparkline interaction. **Never call market-data providers from Livewire request handlers**. Read from the database; enqueue or schedule sync jobs for freshness.
 
-- **Design system (public UI):** Visual language lives under `claude/AdFreeMarketCap Design System/` (tokens + UI kit). Production CSS tokens are copied to `resources/css/design-system/`; Blade primitives live in `resources/views/components/afmc/` and `resources/css/afmc.css`.
+- **Design system (public UI):** Visual language lives under `claude/AdFreeMarketCap Design System (2)/` (tokens + UI kit). Production CSS tokens are copied to `resources/css/design-system/`; Blade primitives live in `resources/views/components/afmc/` and `resources/css/afmc.css`. Below 820px, primary nav moves to the bottom tab bar and More drawer (horizontal scrolling header nav is a defect).
   - **Logo:** four-bar mark + lowercase wordmark via `<x-afmc.brand-mark>` (header/footer). Static assets live in `public/brand/` (`logo.svg` favicon; mono/inverse variants). Bar heights stay 60/100/38/78; only the second bar is amber. Do not invent a different mark.
   - **Warm paper / amber accent / green-up red-down only for price**. Do not use amber for market direction or green/red for non-price chrome.
   - **Type:** Archivo (display), Public Sans (body), JetBrains Mono (every figure, tabular-nums).
