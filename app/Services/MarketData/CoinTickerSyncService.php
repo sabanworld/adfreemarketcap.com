@@ -8,6 +8,7 @@ use App\Models\Coin;
 use App\Models\CoinTicker;
 use App\Models\SyncRun;
 use App\Services\MarketData\DTOs\CoinTickerData;
+use App\Services\MarketData\Exceptions\ProviderCoinNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -16,6 +17,7 @@ class CoinTickerSyncService
 {
     public function __construct(
         private readonly CoinGeckoProvider $coingecko,
+        private readonly UnknownProviderCoinCleaner $cleaner,
     ) {}
 
     public function syncCoin(Coin $coin): SyncRun
@@ -29,8 +31,8 @@ class CoinTickerSyncService
         ]);
 
         try {
-            $count = $this->persistTickers($coin);
-            $run->markSucceeded($count, "Synced {$count} tickers for {$coin->slug}.");
+            $result = $this->persistTickers($coin);
+            $run->markSucceeded($result['count'], $result['message']);
 
             return $run->fresh();
         } catch (Throwable $exception) {
@@ -54,14 +56,34 @@ class CoinTickerSyncService
 
         try {
             $processed = 0;
+            $removed = 0;
+            $failed = 0;
 
             foreach ($coins as $coin) {
-                $this->persistTickers($coin);
-                $processed++;
+                try {
+                    $result = $this->persistTickers($coin);
+                    if ($result['removed']) {
+                        $removed++;
+                    } else {
+                        $processed++;
+                    }
+                } catch (Throwable $exception) {
+                    $failed++;
+                    report($exception);
+                }
+
                 usleep(200_000);
             }
 
-            $run->markSucceeded($processed, "Synced tickers for {$processed} top coins.");
+            $message = "Synced tickers for {$processed} top coins.";
+            if ($removed > 0) {
+                $message .= " Cleaned up {$removed} unknown or delisted ids.";
+            }
+            if ($failed > 0) {
+                $message .= " Failed {$failed} after provider errors.";
+            }
+
+            $run->markSucceeded($processed, $message);
 
             return $run->fresh();
         } catch (Throwable $exception) {
@@ -71,7 +93,10 @@ class CoinTickerSyncService
         }
     }
 
-    private function persistTickers(Coin $coin): int
+    /**
+     * @return array{count: int, removed: bool, message: string}
+     */
+    private function persistTickers(Coin $coin): array
     {
         $externalId = $coin->providerIds()
             ->where('provider', 'coingecko')
@@ -85,8 +110,18 @@ class CoinTickerSyncService
         /** @var Collection<int, CoinTickerData> $tickers */
         $tickers = collect();
 
-        for ($page = 1; $page <= $pages; $page++) {
-            $tickers = $tickers->concat($this->coingecko->fetchCoinTickers($externalId, $page));
+        try {
+            for ($page = 1; $page <= $pages; $page++) {
+                $tickers = $tickers->concat($this->coingecko->fetchCoinTickers($externalId, $page));
+            }
+        } catch (ProviderCoinNotFoundException $exception) {
+            $message = $this->cleaner->clean($coin, $exception->provider, $exception->externalId);
+
+            return [
+                'count' => 0,
+                'removed' => true,
+                'message' => $message,
+            ];
         }
 
         $tickers = $tickers
@@ -138,6 +173,10 @@ class CoinTickerSyncService
             $coin->update(['tickers_synced_at' => now()]);
         });
 
-        return $tickers->count();
+        return [
+            'count' => $tickers->count(),
+            'removed' => false,
+            'message' => "Synced {$tickers->count()} tickers for {$coin->slug}.",
+        ];
     }
 }

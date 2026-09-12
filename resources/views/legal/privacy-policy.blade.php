@@ -19,7 +19,7 @@
             'retention' => __('Until you remove the item or delete your account'),
         ],
         [
-            'data' => __('IP address, user agent, and requested URL in server logs'),
+            'data' => __('IP address, user agent, requested URL, and application error details in server logs and error reports'),
             'purpose' => __('Keeping the site available, finding faults, and blocking abuse'),
             'basis' => __('Legitimate interests in a secure service, article 6(1)(f) GDPR'),
             'retention' => __(':days days', ['days' => $logDays]),

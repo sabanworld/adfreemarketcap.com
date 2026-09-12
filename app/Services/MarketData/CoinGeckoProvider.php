@@ -9,6 +9,7 @@ use App\Services\MarketData\DTOs\CoinDetailData;
 use App\Services\MarketData\DTOs\CoinTickerData;
 use App\Services\MarketData\DTOs\GlobalMarketData;
 use App\Services\MarketData\DTOs\MarketCoinData;
+use App\Services\MarketData\Exceptions\ProviderCoinNotFoundException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -98,6 +99,10 @@ class CoinGeckoProvider implements ExchangeRateProvider, MarketDataProvider
             'developer_data' => 'false',
         ]);
 
+        if ($detail->status() === 404) {
+            throw new ProviderCoinNotFoundException($this->name(), $externalId);
+        }
+
         throw_unless($detail->successful(), new RuntimeException(
             'CoinGecko coin detail failed: ' . $detail->status() . ' ' . $detail->body()
         ));
@@ -131,6 +136,12 @@ class CoinGeckoProvider implements ExchangeRateProvider, MarketDataProvider
             'page' => max(1, $page),
             'order' => 'volume_desc',
         ]);
+
+        // Delisted or remapped ids come back as 404. Callers remove the stale
+        // provider mapping instead of retrying forever.
+        if ($response->status() === 404) {
+            throw new ProviderCoinNotFoundException($this->name(), $externalId);
+        }
 
         throw_unless($response->successful(), new RuntimeException(
             'CoinGecko tickers failed: ' . $response->status() . ' ' . $response->body()

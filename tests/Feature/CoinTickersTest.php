@@ -134,6 +134,103 @@ class CoinTickersTest extends TestCase
             ->assertOk();
     }
 
+    public function test_sync_coin_tickers_removes_coin_when_provider_returns_404(): void
+    {
+        $coin = Coin::query()->create([
+            'slug' => 'gone-coin',
+            'symbol' => 'GONE',
+            'name' => 'Gone Coin',
+            'rank' => 272,
+            'price' => 0.01,
+            'detail_synced_at' => now(),
+        ]);
+
+        CoinProviderId::query()->create([
+            'coin_id' => $coin->id,
+            'provider' => 'coingecko',
+            'external_id' => 'gone-coin',
+        ]);
+
+        $coin->tickers()->create([
+            'provider' => 'coingecko',
+            'exchange_id' => 'old-exchange',
+            'exchange_name' => 'Old Exchange',
+            'base_symbol' => 'GONE',
+            'target_symbol' => 'USDT',
+            'pair' => 'GONE/USDT',
+            'price_usd' => 0.01,
+            'volume_24h_usd' => 1000,
+            'rank' => 1,
+            'synced_at' => now()->subDay(),
+        ]);
+
+        Http::fake([
+            'api.coingecko.com/api/v3/coins/gone-coin/tickers*' => Http::response(
+                ['error' => 'coin not found'],
+                404,
+            ),
+        ]);
+
+        config(['marketdata.sync.tickers_pages' => 1]);
+
+        $run = app(CoinTickerSyncService::class)->syncCoin($coin);
+
+        $this->assertSame(SyncRun::STATUS_SUCCEEDED, $run->status);
+        $this->assertSame(0, $run->records_processed);
+        $this->assertStringContainsString('Removed delisted coin gone-coin', (string) $run->message);
+        $this->assertDatabaseMissing('coins', ['id' => $coin->id]);
+        $this->assertDatabaseMissing('coin_provider_ids', ['external_id' => 'gone-coin']);
+        $this->assertDatabaseMissing('coin_tickers', ['coin_id' => $coin->id]);
+    }
+
+    public function test_sync_coin_tickers_clears_stale_provider_id_when_other_providers_remain(): void
+    {
+        $coin = Coin::query()->create([
+            'slug' => 'multi-provider-coin',
+            'symbol' => 'MPC',
+            'name' => 'Multi Provider Coin',
+            'rank' => 50,
+            'price' => 1.5,
+            'detail_synced_at' => now(),
+        ]);
+
+        CoinProviderId::query()->create([
+            'coin_id' => $coin->id,
+            'provider' => 'coingecko',
+            'external_id' => 'multi-provider-coin',
+        ]);
+
+        CoinProviderId::query()->create([
+            'coin_id' => $coin->id,
+            'provider' => 'coinpaprika',
+            'external_id' => 'mpc-multi-provider-coin',
+        ]);
+
+        Http::fake([
+            'api.coingecko.com/api/v3/coins/multi-provider-coin/tickers*' => Http::response(
+                ['error' => 'coin not found'],
+                404,
+            ),
+        ]);
+
+        config(['marketdata.sync.tickers_pages' => 1]);
+
+        $run = app(CoinTickerSyncService::class)->syncCoin($coin);
+
+        $this->assertSame(SyncRun::STATUS_SUCCEEDED, $run->status);
+        $this->assertStringContainsString('Cleared unknown coingecko id', (string) $run->message);
+        $this->assertDatabaseHas('coins', ['id' => $coin->id, 'rank' => null]);
+        $this->assertDatabaseMissing('coin_provider_ids', [
+            'coin_id' => $coin->id,
+            'provider' => 'coingecko',
+        ]);
+        $this->assertDatabaseHas('coin_provider_ids', [
+            'coin_id' => $coin->id,
+            'provider' => 'coinpaprika',
+        ]);
+        $this->assertNotNull($coin->fresh()->tickers_synced_at);
+    }
+
     /**
      * @return array<string, mixed>
      */

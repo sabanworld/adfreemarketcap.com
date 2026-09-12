@@ -22,6 +22,7 @@ The policies are written against this list. Keep them in step.
 - **Watchlist:** coin references per user (`watchlist_items`). Legal basis: contract.
 - **Sessions:** database sessions, `SESSION_LIFETIME` minutes (default 120).
 - **Server logs:** IP address, user agent, URL. Claimed retention: `COMPANY_RETENTION_LOG_DAYS` (default 90).
+- **Error monitoring:** Sentry (`sentry/sentry-laravel`, `config/sentry.php`, wired in `bootstrap/app.php`). Server-side only when `SENTRY_LARAVEL_DSN` is set. Unhandled exceptions (and optional traces) can include request URL, user agent, and stack traces. `SENTRY_SEND_DEFAULT_PII` defaults to false. Legal basis: legitimate interests.
 - **Abuse prevention:** `App\Support\FormRateLimiter` counters and ALTCHA challenge state in Redis, minutes to hours. Legal basis: legitimate interests.
 - **Hosting:** DigitalOcean (AMS3, Amsterdam), with servers provisioned and deployed through Ploi. DigitalOcean, LLC is a US company, so the row carries standard contractual clauses plus its EU-US Data Privacy Framework certification even though the data sits in Amsterdam. Ploi is run by WebBuilds B.V. in the Netherlands.
 - **Cloudflare** sits in front as reverse proxy and bot filter, so it processes request metadata as a processor.

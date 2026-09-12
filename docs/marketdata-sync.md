@@ -41,6 +41,8 @@ Every monetary column holds USD. Visitors can display those figures in another c
 
 Coin detail **Markets** tables (exchange + pair + price + volume) come from CoinGecko tickers. Top coins refresh on a short schedule; visiting a coin also dispatches `SyncCoinTickers` when `tickers_synced_at` is older than `MARKETDATA_TICKERS_STALE_MINUTES` (default 15). The UI `wire:poll`s every 30s from MySQL only.
 
+If CoinGecko returns 404 for a coin id (delisted or remapped), `UnknownProviderCoinCleaner` drops that provider mapping and the coin's ticker rows. When no provider ids remain, the coin row is deleted (related watchlist and insight rows cascade). The sync run is marked succeeded so Horizon does not retry forever.
+
 ## Coin detail and the 7 day chart
 
 `coins.chart_7d` and the description come from `SyncCoinDetail`, one provider call per coin. Two things dispatch it:

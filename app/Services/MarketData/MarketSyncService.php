@@ -9,6 +9,7 @@ use App\Models\CoinProviderId;
 use App\Models\MarketGlobal;
 use App\Models\SyncRun;
 use App\Services\MarketData\DTOs\MarketCoinData;
+use App\Services\MarketData\Exceptions\ProviderCoinNotFoundException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -18,6 +19,7 @@ class MarketSyncService
 {
     public function __construct(
         private readonly MarketDataAggregator $aggregator,
+        private readonly UnknownProviderCoinCleaner $cleaner,
     ) {}
 
     public function syncMarkets(): SyncRun
@@ -114,6 +116,12 @@ class MarketSyncService
 
             $run->update(['provider' => $providerId->provider]);
             $run->markSucceeded(1, "Synced detail for {$coin->slug}.");
+
+            return $run->fresh();
+        } catch (ProviderCoinNotFoundException $exception) {
+            $message = $this->cleaner->clean($coin, $exception->provider, $exception->externalId);
+            $run->update(['provider' => $exception->provider]);
+            $run->markSucceeded(0, $message);
 
             return $run->fresh();
         } catch (Throwable $exception) {

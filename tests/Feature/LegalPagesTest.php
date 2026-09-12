@@ -111,6 +111,8 @@ class LegalPagesTest extends TestCase
             ->assertSee('DigitalOcean, LLC', false)
             ->assertSee('Amsterdam, the Netherlands (AMS3)', false)
             ->assertSee('Ploi (WebBuilds B.V.)', false)
+            ->assertSee('Functional Software, Inc. (Sentry)', false)
+            ->assertSee('Application error reporting', false)
             // A US provider needs its transfer safeguard named, even with EU storage.
             ->assertSee('EU standard contractual clauses and the EU-US Data Privacy Framework', false);
 

@@ -133,6 +133,12 @@ return [
             'location' => 'The Netherlands, with content delivery from European edge locations',
             'transfer' => null,
         ],
+        'error_monitoring' => [
+            'category' => 'Application error reporting',
+            'name' => env('COMPANY_ERROR_MONITORING_PROVIDER', 'Functional Software, Inc. (Sentry)'),
+            'location' => env('COMPANY_ERROR_MONITORING_LOCATION', 'United States, with optional EU data residency depending on project settings'),
+            'transfer' => env('COMPANY_ERROR_MONITORING_TRANSFER', 'EU standard contractual clauses and the EU-US Data Privacy Framework'),
+        ],
     ],
 
 ];
