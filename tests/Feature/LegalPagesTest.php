@@ -104,6 +104,31 @@ class LegalPagesTest extends TestCase
         $response->assertSee('Not yet appointed', false);
     }
 
+    public function test_configured_hosting_stack_appears_on_the_privacy_and_imprint_pages(): void
+    {
+        $this->get(route('legal.show', 'privacy-policy'))
+            ->assertOk()
+            ->assertSee('DigitalOcean, LLC', false)
+            ->assertSee('Amsterdam, the Netherlands (AMS3)', false)
+            ->assertSee('Ploi (WebBuilds B.V.)', false)
+            // A US provider needs its transfer safeguard named, even with EU storage.
+            ->assertSee('EU standard contractual clauses and the EU-US Data Privacy Framework', false);
+
+        $this->get(route('legal.show', 'imprint'))
+            ->assertOk()
+            ->assertSee('DigitalOcean, LLC', false);
+    }
+
+    public function test_imprint_omits_hosting_while_no_provider_is_configured(): void
+    {
+        config(['company.processors.hosting.name' => null]);
+
+        $response = $this->get(route('legal.show', 'imprint'));
+
+        $response->assertOk();
+        $response->assertDontSee('The service runs on infrastructure from', false);
+    }
+
     public function test_cookie_policy_lists_every_stored_item_by_name(): void
     {
         $response = $this->get(route('legal.show', 'cookie-policy'));

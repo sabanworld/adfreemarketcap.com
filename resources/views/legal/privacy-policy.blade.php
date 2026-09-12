@@ -108,7 +108,7 @@
 </ul>
 
 <h2>{{ __('Who else can see the data') }}</h2>
-<p>{{ __('We use a small number of service providers that process data on our instructions under article 28 GDPR. Each one is bound by a data processing agreement and may only use the data to deliver its service to us.') }}</p>
+<p>{{ __('We use a small number of service providers. The ones that handle personal data for us do so on our instructions, under a data processing agreement as article 28 GDPR requires, and may only use the data to deliver their service to us. Our statistics provider receives no personal data, so it is named below without such an agreement.') }}</p>
 <div class="afmc-table-wrap">
 <table class="afmc-legal-table">
     <thead>

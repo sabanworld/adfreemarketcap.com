@@ -2,6 +2,7 @@
     $company = config('company');
     $address = $company['address'];
     $fullAddress = $address['street'].', '.$address['postal_code'].' '.$address['city'].', '.$address['country'];
+    $hosting = $company['processors']['hosting'] ?? null;
 @endphp
 
 <p>{{ __('Last updated: :date', ['date' => $company['policies_updated_at']]) }}</p>
@@ -23,11 +24,21 @@
 <p>{{ __('Email is the fastest way to reach a person, and it is also the contact point for authorities and for users who need to notify us about content on the service.') }}</p>
 
 <h2>{{ __('Responsible for the content') }}</h2>
-<p>{{ __(':legal is responsible for the content of this website. The company also builds and hosts the product, and runs it without advertising or paid placements.', [
+<p>{{ __(':legal is responsible for the content of this website. The company builds and operates the product, and runs it without advertising or paid placements.', [
     'legal' => $company['legal_name'],
 ]) }}
     <a href="{{ $company['website'] }}" rel="noopener noreferrer" target="_blank">{{ $company['website'] }}</a>
 </p>
+
+@if (filled($hosting['name'] ?? null))
+    <h2>{{ __('Hosting') }}</h2>
+    <p>{{ __('The service runs on infrastructure from :provider, located in :location. The Privacy policy lists every provider that can reach data, and the safeguards that apply.', [
+        'provider' => $hosting['name'],
+        'location' => $hosting['location'],
+    ]) }}
+        <a href="{{ route('legal.show', 'privacy-policy') }}" wire:navigate>{{ __('Read the Privacy policy') }}</a>
+    </p>
+@endif
 
 <h2>{{ __('Supervision') }}</h2>
 <p>{{ __('We publish market information and provide no crypto-asset services, so no financial supervisory authority licenses or supervises this service. The Terms explain that position in more detail.') }}

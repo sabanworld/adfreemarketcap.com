@@ -23,6 +23,7 @@ The policies are written against this list. Keep them in step.
 - **Sessions:** database sessions, `SESSION_LIFETIME` minutes (default 120).
 - **Server logs:** IP address, user agent, URL. Claimed retention: `COMPANY_RETENTION_LOG_DAYS` (default 90).
 - **Abuse prevention:** `App\Support\FormRateLimiter` counters and ALTCHA challenge state in Redis, minutes to hours. Legal basis: legitimate interests.
+- **Hosting:** DigitalOcean (AMS3, Amsterdam), with servers provisioned and deployed through Ploi. DigitalOcean, LLC is a US company, so the row carries standard contractual clauses plus its EU-US Data Privacy Framework certification even though the data sits in Amsterdam. Ploi is run by WebBuilds B.V. in the Netherlands.
 - **Cloudflare** sits in front as reverse proxy and bot filter, so it processes request metadata as a processor.
 - **Market data providers** (CoinGecko, CoinPaprika, GeckoTerminal, Bitcoin.com charts) are called server side by scheduled jobs. No visitor data is sent to them, and public pages never call them per request.
 - **Visitor statistics:** Simple Analytics (`config/analytics.php`, rendered by `resources/views/components/afmc/analytics.blade.php`). Legal basis: legitimate interests. See below.

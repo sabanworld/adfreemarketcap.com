@@ -103,25 +103,31 @@ return [
     */
 
     'processors' => [
-        [
+        'hosting' => [
             'category' => 'Hosting, database, and backups',
-            'name' => env('COMPANY_HOSTING_PROVIDER'),
-            'location' => env('COMPANY_HOSTING_LOCATION', 'European Union'),
+            'name' => env('COMPANY_HOSTING_PROVIDER', 'DigitalOcean, LLC'),
+            'location' => env('COMPANY_HOSTING_LOCATION', 'Amsterdam, the Netherlands (AMS3), with support access from the United States'),
+            'transfer' => env('COMPANY_HOSTING_TRANSFER', 'EU standard contractual clauses and the EU-US Data Privacy Framework'),
+        ],
+        'server_management' => [
+            'category' => 'Server provisioning, deployment, and monitoring',
+            'name' => env('COMPANY_SERVER_MANAGEMENT_PROVIDER', 'Ploi (WebBuilds B.V.)'),
+            'location' => env('COMPANY_SERVER_MANAGEMENT_LOCATION', 'The Netherlands'),
             'transfer' => null,
         ],
-        [
+        'proxy' => [
             'category' => 'Reverse proxy, DDoS protection, and bot filtering',
             'name' => 'Cloudflare, Inc.',
             'location' => 'European edge locations, with support access from the United States',
             'transfer' => 'EU standard contractual clauses and the EU-US Data Privacy Framework',
         ],
-        [
+        'mail' => [
             'category' => 'Transactional email (account and support messages)',
             'name' => env('COMPANY_MAIL_PROVIDER'),
             'location' => env('COMPANY_MAIL_LOCATION', 'European Union'),
             'transfer' => null,
         ],
-        [
+        'analytics' => [
             'category' => 'Visitor statistics, without cookies or stored IP addresses',
             'name' => 'Simple Analytics B.V., Amsterdam',
             'location' => 'The Netherlands, with content delivery from European edge locations',
