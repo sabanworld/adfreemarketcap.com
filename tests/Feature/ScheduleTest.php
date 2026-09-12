@@ -17,6 +17,11 @@ class ScheduleTest extends TestCase
 
         $this->assertStringContainsString('marketdata:sync-markets', $output);
         $this->assertStringContainsString('marketdata:sync-global', $output);
+        $this->assertStringContainsString('marketdata:sync-dex', $output);
+        $this->assertStringContainsString('marketdata:sync-tickers', $output);
+        $this->assertStringContainsString('marketdata:sync-coin-details', $output);
+        $this->assertStringContainsString('marketdata:sync-insights', $output);
+        $this->assertStringContainsString('marketdata:sync-currency-rates', $output);
         $this->assertStringContainsString('horizon:snapshot', $output);
     }
 }

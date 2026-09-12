@@ -25,15 +25,6 @@ class SyncRun extends Model
         'finished_at',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'records_processed' => 'integer',
-            'started_at' => 'datetime',
-            'finished_at' => 'datetime',
-        ];
-    }
-
     public function failed(): bool
     {
         return $this->status === self::STATUS_FAILED;
@@ -56,5 +47,14 @@ class SyncRun extends Model
             'error' => $error,
             'finished_at' => now(),
         ]);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'records_processed' => 'integer',
+            'started_at' => 'datetime',
+            'finished_at' => 'datetime',
+        ];
     }
 }

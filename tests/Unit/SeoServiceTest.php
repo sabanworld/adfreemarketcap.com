@@ -38,6 +38,6 @@ class SeoServiceTest extends TestCase
         $body = app(SeoService::class)->robotsTxt();
 
         $this->assertStringEndsWith("\n", $body);
-        $this->assertStringContainsString('Sitemap: '.route('sitemap'), $body);
+        $this->assertStringContainsString('Sitemap: ' . route('sitemap'), $body);
     }
 }

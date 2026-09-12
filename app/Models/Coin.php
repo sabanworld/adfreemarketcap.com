@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 class Coin extends Model
@@ -29,7 +30,60 @@ class Coin extends Model
         'last_provider',
         'market_synced_at',
         'detail_synced_at',
+        'tickers_synced_at',
     ];
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+
+    public function providerIds(): HasMany
+    {
+        return $this->hasMany(CoinProviderId::class);
+    }
+
+    public function treasurySnapshot(): HasOne
+    {
+        return $this->hasOne(CoinTreasurySnapshot::class);
+    }
+
+    public function treasuryHolders(): HasMany
+    {
+        return $this->hasMany(CoinTreasuryHolder::class)->orderBy('rank');
+    }
+
+    public function marketCycleSnapshot(): HasOne
+    {
+        return $this->hasOne(CoinMarketCycleSnapshot::class);
+    }
+
+    public function tickers(): HasMany
+    {
+        return $this->hasMany(CoinTicker::class)->orderBy('rank');
+    }
+
+    public function detailIsStale(?int $hours = null): bool
+    {
+        $hours ??= (int) config('marketdata.sync.coin_detail_stale_hours', 6);
+
+        if (! $this->detail_synced_at instanceof Carbon) {
+            return true;
+        }
+
+        return $this->detail_synced_at->lte(now()->subHours($hours));
+    }
+
+    public function tickersAreStale(?int $minutes = null): bool
+    {
+        $minutes ??= (int) config('marketdata.sync.tickers_stale_minutes', 15);
+
+        if (! $this->tickers_synced_at instanceof Carbon) {
+            return true;
+        }
+
+        return $this->tickers_synced_at->lte(now()->subMinutes(max(1, $minutes)));
+    }
 
     protected function casts(): array
     {
@@ -46,27 +100,7 @@ class Coin extends Model
             'chart_7d' => 'array',
             'market_synced_at' => 'datetime',
             'detail_synced_at' => 'datetime',
+            'tickers_synced_at' => 'datetime',
         ];
-    }
-
-    public function getRouteKeyName(): string
-    {
-        return 'slug';
-    }
-
-    public function providerIds(): HasMany
-    {
-        return $this->hasMany(CoinProviderId::class);
-    }
-
-    public function detailIsStale(?int $hours = null): bool
-    {
-        $hours ??= (int) config('marketdata.sync.coin_detail_stale_hours', 6);
-
-        if (! $this->detail_synced_at instanceof Carbon) {
-            return true;
-        }
-
-        return $this->detail_synced_at->lte(now()->subHours($hours));
     }
 }

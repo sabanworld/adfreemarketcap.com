@@ -7,6 +7,7 @@ namespace Tests;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Env;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -21,6 +22,10 @@ abstract class TestCase extends BaseTestCase
         if ($database !== 'testing') {
             $this->fail("Refusing to run tests against database [{$database}]; expected [testing].");
         }
+
+        // The suite must never reach a live provider. Page tests that dispatch sync
+        // jobs should fake the queue; tests that exercise a client should fake HTTP.
+        Http::preventStrayRequests();
     }
 
     /**

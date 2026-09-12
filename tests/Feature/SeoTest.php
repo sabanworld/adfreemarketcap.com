@@ -7,11 +7,21 @@ namespace Tests\Feature;
 use App\Models\Coin;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 class SeoTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Opening a coin page dispatches sync jobs for anything stale, and the
+        // testing queue runs inline, so keep those jobs off the provider.
+        Queue::fake();
+    }
 
     public function test_robots_txt_disallows_admin_and_points_at_sitemap(): void
     {
@@ -23,7 +33,11 @@ class SeoTest extends TestCase
         $response->assertSee('Disallow: /admin', false);
         $response->assertSee('Disallow: /horizon', false);
         $response->assertSee('Disallow: /livewire', false);
-        $response->assertSee('Sitemap: '.route('sitemap'), false);
+        $response->assertSee('Disallow: /login', false);
+        $response->assertSee('Disallow: /register', false);
+        $response->assertSee('Disallow: /watchlist', false);
+        $response->assertSee('Disallow: /altcha', false);
+        $response->assertSee('Sitemap: ' . route('sitemap'), false);
     }
 
     public function test_sitemap_includes_home_and_coin_urls(): void
@@ -43,8 +57,8 @@ class SeoTest extends TestCase
 
         $response->assertOk();
         $response->assertHeader('Content-Type', 'application/xml; charset=UTF-8');
-        $response->assertSee('<loc>'.route('home').'</loc>', false);
-        $response->assertSee('<loc>'.route('coins.show', 'bitcoin').'</loc>', false);
+        $response->assertSee('<loc>' . route('home') . '</loc>', false);
+        $response->assertSee('<loc>' . route('coins.show', 'bitcoin') . '</loc>', false);
         $response->assertSee('<changefreq>hourly</changefreq>', false);
     }
 
@@ -53,7 +67,7 @@ class SeoTest extends TestCase
         $response = $this->get('/');
 
         $response->assertOk();
-        $response->assertSee('<link rel="canonical" href="'.route('home').'">', false);
+        $response->assertSee('<link rel="canonical" href="' . route('home') . '">', false);
         $response->assertSee('<meta name="description"', false);
         $response->assertSee('"@type":"WebSite"', false);
         $response->assertSee('<meta property="og:title"', false);
@@ -76,7 +90,7 @@ class SeoTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Ethereum (ETH) Price and Market Cap', false);
-        $response->assertSee('<link rel="canonical" href="'.route('coins.show', 'ethereum').'">', false);
+        $response->assertSee('<link rel="canonical" href="' . route('coins.show', 'ethereum') . '">', false);
         $response->assertSee('https://example.test/eth.png', false);
         $response->assertSee('"@type":"BreadcrumbList"', false);
         $response->assertSee('"@type":"WebPage"', false);
@@ -87,7 +101,7 @@ class SeoTest extends TestCase
         $response = $this->get('/?search=btc&sort=price&direction=desc');
 
         $response->assertOk();
-        $response->assertSee('<link rel="canonical" href="'.route('home').'">', false);
-        $response->assertDontSee('<link rel="canonical" href="'.url('/?search=btc'), false);
+        $response->assertSee('<link rel="canonical" href="' . route('home') . '">', false);
+        $response->assertDontSee('<link rel="canonical" href="' . url('/?search=btc'), false);
     }
 }

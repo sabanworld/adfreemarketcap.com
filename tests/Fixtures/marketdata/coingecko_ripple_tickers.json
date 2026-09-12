@@ -1,0 +1,51 @@
+{
+    "name": "XRP",
+    "tickers": [
+        {
+            "base": "XRP",
+            "target": "USDT",
+            "market": {
+                "name": "Binance",
+                "identifier": "binance",
+                "has_trading_incentive": false
+            },
+            "last": 1.3661,
+            "converted_last": {
+                "usd": 1.37
+            },
+            "converted_volume": {
+                "usd": 220864106
+            },
+            "coin_id": "ripple",
+            "target_coin_id": "tether",
+            "trust_score": "green",
+            "bid_ask_spread_percentage": 0.01732,
+            "last_traded_at": "2026-09-12T08:29:16+00:00",
+            "is_anomaly": false,
+            "is_stale": false,
+            "trade_url": "https://www.binance.com/en/trade/XRP_USDT"
+        },
+        {
+            "base": "524C555344000000000000000000000000000000.rMxCKbEDwqr76QuheSUMdEGf4B9xJ8m5De",
+            "target": "XRP",
+            "market": {
+                "name": "First Ledger",
+                "identifier": "first-ledger",
+                "has_trading_incentive": false
+            },
+            "last": 0.7313766667,
+            "converted_last": {
+                "usd": 1.37
+            },
+            "converted_volume": {
+                "usd": 7290184
+            },
+            "coin_id": "ripple-usd",
+            "target_coin_id": "xrp",
+            "bid_ask_spread_percentage": 0.602797,
+            "last_traded_at": "2026-09-12T08:28:29+00:00",
+            "is_anomaly": false,
+            "is_stale": false
+        }
+    ]
+}

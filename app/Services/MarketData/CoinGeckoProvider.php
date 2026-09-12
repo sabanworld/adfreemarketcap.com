@@ -4,17 +4,25 @@ declare(strict_types=1);
 
 namespace App\Services\MarketData;
 
+use App\Services\Currency\ExchangeRateProvider;
 use App\Services\MarketData\DTOs\CoinDetailData;
+use App\Services\MarketData\DTOs\CoinTickerData;
 use App\Services\MarketData\DTOs\GlobalMarketData;
 use App\Services\MarketData\DTOs\MarketCoinData;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use RuntimeException;
 
-class CoinGeckoProvider implements MarketDataProvider
+class CoinGeckoProvider implements ExchangeRateProvider, MarketDataProvider
 {
+    /**
+     * Keeps base/target symbols inside the coin_tickers column widths.
+     */
+    private const MAX_SYMBOL_LENGTH = 32;
+
     public function name(): string
     {
         return 'coingecko';
@@ -32,7 +40,7 @@ class CoinGeckoProvider implements MarketDataProvider
         ]);
 
         throw_unless($response->successful(), new RuntimeException(
-            'CoinGecko markets failed: '.$response->status().' '.$response->body()
+            'CoinGecko markets failed: ' . $response->status() . ' ' . $response->body()
         ));
 
         return collect($response->json() ?? [])->map(function (array $row): MarketCoinData {
@@ -67,7 +75,7 @@ class CoinGeckoProvider implements MarketDataProvider
         $response = $this->client()->get('/global');
 
         throw_unless($response->successful(), new RuntimeException(
-            'CoinGecko global failed: '.$response->status().' '.$response->body()
+            'CoinGecko global failed: ' . $response->status() . ' ' . $response->body()
         ));
 
         $data = $response->json('data') ?? [];
@@ -82,7 +90,7 @@ class CoinGeckoProvider implements MarketDataProvider
 
     public function fetchCoinDetail(string $externalId): CoinDetailData
     {
-        $detail = $this->client()->get('/coins/'.$externalId, [
+        $detail = $this->client()->get('/coins/' . $externalId, [
             'localization' => 'false',
             'tickers' => 'false',
             'market_data' => 'false',
@@ -91,16 +99,16 @@ class CoinGeckoProvider implements MarketDataProvider
         ]);
 
         throw_unless($detail->successful(), new RuntimeException(
-            'CoinGecko coin detail failed: '.$detail->status().' '.$detail->body()
+            'CoinGecko coin detail failed: ' . $detail->status() . ' ' . $detail->body()
         ));
 
-        $chart = $this->client()->get('/coins/'.$externalId.'/market_chart', [
+        $chart = $this->client()->get('/coins/' . $externalId . '/market_chart', [
             'vs_currency' => 'usd',
             'days' => 7,
         ]);
 
         throw_unless($chart->successful(), new RuntimeException(
-            'CoinGecko market chart failed: '.$chart->status().' '.$chart->body()
+            'CoinGecko market chart failed: ' . $chart->status() . ' ' . $chart->body()
         ));
 
         $description = data_get($detail->json(), 'description.en');
@@ -111,6 +119,133 @@ class CoinGeckoProvider implements MarketDataProvider
             description: is_string($description) ? strip_tags($description) : null,
             chart7d: is_array($prices) ? $prices : null,
         );
+    }
+
+    /**
+     * @return Collection<int, CoinTickerData>
+     */
+    public function fetchCoinTickers(string $externalId, int $page = 1): Collection
+    {
+        $response = $this->client()->get('/coins/' . $externalId . '/tickers', [
+            'include_exchange_logo' => 'false',
+            'page' => max(1, $page),
+            'order' => 'volume_desc',
+        ]);
+
+        throw_unless($response->successful(), new RuntimeException(
+            'CoinGecko tickers failed: ' . $response->status() . ' ' . $response->body()
+        ));
+
+        $tickers = $response->json('tickers');
+        if (! is_array($tickers)) {
+            return collect();
+        }
+
+        return collect($tickers)
+            ->map(function (mixed $row): ?CoinTickerData {
+                if (! is_array($row)) {
+                    return null;
+                }
+
+                $base = $this->tickerSymbol($row['base'] ?? null, $row['coin_id'] ?? null);
+                $target = $this->tickerSymbol($row['target'] ?? null, $row['target_coin_id'] ?? null);
+                $market = is_array($row['market'] ?? null) ? $row['market'] : [];
+                $exchangeId = $market['identifier'] ?? null;
+                $exchangeName = $market['name'] ?? null;
+
+                if (! filled($base) || ! filled($target)) {
+                    return null;
+                }
+
+                if (! is_string($exchangeId) || $exchangeId === '' || ! is_string($exchangeName) || $exchangeName === '') {
+                    return null;
+                }
+
+                $lastTraded = $row['last_traded_at'] ?? null;
+                $tradeUrl = $row['trade_url'] ?? null;
+                $trust = $row['trust_score'] ?? null;
+
+                return new CoinTickerData(
+                    exchangeId: $exchangeId,
+                    exchangeName: $exchangeName,
+                    baseSymbol: $base,
+                    targetSymbol: $target,
+                    pair: $base . '/' . $target,
+                    priceUsd: is_numeric(data_get($row, 'converted_last.usd'))
+                        ? (float) data_get($row, 'converted_last.usd')
+                        : null,
+                    lastPrice: is_numeric($row['last'] ?? null) ? (float) $row['last'] : null,
+                    volume24hUsd: is_numeric(data_get($row, 'converted_volume.usd'))
+                        ? (float) data_get($row, 'converted_volume.usd')
+                        : null,
+                    bidAskSpreadPercent: is_numeric($row['bid_ask_spread_percentage'] ?? null)
+                        ? (float) $row['bid_ask_spread_percentage']
+                        : null,
+                    trustScore: is_string($trust) ? $trust : null,
+                    isAnomaly: (bool) ($row['is_anomaly'] ?? false),
+                    isStale: (bool) ($row['is_stale'] ?? false),
+                    tradeUrl: is_string($tradeUrl) && $tradeUrl !== '' ? $tradeUrl : null,
+                    lastTradedAt: is_string($lastTraded) && $lastTraded !== ''
+                        ? Carbon::parse($lastTraded)
+                        : null,
+                );
+            })
+            ->filter()
+            ->values();
+    }
+
+    /**
+     * CoinGecko quotes every rate against BTC, so each value is divided by the
+     * USD value to get the multiplier for our USD-denominated columns.
+     *
+     * @return Collection<string, float>
+     */
+    public function fetchRatesPerUsd(): Collection
+    {
+        $response = $this->client()->get('/exchange_rates');
+
+        throw_unless($response->successful(), new RuntimeException(
+            'CoinGecko exchange rates failed: ' . $response->status() . ' ' . $response->body()
+        ));
+
+        $rates = $response->json('rates');
+        $usdPerBtc = data_get($rates, 'usd.value');
+
+        throw_unless(is_array($rates) && is_numeric($usdPerBtc) && (float) $usdPerBtc > 0, new RuntimeException(
+            'CoinGecko exchange rates did not include a usable USD rate.'
+        ));
+
+        return collect($rates)
+            ->mapWithKeys(function (mixed $row, mixed $code) use ($usdPerBtc): array {
+                $value = is_array($row) ? ($row['value'] ?? null) : null;
+
+                if (! is_numeric($value) || (float) $value <= 0) {
+                    return [];
+                }
+
+                return [Str::lower((string) $code) => (float) $value / (float) $usdPerBtc];
+            });
+    }
+
+    /**
+     * On-chain markets arrive with a contract address or XRPL currency code as
+     * base/target, so fall back to the CoinGecko coin id for a displayable symbol.
+     */
+    private function tickerSymbol(mixed $value, mixed $coinId): ?string
+    {
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+
+        if (Str::length($value) <= self::MAX_SYMBOL_LENGTH) {
+            return Str::upper($value);
+        }
+
+        if (is_string($coinId) && $coinId !== '' && Str::length($coinId) <= self::MAX_SYMBOL_LENGTH) {
+            return Str::upper($coinId);
+        }
+
+        return Str::upper(Str::limit($value, self::MAX_SYMBOL_LENGTH, ''));
     }
 
     private function client(): PendingRequest

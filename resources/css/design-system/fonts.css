@@ -1,6 +1,23 @@
-/* Webfonts. No brand binaries were provided, so these are the nearest Google Fonts
-   matches, loaded from the Google Fonts CDN. Replace with self-hosted @font-face
-   rules + local files if licensed binaries become available.
-   Icon font: Material Symbols Rounded (substituted set — see readme ICONOGRAPHY). */
-@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Public+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block");
+/* Webfonts, all served from our own origin. Nothing here calls a third-party font
+   CDN, so a visitor's IP address never reaches Google. The privacy and cookie
+   policies both state that, so keep it that way (docs/privacy-and-legal.md).
+
+   Text faces come from the fontsource packages in node_modules and are bundled by
+   Vite. No brand binaries were provided, so these are the nearest matches; swap
+   the packages if licensed files arrive.
+
+   Icon font: Material Symbols Rounded, subset to the icons we actually render by
+   scripts/build-icon-font.mjs (`yarn icons:build`). Reference icons through
+   <x-afmc.icon name="search" />, never by typing the ligature name. */
+@import "@fontsource-variable/archivo/wght.css";
+@import "@fontsource-variable/public-sans/wght.css";
+@import "@fontsource-variable/public-sans/wght-italic.css";
+@import "@fontsource-variable/jetbrains-mono/wght.css";
+
+@font-face {
+  font-family: "Material Symbols Rounded";
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url("../../fonts/material-symbols-rounded-subset.woff2") format("woff2");
+}

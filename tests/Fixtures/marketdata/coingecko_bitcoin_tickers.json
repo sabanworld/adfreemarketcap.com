@@ -1,0 +1,58 @@
+{
+    "name": "Bitcoin",
+    "tickers": [
+        {
+            "base": "BTC",
+            "target": "USDT",
+            "market": {
+                "name": "Binance",
+                "identifier": "binance",
+                "has_trading_incentive": false
+            },
+            "last": 77000.5,
+            "converted_last": {
+                "usd": 77000.5
+            },
+            "converted_volume": {
+                "usd": 1500000000
+            },
+            "trust_score": "green",
+            "bid_ask_spread_percentage": 0.01,
+            "last_traded_at": "2026-09-12T08:00:00+00:00",
+            "is_anomaly": false,
+            "is_stale": false,
+            "trade_url": "https://www.binance.com/en/trade/BTC_USDT"
+        },
+        {
+            "base": "BTC",
+            "target": "USD",
+            "market": {
+                "name": "Coinbase Exchange",
+                "identifier": "gdax",
+                "has_trading_incentive": false
+            },
+            "last": 76950.1,
+            "converted_last": {
+                "usd": 76950.1
+            },
+            "converted_volume": {
+                "usd": 900000000
+            },
+            "trust_score": "green",
+            "bid_ask_spread_percentage": 0.02,
+            "last_traded_at": "2026-09-12T08:00:10+00:00",
+            "is_anomaly": false,
+            "is_stale": false,
+            "trade_url": "https://www.coinbase.com/advanced-trade/spot/BTC-USD"
+        },
+        false,
+        {
+            "base": "BTC",
+            "target": "USDT",
+            "market": {
+                "name": "",
+                "identifier": ""
+            }
+        }
+    ]
+}

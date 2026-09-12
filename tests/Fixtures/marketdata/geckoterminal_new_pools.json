@@ -1,0 +1,76 @@
+{
+    "data": [
+        {
+            "id": "base_0xnewpooladdress000000000000000000001",
+            "type": "pool",
+            "attributes": {
+                "base_token_price_usd": "0.0004",
+                "address": "0xnewpooladdress000000000000000000001",
+                "name": "NEWCOIN / USDC",
+                "pool_created_at": "2026-09-11T20:00:00Z",
+                "price_change_percentage": {
+                    "h24": "55.1"
+                },
+                "transactions": {
+                    "h24": {
+                        "buys": 20,
+                        "sells": 10
+                    }
+                },
+                "volume_usd": {
+                    "h24": "120000"
+                },
+                "reserve_in_usd": "45000"
+            },
+            "relationships": {
+                "base_token": {
+                    "data": {
+                        "id": "base_token_new",
+                        "type": "token"
+                    }
+                },
+                "quote_token": {
+                    "data": {
+                        "id": "base_token_usdc",
+                        "type": "token"
+                    }
+                },
+                "network": {
+                    "data": {
+                        "id": "base",
+                        "type": "network"
+                    }
+                },
+                "dex": {
+                    "data": {
+                        "id": "aerodrome",
+                        "type": "dex"
+                    }
+                }
+            }
+        }
+    ],
+    "included": [
+        {
+            "id": "base_token_new",
+            "type": "token",
+            "attributes": {
+                "symbol": "NEWCOIN"
+            }
+        },
+        {
+            "id": "base_token_usdc",
+            "type": "token",
+            "attributes": {
+                "symbol": "USDC"
+            }
+        },
+        {
+            "id": "aerodrome",
+            "type": "dex",
+            "attributes": {
+                "name": "Aerodrome"
+            }
+        }
+    ]
+}

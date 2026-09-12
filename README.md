@@ -22,7 +22,7 @@ composer install
 ```
 
 App: [http://localhost:8888](http://localhost:8888) (or your `APP_PORT`)  
-Admin: [http://localhost:8888/admin](http://localhost:8888/admin) — `admin@adfreemarketcap.com` / `password`  
+Admin: [http://localhost:8888/admin](http://localhost:8888/admin) with `admin@adfreemarketcap.com` / `password`  
 Horizon: [http://localhost:8888/horizon](http://localhost:8888/horizon) (requires `QUEUE_CONNECTION=redis`)
 
 If default host ports are busy, copy the `APP_PORT` / `FORWARD_*` values from `.env.example`.
@@ -54,9 +54,16 @@ One-shot sync without the queue:
 
 ## Frontend
 
-Public UI is intentionally simple; a Claude design will replace styling later. Use **Yarn** only (not npm)—prefer `./vendor/bin/sail yarn …` so native deps match the Sail Linux image.
+Use **Yarn** only, not npm, and prefer `./vendor/bin/sail yarn …` so native deps match the Sail Linux image.
+
+Fonts and icons are self-hosted so no visitor request reaches a third-party CDN. The icon font is a subset of Material Symbols Rounded; after adding an icon name to `resources/fonts/material-symbols.json`, rebuild it:
+
+```bash
+./vendor/bin/sail yarn icons:build
+```
 
 ## Docs
 
 - Agent rules: [`AGENTS.md`](AGENTS.md)
 - Product docs: [`docs/index.md`](docs/index.md)
+- Privacy, cookies, and legal pages: [`docs/privacy-and-legal.md`](docs/privacy-and-legal.md)

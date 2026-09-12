@@ -11,6 +11,7 @@ use App\Models\SyncRun;
 use App\Services\MarketData\DTOs\MarketCoinData;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Throwable;
 
 class MarketSyncService
@@ -101,7 +102,7 @@ class MarketSyncService
                 ->first()
                 ?? $coin->providerIds()->first();
 
-            throw_unless($providerId, new \RuntimeException("No provider id mapped for coin [{$coin->slug}]."));
+            throw_unless($providerId, new RuntimeException("No provider id mapped for coin [{$coin->slug}]."));
 
             $detail = $this->aggregator->fetchCoinDetail($providerId->provider, $providerId->external_id);
 
@@ -176,6 +177,6 @@ class MarketSyncService
             return Str::slug($data->externalId);
         }
 
-        return Str::slug($data->name.'-'.$data->symbol);
+        return Str::slug($data->name . '-' . $data->symbol);
     }
 }

@@ -20,7 +20,7 @@
     <span class="afmc-change" style="color: var(--text-faint)">—</span>
 @else
     <span {{ $attributes->class($classes) }}>
-        <span class="afmc-icon" data-fill="1" style="font-size: 1.1em">{{ $up ? 'arrow_drop_up' : 'arrow_drop_down' }}</span>
+        <x-afmc.icon :name="$up ? 'arrow_drop_up' : 'arrow_drop_down'" filled size="1.1em" />
         {{ number_format(abs($numeric), 2) }}%
     </span>
 @endif

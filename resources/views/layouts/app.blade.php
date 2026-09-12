@@ -18,10 +18,7 @@
 </head>
 <body
     style="min-height:100vh;background:var(--surface-page);color:var(--text-body);margin:0"
-    x-data="{
-        dark: localStorage.getItem('afmc-theme') === 'dark',
-        cookieConsent: localStorage.getItem('afmc-cookies') !== null,
-    }"
+    x-data="{ dark: localStorage.getItem('afmc-theme') === 'dark' }"
     x-effect="
         document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
         localStorage.setItem('afmc-theme', dark ? 'dark' : 'light');
@@ -36,5 +33,6 @@
     <x-afmc.cookie-bar />
 
     @livewireScripts
+    <x-afmc.analytics />
 </body>
 </html>

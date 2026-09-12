@@ -42,6 +42,11 @@ return [
             '/admin',
             '/horizon',
             '/livewire',
+            '/login',
+            '/register',
+            '/watchlist',
+            '/logout',
+            '/altcha',
         ],
     ],
 

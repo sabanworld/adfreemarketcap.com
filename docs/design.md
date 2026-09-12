@@ -18,8 +18,10 @@ The production front-end follows the **AdFreeMarketCap Design System** under `cl
 - Amber is action/attention only; green/red only for price direction.
 - Figures use JetBrains Mono + tabular nums.
 - Pledge band + picks disclose funding and interests; never style picks as ad inventory.
-- DexScan / Exchanges / Watchlist remain disabled in nav until those surfaces ship.
+- DexScan and Watchlist are live in nav. Exchanges stays disabled until that surface ships. Watchlist requires `auth` on the `web` guard (see [`docs/public-accounts.md`](public-accounts.md)).
 
-## Theme + consent
+## Theme + cookie notice
 
-Alpine on the document root persists `afmc-theme` and `afmc-cookies` in `localStorage` and toggles `data-theme="light|dark"` for token overrides.
+Alpine on `<body>` persists `afmc-theme` in `localStorage` and toggles `data-theme="light|dark"` for token overrides.
+
+The cookie notice (`resources/views/components/afmc/cookie-bar.blade.php`) owns its own state: it opens when `afmc-cookies` is missing from `localStorage`, and "Got it" writes the key. Nothing here is optional, so the footer offers no preference panel. Its "Cookie notice" button dispatches the `afmc-cookie-notice` window event, which clears the key, reopens the notice, and moves focus to it.

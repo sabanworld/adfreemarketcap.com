@@ -25,7 +25,7 @@ class CoinPaprikaProvider implements MarketDataProvider
         $response = $this->client()->get('/tickers');
 
         throw_unless($response->successful(), new RuntimeException(
-            'CoinPaprika tickers failed: '.$response->status().' '.$response->body()
+            'CoinPaprika tickers failed: ' . $response->status() . ' ' . $response->body()
         ));
 
         $offset = max(0, ($page - 1) * $perPage);
@@ -60,7 +60,7 @@ class CoinPaprikaProvider implements MarketDataProvider
         $response = $this->client()->get('/global');
 
         throw_unless($response->successful(), new RuntimeException(
-            'CoinPaprika global failed: '.$response->status().' '.$response->body()
+            'CoinPaprika global failed: ' . $response->status() . ' ' . $response->body()
         ));
 
         $data = $response->json() ?? [];
@@ -75,10 +75,10 @@ class CoinPaprikaProvider implements MarketDataProvider
 
     public function fetchCoinDetail(string $externalId): CoinDetailData
     {
-        $detail = $this->client()->get('/coins/'.$externalId);
+        $detail = $this->client()->get('/coins/' . $externalId);
 
         throw_unless($detail->successful(), new RuntimeException(
-            'CoinPaprika coin detail failed: '.$detail->status().' '.$detail->body()
+            'CoinPaprika coin detail failed: ' . $detail->status() . ' ' . $detail->body()
         ));
 
         $description = data_get($detail->json(), 'description');

@@ -1,6 +1,8 @@
 @php
+    use App\Services\Currency\MarketDisplayService;
     use App\Services\MarketData\MarketNumberFormatter;
 
+    $display = app(MarketDisplayService::class);
     $btcDominance = $global?->btc_dominance !== null ? (float) $global->btc_dominance : null;
 @endphp
 
@@ -11,17 +13,17 @@
             <span style="font:var(--type-body-sm);color:var(--text-faint)">{{ __('Ranking cannot be bought') }}</span>
         </div>
         <span class="afmc-live">
-            <span class="afmc-icon" data-fill="1">fiber_manual_record</span>
+            <x-afmc.icon name="fiber_manual_record" filled />
             {{ __('Live · rankings from synced market data') }}
         </span>
     </div>
 
     @if ($featured->isNotEmpty())
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:var(--space-3);margin-bottom:var(--space-3)">
+        <div class="afmc-grid afmc-grid--features">
             @foreach ($featured as $index => $coin)
                 @php
-                    $change24 = $coin->percent_change_24h !== null ? (float) $coin->percent_change_24h : null;
-                    $spark = is_array($coin->sparkline_7d) ? $coin->sparkline_7d : [];
+                    $change24 = $display->change($coin->percent_change_24h);
+                    $spark = $display->sparkline($coin->sparkline_7d);
                 @endphp
                 <a
                     href="{{ route('coins.show', $coin) }}"
@@ -105,24 +107,25 @@
             <table class="afmc-table {{ $dense ? 'afmc-table--dense' : '' }}">
                 <thead>
                     <tr>
+                        <th style="width:38px"></th>
                         <th class="{{ $sort === 'rank' ? 'is-sorted' : '' }}" style="width:48px">
                             <button type="button" wire:click="sortBy('rank')">#
                                 @if ($sort === 'rank')
-                                    <span class="afmc-icon" style="font-size:14px;color:var(--amber-600)">{{ $direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down' }}</span>
+                                    <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
                                 @endif
                             </button>
                         </th>
                         <th class="{{ $sort === 'name' ? 'is-sorted' : '' }}">
                             <button type="button" wire:click="sortBy('name')">{{ __('Name') }}
                                 @if ($sort === 'name')
-                                    <span class="afmc-icon" style="font-size:14px;color:var(--amber-600)">{{ $direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down' }}</span>
+                                    <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
                                 @endif
                             </button>
                         </th>
                         <th class="is-right {{ $sort === 'price' ? 'is-sorted' : '' }}">
                             <button type="button" wire:click="sortBy('price')">{{ __('Price') }}
                                 @if ($sort === 'price')
-                                    <span class="afmc-icon" style="font-size:14px;color:var(--amber-600)">{{ $direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down' }}</span>
+                                    <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
                                 @endif
                             </button>
                         </th>
@@ -147,10 +150,13 @@
                 <tbody>
                     @forelse ($coins as $coin)
                         @php
-                            $change24 = $coin->percent_change_24h !== null ? (float) $coin->percent_change_24h : null;
-                            $spark = is_array($coin->sparkline_7d) ? $coin->sparkline_7d : [];
+                            $change24 = $display->change($coin->percent_change_24h);
+                            $spark = $display->sparkline($coin->sparkline_7d);
                         @endphp
                         <tr wire:key="coin-{{ $coin->id }}">
+                            <td>
+                                <livewire:watch-toggle :coin="$coin" :key="'home-watch-'.$coin->id" />
+                            </td>
                             <td class="is-muted">{{ $coin->rank ?? '—' }}</td>
                             <td>
                                 <x-afmc.coin-identity
@@ -161,9 +167,9 @@
                                 />
                             </td>
                             <td class="is-right">{{ MarketNumberFormatter::money($coin->price !== null ? (float) $coin->price : null, 8) }}</td>
-                            <td class="is-right"><x-afmc.price-change :value="$coin->percent_change_1h !== null ? (float) $coin->percent_change_1h : null" size="sm" /></td>
+                            <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_1h, '1h')" size="sm" /></td>
                             <td class="is-right"><x-afmc.price-change :value="$change24" size="sm" /></td>
-                            <td class="is-right"><x-afmc.price-change :value="$coin->percent_change_7d !== null ? (float) $coin->percent_change_7d : null" size="sm" /></td>
+                            <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_7d, '7d')" size="sm" /></td>
                             <td class="is-right">{{ MarketNumberFormatter::money($coin->market_cap !== null ? (float) $coin->market_cap : null) }}</td>
                             <td class="is-right">{{ MarketNumberFormatter::money($coin->volume_24h !== null ? (float) $coin->volume_24h : null) }}</td>
                             <td class="is-right">
@@ -172,7 +178,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" style="height:auto;padding:var(--space-8);text-align:center;color:var(--text-faint);font:var(--type-body-sm)">
+                            <td colspan="10" style="height:auto;padding:var(--space-8);text-align:center;color:var(--text-faint);font:var(--type-body-sm)">
                                 {{ __('No coins yet. Run php artisan marketdata:sync') }}
                             </td>
                         </tr>
@@ -208,25 +214,25 @@
             <div>
                 <h2 class="afmc-pledge__statement">{{ __('No ads. No paid rankings. No sponsored listings.') }}</h2>
                 <p class="afmc-pledge__detail">
-                    {{ __('This site is paid for out of the creator\'s own pocket. Nobody can pay to appear, to move up, or to lose a risk flag, and the picks below are companies our creator uses or has a stake in — stated on each card — never paid placements.') }}
+                    {{ __('This site is paid for out of the creator\'s own pocket. Nobody can pay to appear, to move up, or to lose a risk flag. The picks below are companies our creator uses or holds a stake in. Each card names the relationship, and none of them are paid placements.') }}
                 </p>
             </div>
         </div>
         <div class="afmc-pledge__items">
             <div>
-                <div class="afmc-pledge__item-label"><span class="afmc-icon">block</span>{{ __('Zero ad slots') }}</div>
+                <div class="afmc-pledge__item-label"><x-afmc.icon name="block" />{{ __('Zero ad slots') }}</div>
                 <p class="afmc-pledge__item-detail">{{ __('None sold, none planned, no house ads.') }}</p>
             </div>
             <div>
-                <div class="afmc-pledge__item-label"><span class="afmc-icon">balance</span>{{ __('Rank is market cap') }}</div>
+                <div class="afmc-pledge__item-label"><x-afmc.icon name="balance" />{{ __('Rank is market cap') }}</div>
                 <p class="afmc-pledge__item-detail">{{ __('One formula, published, applied to every asset.') }}</p>
             </div>
             <div>
-                <div class="afmc-pledge__item-label"><span class="afmc-icon">visibility</span>{{ __('Risk flags are ours') }}</div>
+                <div class="afmc-pledge__item-label"><x-afmc.icon name="visibility" />{{ __('Risk flags are ours') }}</div>
                 <p class="afmc-pledge__item-detail">{{ __('Set by liquidity and history, never negotiable.') }}</p>
             </div>
             <div>
-                <div class="afmc-pledge__item-label"><span class="afmc-icon">savings</span>{{ __('Funded by the creator') }}</div>
+                <div class="afmc-pledge__item-label"><x-afmc.icon name="savings" />{{ __('Funded by the creator') }}</div>
                 <p class="afmc-pledge__item-detail">{{ __('Out of pocket. No ads, no sponsors, no investors to please.') }}</p>
             </div>
         </div>
@@ -237,21 +243,21 @@
             <h2 style="margin:0;font:var(--type-h2)">{{ __('Picks, not ads') }}</h2>
             <span style="font:var(--type-body-sm);color:var(--text-faint)">{{ __('Companies we like · any stake is disclosed') }}</span>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--space-3)">
+        <div class="afmc-grid afmc-grid--picks">
             <article class="afmc-pick">
-                <div style="display:flex;justify-content:space-between;gap:var(--space-2)">
+                <div class="afmc-pick__head">
                     <span class="afmc-pick__kind">{{ __('Hardware') }}</span>
                     <span class="afmc-pick__badge">{{ __('We use this') }}</span>
                 </div>
                 <h3 class="afmc-pick__title">Trezor</h3>
-                <p class="afmc-pick__note">{{ __('Suggested hardware wallet for long-term custody. We use one.') }}</p>
+                <p class="afmc-pick__note">{{ __('Hardware wallet for long-term custody, and what our creator keeps his own coins on.') }}</p>
                 <div class="afmc-pick__foot">
                     <span>trezor.io</span>
-                    <span class="afmc-icon" style="font-size:16px">arrow_outward</span>
+                    <x-afmc.icon name="arrow_outward" size="16px" />
                 </div>
             </article>
             <article class="afmc-pick">
-                <div style="display:flex;justify-content:space-between;gap:var(--space-2)">
+                <div class="afmc-pick__head">
                     <span class="afmc-pick__kind">{{ __('Swap') }}</span>
                     <span class="afmc-pick__badge">{{ __('We use this') }}</span>
                 </div>
@@ -259,19 +265,19 @@
                 <p class="afmc-pick__note">{{ __('Non-custodial swaps when a CEX account is the wrong tool.') }}</p>
                 <div class="afmc-pick__foot">
                     <span>changenow.io</span>
-                    <span class="afmc-icon" style="font-size:16px">arrow_outward</span>
+                    <x-afmc.icon name="arrow_outward" size="16px" />
                 </div>
             </article>
             <article class="afmc-pick">
-                <div style="display:flex;justify-content:space-between;gap:var(--space-2)">
+                <div class="afmc-pick__head">
                     <span class="afmc-pick__kind">{{ __('Mining') }}</span>
-                    <span class="afmc-pick__badge afmc-pick__badge--warn">{{ __('Creator is a shareholder') }}</span>
+                    <span class="afmc-pick__badge afmc-pick__badge--warn">{{ __('Creator is a partner') }}</span>
                 </div>
                 <h3 class="afmc-pick__title">Rigly</h3>
-                <p class="afmc-pick__note">{{ __('Bitcoin mining marketplace. The creator holds shares — stated here, not only in a policy.') }}</p>
+                <p class="afmc-pick__note">{{ __('Bitcoin mining marketplace. Our creator holds shares in it, which is why this card carries a partner badge.') }}</p>
                 <div class="afmc-pick__foot">
                     <span>rigly.io</span>
-                    <span class="afmc-icon" style="font-size:16px">arrow_outward</span>
+                    <x-afmc.icon name="arrow_outward" size="16px" />
                 </div>
             </article>
         </div>

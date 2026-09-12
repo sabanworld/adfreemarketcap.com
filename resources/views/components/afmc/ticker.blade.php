@@ -19,7 +19,7 @@
         <span class="afmc-ticker__value">{{ MarketNumberFormatter::percent($global?->btc_dominance !== null ? (float) $global->btc_dominance : null) }}</span>
     </span>
     <span class="afmc-ticker__note">
-        <span class="afmc-icon" data-fill="1" style="font-size: 14px; color: var(--up-500)">bolt</span>
+        <x-afmc.icon name="bolt" filled size="14px" color="var(--up-500)" />
         {{ __('Live · from the database') }}
     </span>
 </div>

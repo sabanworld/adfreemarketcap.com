@@ -1,0 +1,39 @@
+{
+    "success": true,
+    "data": {
+        "price": [
+            {
+                "timestamp": 1700000000000,
+                "price": 42000
+            },
+            {
+                "timestamp": 1700086400000,
+                "price": 43000
+            }
+        ],
+        "ma111": [
+            {
+                "timestamp": 1700000000000,
+                "value": 40000
+            },
+            {
+                "timestamp": 1700086400000,
+                "value": 41000
+            }
+        ],
+        "ma350x2": [
+            {
+                "timestamp": 1700000000000,
+                "value": 70000
+            },
+            {
+                "timestamp": 1700086400000,
+                "value": 69000
+            }
+        ],
+        "crosses": []
+    },
+    "metadata": {
+        "lastCross": null
+    }
+}

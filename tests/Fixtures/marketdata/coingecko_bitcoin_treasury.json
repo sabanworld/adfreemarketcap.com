@@ -1,0 +1,33 @@
+{
+    "total_holdings": 1294579.77,
+    "total_value_usd": 100047947934.3,
+    "market_cap_dominance": 6.16,
+    "companies": [
+        {
+            "name": "Strategy",
+            "symbol": "MSTR.US",
+            "country": "US",
+            "total_holdings": 845050,
+            "total_entry_value_usd": 64267830000,
+            "total_current_value_usd": 65307306474,
+            "percentage_of_total_supply": 4.024
+        },
+        {
+            "name": "Marathon Digital Holdings",
+            "symbol": "MARA.US",
+            "country": "US",
+            "total_holdings": 50000,
+            "total_entry_value_usd": 2000000000,
+            "total_current_value_usd": 3800000000,
+            "percentage_of_total_supply": 0.24
+        },
+        "bad-row",
+        {
+            "name": "",
+            "total_holdings": 1
+        },
+        {
+            "name": "NoHoldings"
+        }
+    ]
+}

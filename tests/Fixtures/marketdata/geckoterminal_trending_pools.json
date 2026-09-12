@@ -1,0 +1,147 @@
+{
+    "data": [
+        {
+            "id": "eth_0xfixturepooladdress00000000000000000001",
+            "type": "pool",
+            "attributes": {
+                "base_token_price_usd": "1.23",
+                "address": "0xfixturepooladdress00000000000000000001",
+                "name": "PEPE / WETH 0.3%",
+                "pool_created_at": "2026-09-01T12:00:00Z",
+                "price_change_percentage": {
+                    "h24": "12.5"
+                },
+                "transactions": {
+                    "h24": {
+                        "buys": 100,
+                        "sells": 80
+                    }
+                },
+                "volume_usd": {
+                    "h24": "1500000.5"
+                },
+                "reserve_in_usd": "2500000.25"
+            },
+            "relationships": {
+                "base_token": {
+                    "data": {
+                        "id": "eth_token_base",
+                        "type": "token"
+                    }
+                },
+                "quote_token": {
+                    "data": {
+                        "id": "eth_token_quote",
+                        "type": "token"
+                    }
+                },
+                "network": {
+                    "data": {
+                        "id": "eth",
+                        "type": "network"
+                    }
+                },
+                "dex": {
+                    "data": {
+                        "id": "uniswap_v3",
+                        "type": "dex"
+                    }
+                }
+            }
+        },
+        {
+            "id": "solana_FixturePoolAddress2222222222222222222",
+            "type": "pool",
+            "attributes": {
+                "base_token_price_usd": "0.01",
+                "address": "FixturePoolAddress2222222222222222222",
+                "name": "BONK / SOL",
+                "pool_created_at": "2026-09-10T08:00:00Z",
+                "price_change_percentage": {
+                    "h24": "-3.2"
+                },
+                "transactions": {
+                    "h24": {
+                        "buys": 50,
+                        "sells": 40
+                    }
+                },
+                "volume_usd": {
+                    "h24": "900000"
+                },
+                "reserve_in_usd": "800000"
+            },
+            "relationships": {
+                "base_token": {
+                    "data": {
+                        "id": "sol_token_base",
+                        "type": "token"
+                    }
+                },
+                "quote_token": {
+                    "data": {
+                        "id": "sol_token_quote",
+                        "type": "token"
+                    }
+                },
+                "network": {
+                    "data": {
+                        "id": "solana",
+                        "type": "network"
+                    }
+                },
+                "dex": {
+                    "data": {
+                        "id": "raydium",
+                        "type": "dex"
+                    }
+                }
+            }
+        }
+    ],
+    "included": [
+        {
+            "id": "eth_token_base",
+            "type": "token",
+            "attributes": {
+                "symbol": "PEPE",
+                "coingecko_coin_id": "pepe"
+            }
+        },
+        {
+            "id": "eth_token_quote",
+            "type": "token",
+            "attributes": {
+                "symbol": "WETH"
+            }
+        },
+        {
+            "id": "sol_token_base",
+            "type": "token",
+            "attributes": {
+                "symbol": "BONK"
+            }
+        },
+        {
+            "id": "sol_token_quote",
+            "type": "token",
+            "attributes": {
+                "symbol": "SOL"
+            }
+        },
+        {
+            "id": "uniswap_v3",
+            "type": "dex",
+            "attributes": {
+                "name": "Uniswap V3"
+            }
+        },
+        {
+            "id": "raydium",
+            "type": "dex",
+            "attributes": {
+                "name": "Raydium"
+            }
+        }
+    ]
+}

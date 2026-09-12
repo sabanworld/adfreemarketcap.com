@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Seo;
 
+use App\Livewire\LegalPage;
 use App\Models\Coin;
 use App\Services\MarketData\MarketNumberFormatter;
 use Illuminate\Support\Carbon;
@@ -48,8 +49,9 @@ final class SeoService
     {
         $siteName = (string) config('app.name', 'adfreemarketcap.com');
         $canonical = route('coins.show', $coin);
-        $price = MarketNumberFormatter::money($coin->price !== null ? (float) $coin->price : null, 8);
-        $marketCap = MarketNumberFormatter::money($coin->market_cap !== null ? (float) $coin->market_cap : null);
+        // Meta copy is crawled and shared, so it stays USD regardless of the visitor's display currency.
+        $price = MarketNumberFormatter::moneyUsd($coin->price !== null ? (float) $coin->price : null, 8);
+        $marketCap = MarketNumberFormatter::moneyUsd($coin->market_cap !== null ? (float) $coin->market_cap : null);
 
         $description = $this->truncate(
             __('seo.coin_description', [
@@ -57,7 +59,7 @@ final class SeoService
                 'symbol' => strtoupper((string) $coin->symbol),
                 'price' => $price,
                 'market_cap' => $marketCap,
-                'rank' => $coin->rank ?? '—',
+                'rank' => $coin->rank ?? '?',
             ]),
         );
 
@@ -114,6 +116,31 @@ final class SeoService
         );
     }
 
+    public function forStaticPage(
+        string $title,
+        string $description,
+        string $canonical,
+        string $robots = 'index,follow',
+    ): PageSeo {
+        return new PageSeo(
+            title: $title,
+            description: $this->truncate($description),
+            canonical: $canonical,
+            image: $this->defaultImage(),
+            ogType: 'website',
+            jsonLd: [
+                [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'WebPage',
+                    'name' => $title,
+                    'url' => $canonical,
+                    'description' => $this->truncate($description),
+                ],
+            ],
+            robots: $robots,
+        );
+    }
+
     /**
      * @return Collection<int, array{loc: string, lastmod: string|null, changefreq: string, priority: string}>
      */
@@ -126,7 +153,22 @@ final class SeoService
                 'changefreq' => 'hourly',
                 'priority' => '1.0',
             ],
+            [
+                'loc' => route('dexscan'),
+                'lastmod' => now()->toAtomString(),
+                'changefreq' => 'hourly',
+                'priority' => '0.9',
+            ],
         ]);
+
+        foreach (array_keys(LegalPage::PAGES) as $legalPage) {
+            $entries->push([
+                'loc' => route('legal.show', $legalPage),
+                'lastmod' => now()->toAtomString(),
+                'changefreq' => 'monthly',
+                'priority' => '0.3',
+            ]);
+        }
 
         $coins = Coin::query()
             ->whereNotNull('slug')

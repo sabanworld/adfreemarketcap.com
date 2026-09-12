@@ -1,9 +1,9 @@
 :root{
   /* families */
-  --font-display:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --font-sans:"Public Sans","Helvetica Neue",Arial,sans-serif;
-  --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-  /* sizes — 1.20 ratio, floored at 11px for dense table chrome */
+  --font-display:"Archivo Variable","Archivo","Helvetica Neue",Arial,sans-serif;
+  --font-sans:"Public Sans Variable","Public Sans","Helvetica Neue",Arial,sans-serif;
+  --font-mono:"JetBrains Mono Variable","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* sizes: 1.20 ratio, floored at 11px for dense table chrome */
   --text-2xs:11px;--text-xs:12px;--text-sm:13px;--text-base:15px;--text-md:17px;
   --text-lg:20px;--text-xl:24px;--text-2xl:30px;--text-3xl:38px;--text-4xl:48px;--text-5xl:60px;
   /* weights */

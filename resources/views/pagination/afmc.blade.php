@@ -2,7 +2,7 @@
     <nav role="navigation" aria-label="{{ __('Page navigation') }}">
         @if ($paginator->onFirstPage())
             <span aria-disabled="true" style="opacity:.45">
-                <span class="afmc-icon" style="font-size:16px">chevron_left</span>
+                <x-afmc.icon name="chevron_left" size="16px" />
             </span>
         @else
             <button
@@ -12,7 +12,7 @@
                 rel="prev"
                 aria-label="{{ __('Previous page') }}"
             >
-                <span class="afmc-icon" style="font-size:16px">chevron_left</span>
+                <x-afmc.icon name="chevron_left" size="16px" />
             </button>
         @endif
 
@@ -40,11 +40,11 @@
                 rel="next"
                 aria-label="{{ __('Next page') }}"
             >
-                <span class="afmc-icon" style="font-size:16px">chevron_right</span>
+                <x-afmc.icon name="chevron_right" size="16px" />
             </button>
         @else
             <span aria-disabled="true" style="opacity:.45">
-                <span class="afmc-icon" style="font-size:16px">chevron_right</span>
+                <x-afmc.icon name="chevron_right" size="16px" />
             </span>
         @endif
     </nav>

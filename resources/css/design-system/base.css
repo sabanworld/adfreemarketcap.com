@@ -12,7 +12,8 @@ table{border-collapse:collapse;width:100%}
 .num,td.num{font:var(--type-num);font-variant-numeric:tabular-nums;color:var(--text-strong)}
 ::selection{background:var(--amber-100);color:var(--ink-900)}
 
-/* Icon utility — Material Symbols Rounded ligatures, inherits color + size */
+/* Icon utility for the Material Symbols Rounded subset, inherits color and size.
+   Views must use <x-afmc.icon name="…" /> so the codepoint comes from the manifest. */
 .afmc-icon{font-family:"Material Symbols Rounded";font-weight:400;font-style:normal;font-size:20px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;-webkit-font-feature-settings:"liga";font-variation-settings:"FILL" 0,"wght" 400,"GRAD" 0,"opsz" 24;-webkit-font-smoothing:antialiased;user-select:none;flex:none}
 .afmc-icon[data-fill="1"]{font-variation-settings:"FILL" 1,"wght" 400,"GRAD" 0,"opsz" 24}
 
@@ -22,14 +23,13 @@ table{border-collapse:collapse;width:100%}
   [data-afmc-rail]{width:100%!important;border-right:none!important;border-bottom:1px solid var(--border-card);grid-template-rows:auto!important;padding:var(--space-3) var(--space-4)!important}
   [data-afmc-rail] nav{grid-auto-flow:column;grid-auto-columns:max-content;overflow-x:auto;gap:var(--space-5)!important;padding-bottom:var(--space-1)}
   [data-afmc-rail] nav>div{grid-auto-flow:column;grid-auto-columns:max-content;align-items:center}
-}
-@media (max-width:820px){
-  [data-afmc-header]{height:auto!important;flex-wrap:wrap;padding-top:10px!important;padding-bottom:10px!important;gap:var(--space-3)!important;position:static!important}
+  [data-afmc-header]{height:auto!important;flex-wrap:wrap;padding-top:10px!important;padding-bottom:10px!important;gap:var(--space-3)!important}
   [data-afmc-header] [data-afmc-nav]{order:3;width:100%;overflow-x:auto;flex:1 0 100%}
-  [data-afmc-search]{flex:1 1 180px;min-width:0}
+  [data-afmc-search]{flex:1 1 12rem;min-width:0;max-width:none}
   [data-afmc-search]>div{width:100%!important}
 }
 @media (max-width:560px){
+  [data-afmc-header]{padding-left:var(--space-4)!important;padding-right:var(--space-4)!important}
   [data-afmc-header] [data-afmc-wordmark]{display:none}
   [data-afmc-page]{padding-left:var(--space-4)!important;padding-right:var(--space-4)!important}
   [data-afmc-footer]{padding-left:var(--space-4)!important;padding-right:var(--space-4)!important}

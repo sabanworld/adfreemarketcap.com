@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Database\Factories\AdminFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -12,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 
 class Admin extends Authenticatable implements FilamentUser
 {
-    /** @use HasFactory<\Database\Factories\AdminFactory> */
+    /** @use HasFactory<AdminFactory> */
     use HasFactory, Notifiable;
 
     protected $fillable = [
@@ -26,16 +27,16 @@ class Admin extends Authenticatable implements FilamentUser
         'remember_token',
     ];
 
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
+    }
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
-    }
-
-    public function canAccessPanel(Panel $panel): bool
-    {
-        return true;
     }
 }

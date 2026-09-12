@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Livewire\CoinShow;
+use App\Livewire\Home;
 use App\Models\Coin;
 use App\Models\MarketGlobal;
-use App\Services\MarketData\MarketSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
-use App\Livewire\Home;
-use App\Livewire\CoinShow;
 use Tests\TestCase;
 
 class MarketPagesTest extends TestCase
@@ -55,6 +53,7 @@ class MarketPagesTest extends TestCase
             'price' => 3000,
             'description' => 'Smart contract platform',
             'detail_synced_at' => now(),
+            'tickers_synced_at' => now(),
         ]);
 
         Livewire::test(CoinShow::class, ['coin' => $coin])

@@ -1,7 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
+use App\Services\Currency\CurrencyService;
+use App\Services\Currency\ExchangeRateProvider;
+use App\Services\Currency\MarketDisplayService;
+use App\Services\MarketData\CoinGeckoProvider;
+use App\Services\MarketData\DexDataProvider;
+use App\Services\MarketData\GeckoTerminalProvider;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -11,7 +19,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(DexDataProvider::class, GeckoTerminalProvider::class);
+        $this->app->bind(ExchangeRateProvider::class, CoinGeckoProvider::class);
+        $this->app->singleton(CurrencyService::class);
+        $this->app->scoped(MarketDisplayService::class);
     }
 
     /**

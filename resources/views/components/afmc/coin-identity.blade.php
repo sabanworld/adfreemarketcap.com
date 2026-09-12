@@ -21,7 +21,7 @@
     @else
         <span class="afmc-identity__logo afmc-identity__fallback {{ $size === 'lg' ? 'afmc-identity__logo--lg' : '' }}">{{ $initials }}</span>
     @endif
-    <span style="min-width:0">
+    <span class="afmc-identity__body">
         <span class="afmc-identity__name {{ $size === 'lg' ? 'afmc-identity__name--lg' : '' }}">{{ $name }}</span>
         <span class="afmc-identity__meta">
             <span class="afmc-identity__symbol">{{ $symbol }}</span>

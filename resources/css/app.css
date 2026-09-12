@@ -15,7 +15,7 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Archivo', ui-sans-serif, system-ui, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-sans: 'Public Sans Variable', 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Archivo Variable', 'Archivo', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }

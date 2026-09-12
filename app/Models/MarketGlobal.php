@@ -17,6 +17,11 @@ class MarketGlobal extends Model
         'synced_at',
     ];
 
+    public static function latestSnapshot(): ?self
+    {
+        return static::query()->latest('synced_at')->first();
+    }
+
     protected function casts(): array
     {
         return [
@@ -26,10 +31,5 @@ class MarketGlobal extends Model
             'active_cryptocurrencies' => 'integer',
             'synced_at' => 'datetime',
         ];
-    }
-
-    public static function latestSnapshot(): ?self
-    {
-        return static::query()->latest('synced_at')->first();
     }
 }
