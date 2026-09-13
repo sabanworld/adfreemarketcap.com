@@ -70,6 +70,33 @@ class MarketPagesTest extends TestCase
             ->assertSeeInOrder(['Bitcoin', 'Aaa Coin']);
     }
 
+    public function test_home_hides_unranked_coins_from_the_markets_table(): void
+    {
+        Coin::query()->create([
+            'slug' => 'bitcoin',
+            'symbol' => 'BTC',
+            'name' => 'Bitcoin',
+            'rank' => 1,
+            'price' => 50000,
+            'market_cap' => 1_000_000_000,
+        ]);
+
+        Coin::query()->create([
+            'slug' => 'zombie-coin',
+            'symbol' => 'ZOM',
+            'name' => 'Zombie Coin',
+            'rank' => null,
+            'price' => 1,
+            'market_cap' => 999_000_000,
+        ]);
+
+        Livewire::test(Home::class)
+            ->assertSee('Bitcoin')
+            ->assertDontSee('Zombie Coin')
+            ->assertSee('1')
+            ->assertOk();
+    }
+
     public function test_coin_detail_page_renders(): void
     {
         $coin = Coin::query()->create([

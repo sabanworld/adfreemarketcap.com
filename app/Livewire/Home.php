@@ -71,7 +71,9 @@ class Home extends Component
 
     public function render(SeoService $seo)
     {
-        $query = Coin::query();
+        // Markets is a ranked list. Unranked rows (null rank) must not appear:
+        // MySQL ASC puts NULLs first, which looked like a broken A-Z page.
+        $query = Coin::query()->whereNotNull('rank');
 
         if (filled($this->search)) {
             $term = '%' . $this->search . '%';
@@ -98,13 +100,14 @@ class Home extends Component
         }
 
         $featured = Coin::query()
+            ->whereNotNull('rank')
             ->whereIn('symbol', ['BTC', 'ETH'])
             ->orderBy('rank')
             ->limit(2)
             ->get();
 
         if ($featured->count() < 2) {
-            $featured = Coin::query()->orderBy('rank')->limit(2)->get();
+            $featured = Coin::query()->whereNotNull('rank')->orderBy('rank')->limit(2)->get();
         }
 
         $pageSeo = $seo->forHome();
@@ -113,7 +116,7 @@ class Home extends Component
             'coins' => $query->paginate(50),
             'global' => MarketGlobal::latestSnapshot(),
             'featured' => $featured,
-            'coinCount' => Coin::query()->count(),
+            'coinCount' => Coin::query()->whereNotNull('rank')->count(),
         ])
             ->title($pageSeo->title)
             ->layoutData(['seo' => $pageSeo]);

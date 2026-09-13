@@ -12,16 +12,18 @@ use Illuminate\Support\Facades\DB;
 class UnknownProviderCoinCleaner
 {
     /**
-     * Drop a provider id CoinGecko (or another source) no longer recognizes.
-     * When the coin has no provider mappings left, delete it and cascade
-     * related rows. Otherwise clear markets data and demote it from rankings.
+     * Drop a provider id the upstream no longer recognizes, and remove ticker
+     * rows for that coin. When the unknown id belongs to the primary provider
+     * (or the coin has no mappings left), delete the coin. Never leave
+     * rank-null zombies: those float to the top of ASC rank sorts.
      */
     public function clean(Coin $coin, string $provider, string $externalId): string
     {
         $slug = $coin->slug;
+        $primary = (string) config('marketdata.primary', 'coingecko');
         $deleted = false;
 
-        DB::transaction(function () use ($coin, $provider, $externalId, &$deleted): void {
+        DB::transaction(function () use ($coin, $provider, $externalId, $primary, &$deleted): void {
             CoinProviderId::query()
                 ->where('coin_id', $coin->id)
                 ->where('provider', $provider)
@@ -32,7 +34,9 @@ class UnknownProviderCoinCleaner
 
             $coin->unsetRelation('providerIds');
 
-            if ($coin->providerIds()->doesntExist()) {
+            $shouldDelete = $provider === $primary || $coin->providerIds()->doesntExist();
+
+            if ($shouldDelete) {
                 $coin->delete();
                 $deleted = true;
 
@@ -40,7 +44,6 @@ class UnknownProviderCoinCleaner
             }
 
             $coin->update([
-                'rank' => null,
                 'tickers_synced_at' => now(),
             ]);
         });

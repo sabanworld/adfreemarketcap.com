@@ -183,7 +183,7 @@ class CoinTickersTest extends TestCase
         $this->assertDatabaseMissing('coin_tickers', ['coin_id' => $coin->id]);
     }
 
-    public function test_sync_coin_tickers_clears_stale_provider_id_when_other_providers_remain(): void
+    public function test_sync_coin_tickers_removes_coin_when_primary_provider_returns_404_even_if_failover_mapping_remains(): void
     {
         $coin = Coin::query()->create([
             'slug' => 'multi-provider-coin',
@@ -192,6 +192,7 @@ class CoinTickersTest extends TestCase
             'rank' => 50,
             'price' => 1.5,
             'detail_synced_at' => now(),
+            'last_provider' => 'coingecko',
         ]);
 
         CoinProviderId::query()->create([
@@ -213,22 +214,16 @@ class CoinTickersTest extends TestCase
             ),
         ]);
 
-        config(['marketdata.sync.tickers_pages' => 1]);
+        config([
+            'marketdata.sync.tickers_pages' => 1,
+            'marketdata.primary' => 'coingecko',
+        ]);
 
         $run = app(CoinTickerSyncService::class)->syncCoin($coin);
 
         $this->assertSame(SyncRun::STATUS_SUCCEEDED, $run->status);
-        $this->assertStringContainsString('Cleared unknown coingecko id', (string) $run->message);
-        $this->assertDatabaseHas('coins', ['id' => $coin->id, 'rank' => null]);
-        $this->assertDatabaseMissing('coin_provider_ids', [
-            'coin_id' => $coin->id,
-            'provider' => 'coingecko',
-        ]);
-        $this->assertDatabaseHas('coin_provider_ids', [
-            'coin_id' => $coin->id,
-            'provider' => 'coinpaprika',
-        ]);
-        $this->assertNotNull($coin->fresh()->tickers_synced_at);
+        $this->assertStringContainsString('Removed delisted coin multi-provider-coin', (string) $run->message);
+        $this->assertDatabaseMissing('coins', ['id' => $coin->id]);
     }
 
     /**
