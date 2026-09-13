@@ -10,6 +10,7 @@ Public pages read rankings and coin details from MySQL only. Freshness comes fro
 | `App\Jobs\SyncGlobalData` | same interval | same |
 | `App\Jobs\SyncDexPairs` | every `MARKETDATA_DEX_INTERVAL` minutes (default 5) | `sync.dex_interval_minutes`, `dex_trending_pages`, `dex_new_pages`, `dex_networks` |
 | `App\Jobs\SyncHotCoinTickers` | every `MARKETDATA_HOT_TICKERS_INTERVAL` minutes (default 5) | `MARKETDATA_HOT_COINS` slugs via CoinGecko `/coins/{id}/tickers` |
+| `App\Jobs\SyncHotCoinCharts` | every `MARKETDATA_HOT_CHARTS_INTERVAL` minutes (default 60) | hot majors: CoinGecko `market_chart` for `intraday` / `short` / `daily` |
 | `App\Jobs\SyncTopCoinTickers` | only when `MARKETDATA_TICKERS_TOP_COINS` > 0 (default 0 = off) | every `MARKETDATA_TICKERS_INTERVAL` minutes (default 15) for the top N by rank |
 | `App\Jobs\SyncStaleCoinDetails` | every `MARKETDATA_DETAIL_BACKFILL_INTERVAL` minutes (default 60) | `sync.detail_backfill_coins`, `sync.detail_backfill_batch` (default 3), `sync.coin_detail_stale_hours` |
 | `App\Jobs\SyncCoinInsights` | every `MARKETDATA_INSIGHTS_INTERVAL_HOURS` hours (default 6) | treasury (CoinGecko) + Bitcoin Pi Cycle / halvings |
@@ -50,6 +51,8 @@ Manual one-shot:
 ./vendor/bin/sail artisan marketdata:sync --only-tickers --coin=bitcoin
 ./vendor/bin/sail artisan marketdata:sync --only-insights
 ./vendor/bin/sail artisan marketdata:sync --only-currencies
+./vendor/bin/sail artisan marketdata:sync --only-charts
+./vendor/bin/sail artisan marketdata:sync --only-charts --coin=bitcoin
 ```
 
 Every monetary column holds USD. Visitors can display those figures in another currency or in BTC, converted at render time from `currency_rates`: [`docs/currency.md`](currency.md).
@@ -60,16 +63,23 @@ If CoinGecko returns 404 for a coin id (delisted or remapped), `UnknownProviderC
 
 The public markets table only lists coins with a non-null `rank`. Unranked rows are excluded because MySQL sorts `NULL` first under `ORDER BY rank ASC`, which pushed demoted coins above Bitcoin.
 
-## Coin detail and the 7 day chart
+## Coin detail and multi-range charts
 
-`coins.chart_7d` and the description come from `SyncCoinDetail`, one provider call per coin. Two things dispatch it:
+Coin descriptions still come from `SyncCoinDetail` (visit + `SyncStaleCoinDetails` backfill).
 
-- Visiting a coin page when `detail_synced_at` is older than `MARKETDATA_DETAIL_STALE_HOURS` (default 6).
-- `SyncStaleCoinDetails`, which takes the top `MARKETDATA_DETAIL_BACKFILL_COINS` ranked coins (default 20), picks the `MARKETDATA_DETAIL_BACKFILL_BATCH` stalest of them (default 3, oldest `detail_synced_at` first), and dispatches one `SyncCoinDetail` each.
+Price charts live in `coin_chart_series` as three CoinGecko buckets:
 
-Without the backfill, a coin that nobody opens never gets a chart, and the coin page falls back to "Chart data will appear after the next detail sync." The batch is deliberately small because each coin costs a separate provider call. Raising `MARKETDATA_DETAIL_BACKFILL_BATCH` or lowering the interval multiplies that call volume against the provider rate limit.
+| Series | CoinGecko call | UI ranges |
+|--------|----------------|-----------|
+| `intraday` | `days=1` | 1h, 12h, 1d |
+| `short` | `days=90` | 7d, 1m, 3m |
+| `daily` | `days=max&interval=daily` | 6m, 1y, 5y, 10y, all |
 
-`SyncCoinDetail` is unique per coin id for 5 minutes, so concurrent visitors to the same stale coin queue one job.
+`SyncCoinCharts` fetches stale series for one coin. Visiting a coin page dispatches it for the active range (and warms `intraday` + `short`). Hot majors (`MARKETDATA_HOT_COINS`) also run on `SyncHotCoinCharts` so deep history is warm without a visit.
+
+Stale windows: `MARKETDATA_CHART_INTRADAY_STALE_MINUTES` (30), `MARKETDATA_CHART_SHORT_STALE_MINUTES` (120), `MARKETDATA_CHART_DAILY_STALE_MINUTES` (720). Syncing `short` also refreshes `coins.chart_7d` for sparklines and currency baselines.
+
+`SyncCoinCharts` is unique per coin + series set for 5 minutes.
 
 ## Production cron
 

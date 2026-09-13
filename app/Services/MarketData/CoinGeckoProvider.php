@@ -108,23 +108,56 @@ class CoinGeckoProvider implements ExchangeRateProvider, MarketDataProvider
             'CoinGecko coin detail failed: ' . $detail->status() . ' ' . $detail->body()
         ));
 
-        $chart = $this->client()->get('/coins/' . $externalId . '/market_chart', [
+        $description = data_get($detail->json(), 'description.en');
+
+        return new CoinDetailData(
+            externalId: $externalId,
+            description: is_string($description) ? PlainText::fromHtml($description) : null,
+            chart7d: null,
+        );
+    }
+
+    /**
+     * @return list<array{0: int, 1: float}>
+     */
+    public function fetchMarketChart(string $externalId, string $days, ?string $interval = null): array
+    {
+        $query = [
             'vs_currency' => 'usd',
-            'days' => 7,
-        ]);
+            'days' => $days,
+        ];
+
+        if (filled($interval)) {
+            $query['interval'] = $interval;
+        }
+
+        $chart = $this->client()->get('/coins/' . $externalId . '/market_chart', $query);
+
+        if ($chart->status() === 404) {
+            throw new ProviderCoinNotFoundException($this->name(), $externalId);
+        }
 
         throw_unless($chart->successful(), new RuntimeException(
             'CoinGecko market chart failed: ' . $chart->status() . ' ' . $chart->body()
         ));
 
-        $description = data_get($detail->json(), 'description.en');
         $prices = $chart->json('prices');
 
-        return new CoinDetailData(
-            externalId: $externalId,
-            description: is_string($description) ? PlainText::fromHtml($description) : null,
-            chart7d: is_array($prices) ? $prices : null,
-        );
+        if (! is_array($prices)) {
+            return [];
+        }
+
+        $points = [];
+
+        foreach ($prices as $point) {
+            if (! is_array($point) || ! is_numeric($point[0] ?? null) || ! is_numeric($point[1] ?? null)) {
+                continue;
+            }
+
+            $points[] = [(int) $point[0], (float) $point[1]];
+        }
+
+        return $points;
     }
 
     /**

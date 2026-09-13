@@ -207,8 +207,21 @@ class MarketDisplayService
             return $this->baselineChart === [] ? null : $this->baselineChart;
         }
 
-        $points = $coin?->chart_7d;
         $chart = [];
+
+        if ($coin !== null) {
+            $coin->loadMissing('chartSeries');
+
+            foreach ($coin->chartSeries as $series) {
+                foreach (is_array($series->points) ? $series->points : [] as $point) {
+                    if (is_array($point) && is_numeric($point[0] ?? null) && is_numeric($point[1] ?? null) && (float) $point[1] > 0) {
+                        $chart[(int) $point[0]] = (float) $point[1];
+                    }
+                }
+            }
+        }
+
+        $points = $coin?->chart_7d;
 
         foreach (is_array($points) ? $points : [] as $point) {
             if (is_array($point) && is_numeric($point[0] ?? null) && is_numeric($point[1] ?? null) && (float) $point[1] > 0) {

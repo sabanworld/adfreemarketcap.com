@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace App\Livewire;
 
+use App\Jobs\SyncCoinCharts;
 use App\Jobs\SyncCoinDetail;
 use App\Jobs\SyncCoinInsights;
 use App\Jobs\SyncCoinTickers;
 use App\Models\Coin;
+use App\Services\Currency\MarketDisplayService;
+use App\Services\MarketData\CoinChartService;
 use App\Services\Seo\SeoService;
+use Illuminate\Support\Js;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
@@ -19,9 +24,13 @@ class CoinShow extends Component
     #[Locked]
     public int $coinId;
 
-    public function mount(Coin $coin): void
+    #[Url(as: 'range')]
+    public string $chartRange = '7d';
+
+    public function mount(Coin $coin, CoinChartService $charts): void
     {
         $this->coinId = $coin->id;
+        $this->chartRange = $charts->normalizeRange($this->chartRange);
 
         if ($coin->detailIsStale()) {
             SyncCoinDetail::dispatch($coin->id);
@@ -31,6 +40,8 @@ class CoinShow extends Component
             SyncCoinTickers::dispatch($coin->id);
         }
 
+        $this->dispatchChartSync($coin, $charts);
+
         if ($coin->slug === 'bitcoin') {
             $coin->loadMissing(['treasurySnapshot', 'marketCycleSnapshot']);
 
@@ -38,6 +49,14 @@ class CoinShow extends Component
                 SyncCoinInsights::dispatch();
             }
         }
+    }
+
+    public function setChartRange(string $range, CoinChartService $charts): void
+    {
+        $this->chartRange = $charts->normalizeRange($range);
+        $coin = $this->loadCoin();
+        $this->dispatchChartSync($coin, $charts, preferRange: $this->chartRange);
+        $this->pushChartToClient($coin, $charts);
     }
 
     public function refreshMarkets(): void
@@ -49,10 +68,15 @@ class CoinShow extends Component
         }
     }
 
-    public function render(SeoService $seo)
+    public function render(SeoService $seo, CoinChartService $charts)
     {
         $coin = $this->loadCoin();
+        $coin->loadMissing('chartSeries');
         $pageSeo = $seo->forCoin($coin);
+
+        $range = $charts->normalizeRange($this->chartRange);
+        $chartPoints = $charts->pointsFor($coin, $range);
+        $availableRanges = $charts->availableRanges($coin);
 
         return view('livewire.coin-show', [
             'coin' => $coin,
@@ -60,9 +84,63 @@ class CoinShow extends Component
             'holders' => $coin->treasuryHolders,
             'cycle' => $coin->marketCycleSnapshot,
             'tickers' => $coin->tickers,
+            'chartRange' => $range,
+            'chartPoints' => $chartPoints,
+            'chartLabels' => $charts->chartLabels($chartPoints, $range),
+            'availableRanges' => $availableRanges,
+            'rangeMeta' => CoinChartService::RANGES,
         ])
             ->title($pageSeo->title)
             ->layoutData(['seo' => $pageSeo]);
+    }
+
+    /**
+     * Chart canvas is wire:ignore (Chart.js owns the DOM). Livewire @script only
+     * runs once, so range switches must push a fresh payload to the browser.
+     */
+    private function pushChartToClient(Coin $coin, CoinChartService $charts): void
+    {
+        $range = $charts->normalizeRange($this->chartRange);
+        $points = $charts->pointsFor($coin, $range);
+
+        if (count($points) < 2) {
+            return;
+        }
+
+        $display = app(MarketDisplayService::class);
+        $unit = $display->unit();
+        $values = array_map(static fn (array $point): float => $point[1], $points);
+        $payload = Js::from([
+            'labels' => $charts->chartLabels($points, $range),
+            'values' => $values,
+            'up' => ($display->change($coin->percent_change_24h) ?? 0) >= 0,
+            'symbol' => $unit->symbol,
+            'symbolAfter' => (bool) $unit->symbolAfter,
+        ]);
+
+        $this->js("requestAnimationFrame(() => window.afmcMountCoinChart && window.afmcMountCoinChart({$payload}))");
+    }
+
+    private function dispatchChartSync(Coin $coin, CoinChartService $charts, ?string $preferRange = null): void
+    {
+        $preferRange ??= $this->chartRange;
+        $seriesNeeded = [$charts->seriesForRange($preferRange)];
+
+        // Warm short-horizon buckets so the default tabs respond quickly.
+        foreach (['intraday', 'short'] as $series) {
+            if (! in_array($series, $seriesNeeded, true)) {
+                $seriesNeeded[] = $series;
+            }
+        }
+
+        $stale = array_values(array_filter(
+            $seriesNeeded,
+            fn (string $series): bool => $charts->seriesIsMissingOrStale($coin, $series),
+        ));
+
+        if ($stale !== []) {
+            SyncCoinCharts::dispatch($coin->id, $stale);
+        }
     }
 
     private function loadCoin(): Coin
@@ -73,6 +151,7 @@ class CoinShow extends Component
                 'treasuryHolders' => fn ($query) => $query->orderBy('rank')->limit(10),
                 'marketCycleSnapshot',
                 'tickers' => fn ($query) => $query->orderBy('rank')->limit(50),
+                'chartSeries',
             ])
             ->findOrFail($this->coinId);
     }

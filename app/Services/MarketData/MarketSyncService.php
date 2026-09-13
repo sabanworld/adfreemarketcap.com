@@ -117,7 +117,6 @@ class MarketSyncService
 
             $coin->update([
                 'description' => $detail->description ?? $coin->description,
-                'chart_7d' => $detail->chart7d ?? $coin->chart_7d,
                 'detail_synced_at' => now(),
             ]);
 

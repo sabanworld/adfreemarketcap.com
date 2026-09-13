@@ -24,7 +24,7 @@ class CoinDetailBackfillTest extends TestCase
         Bus::fake();
     }
 
-    public function test_it_dispatches_detail_sync_for_coins_without_a_chart(): void
+    public function test_it_dispatches_detail_sync_for_coins_without_detail_synced_at(): void
     {
         $coin = $this->coin('bitcoin', 1, null);
 

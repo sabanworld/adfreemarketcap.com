@@ -9,6 +9,7 @@ use App\Livewire\Home;
 use App\Models\Coin;
 use App\Models\MarketGlobal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -99,6 +100,8 @@ class MarketPagesTest extends TestCase
 
     public function test_coin_detail_page_renders(): void
     {
+        Queue::fake();
+
         $coin = Coin::query()->create([
             'slug' => 'ethereum',
             'symbol' => 'ETH',
@@ -119,6 +122,8 @@ class MarketPagesTest extends TestCase
 
     public function test_coin_detail_decodes_html_entities_in_description(): void
     {
+        Queue::fake();
+
         $coin = Coin::query()->create([
             'slug' => 'the-open-network',
             'symbol' => 'TON',

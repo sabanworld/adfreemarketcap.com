@@ -88,6 +88,10 @@ return [
             )),
         ))),
         'hot_tickers_interval_minutes' => (int) env('MARKETDATA_HOT_TICKERS_INTERVAL', 5),
+        'chart_intraday_stale_minutes' => (int) env('MARKETDATA_CHART_INTRADAY_STALE_MINUTES', 30),
+        'chart_short_stale_minutes' => (int) env('MARKETDATA_CHART_SHORT_STALE_MINUTES', 120),
+        'chart_daily_stale_minutes' => (int) env('MARKETDATA_CHART_DAILY_STALE_MINUTES', 720),
+        'hot_charts_interval_minutes' => (int) env('MARKETDATA_HOT_CHARTS_INTERVAL', 60),
     ],
 
 ];

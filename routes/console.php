@@ -6,6 +6,7 @@ use App\Jobs\SyncCoinInsights;
 use App\Jobs\SyncCurrencyRates;
 use App\Jobs\SyncDexPairs;
 use App\Jobs\SyncGlobalData;
+use App\Jobs\SyncHotCoinCharts;
 use App\Jobs\SyncHotCoinTickers;
 use App\Jobs\SyncMarketData;
 use App\Jobs\SyncStaleCoinDetails;
@@ -21,6 +22,7 @@ Artisan::command('inspire', function () {
 $marketsInterval = max(1, min(59, (int) config('marketdata.sync.markets_interval_minutes', 10)));
 $dexInterval = max(1, min(59, (int) config('marketdata.sync.dex_interval_minutes', 5)));
 $hotTickersInterval = max(1, min(59, (int) config('marketdata.sync.hot_tickers_interval_minutes', 5)));
+$hotChartsInterval = max(1, min(59, (int) config('marketdata.sync.hot_charts_interval_minutes', 60)));
 $tickersInterval = max(1, min(59, (int) config('marketdata.sync.tickers_interval_minutes', 15)));
 $tickersTopCoins = max(0, (int) config('marketdata.sync.tickers_top_coins', 0));
 $detailInterval = max(1, min(59, (int) config('marketdata.sync.detail_backfill_interval_minutes', 60)));
@@ -50,6 +52,12 @@ Schedule::job(new SyncHotCoinTickers)
     ->withoutOverlapping()
     ->onOneServer()
     ->name('marketdata:sync-hot-tickers');
+
+Schedule::job(new SyncHotCoinCharts)
+    ->cron("*/{$hotChartsInterval} * * * *")
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('marketdata:sync-hot-charts');
 
 if ($tickersTopCoins > 0) {
     Schedule::job(new SyncTopCoinTickers)

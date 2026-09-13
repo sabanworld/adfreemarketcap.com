@@ -6,12 +6,8 @@
     $display = app(MarketDisplayService::class);
     $unit = $display->unit();
 
-    $labels = [];
-    $values = [];
-    foreach ($display->chart($coin->chart_7d) as [$timestamp, $value]) {
-        $labels[] = date('M j H:i', (int) ($timestamp / 1000));
-        $values[] = $value;
-    }
+    $labels = $chartLabels ?? [];
+    $values = array_map(static fn (array $point): float => $point[1], $chartPoints ?? []);
 
     $change24 = $display->change($coin->percent_change_24h);
     $chartUp = ($change24 ?? 0) >= 0;
@@ -51,25 +47,38 @@
                 <div class="afmc-card__body">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-3);gap:var(--space-2);flex-wrap:wrap">
                         <span class="afmc-card__eyebrow">{{ __('Price') }}</span>
-                        <span class="afmc-tag">7D</span>
+                        <div class="afmc-chart-ranges" role="tablist" aria-label="{{ __('Chart range') }}">
+                            @foreach ($rangeMeta as $key => $meta)
+                                @php
+                                    $isAvailable = in_array($key, $availableRanges, true);
+                                    $isActive = $chartRange === $key;
+                                @endphp
+                                <button
+                                    type="button"
+                                    role="tab"
+                                    class="afmc-chart-ranges__item {{ $isActive ? 'is-active' : '' }}"
+                                    wire:click="setChartRange('{{ $key }}')"
+                                    @disabled(! $isAvailable)
+                                    aria-selected="{{ $isActive ? 'true' : 'false' }}"
+                                    @if (! $isAvailable) title="{{ __('Not enough history for this range yet') }}" @endif
+                                >{{ $meta['label'] }}</button>
+                            @endforeach
+                        </div>
                     </div>
                     @if (count($values))
-                        <canvas
-                            id="coin-chart"
-                            height="280"
-                            data-labels='@json($labels)'
-                            data-values='@json($values)'
-                            data-up="{{ $chartUp ? '1' : '0' }}"
-                            data-symbol="{{ $unit->symbol }}"
-                            data-symbol-after="{{ $unit->symbolAfter ? '1' : '0' }}"
-                        ></canvas>
+                        <div wire:ignore class="afmc-chart-frame">
+                            <canvas
+                                id="coin-chart"
+                                height="280"
+                            ></canvas>
+                        </div>
                         @if ($unit->code !== 'usd' && ! $display->usesBaselineHistory())
                             <p style="margin:var(--space-2) 0 0;font:var(--type-body-sm);font-size:var(--text-xs);color:var(--text-faint)">
                                 {{ __('History is converted from USD at the current :currency rate.', ['currency' => $unit->displayCode()]) }}
                             </p>
                         @endif
                     @else
-                        <p style="margin:0;font:var(--type-body-sm);color:var(--text-faint)">{{ __('Chart data will appear after the next detail sync.') }}</p>
+                        <p style="margin:0;font:var(--type-body-sm);color:var(--text-faint)">{{ __('Chart data will appear after the next chart sync.') }}</p>
                     @endif
                 </div>
             </section>
@@ -167,8 +176,6 @@
                     @endif
                 </div>
             </section>
-
-            <x-afmc.mining-block :coin="$coin" />
         </div>
 
         <div style="display:grid;gap:var(--space-4)">
@@ -245,6 +252,8 @@
                     </div>
                 </section>
             @endif
+
+            <x-afmc.mining-block :coin="$coin" />
 
             @if ($treasury && $holders->isNotEmpty())
                 <section class="afmc-card">
@@ -347,3 +356,44 @@
 @assets
     @vite('resources/js/coin-chart.js')
 @endassets
+
+@if (count($values))
+    @script
+    <script>
+        const mount = (payload) => {
+            if (typeof window.afmcMountCoinChart !== 'function') {
+                return false;
+            }
+
+            window.afmcMountCoinChart(payload);
+
+            return true;
+        };
+
+        const initial = {
+            labels: @js($labels),
+            values: @js($values),
+            up: @js($chartUp),
+            symbol: @js($unit->symbol),
+            symbolAfter: @js((bool) $unit->symbolAfter),
+        };
+
+        // Vite entry may still be loading on the first paint.
+        if (! mount(initial)) {
+            let tries = 0;
+            const timer = setInterval(() => {
+                tries += 1;
+                if (mount(initial) || tries > 40) {
+                    clearInterval(timer);
+                }
+            }, 50);
+        }
+
+        // Range switches call $this->js(...); keep a listener for any future dispatches.
+        $wire.on('afmc-chart-updated', (payload) => {
+            const data = Array.isArray(payload) ? payload[0] : payload;
+            mount(data ?? {});
+        });
+    </script>
+    @endscript
+@endif

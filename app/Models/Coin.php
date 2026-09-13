@@ -101,6 +101,11 @@ class Coin extends Model
         return $this->hasMany(CoinTicker::class)->orderBy('rank');
     }
 
+    public function chartSeries(): HasMany
+    {
+        return $this->hasMany(CoinChartSeries::class);
+    }
+
     public function detailIsStale(?int $hours = null): bool
     {
         $hours ??= (int) config('marketdata.sync.coin_detail_stale_hours', 6);
