@@ -40,6 +40,8 @@ Two guards matter:
 
 Changing the unit reloads the page, because prices render in the page component, the market ticker, and layout chrome alike.
 
+At and below 640px the control opens as a bottom sheet instead of a popover. That sheet is **teleported to `<body>`** with `x-teleport`: the sticky header paints a `backdrop-filter`, which makes it the containing block for `position: fixed` children, so a sheet left inside the header anchors to the header instead of the viewport and ends up off screen. Keep any new fixed overlay in the header teleported for the same reason. Rows are one per line at 48px so a name like South Korean Won is not truncated.
+
 ## Rendering
 
 `App\Services\MarketData\MarketNumberFormatter::money()` takes a USD figure, asks `App\Services\Currency\CurrencyService` for the active unit and its rate, and formats the result. Public views keep passing USD and need no currency awareness of their own.

@@ -4,7 +4,6 @@
         ['label' => __('DexScan'), 'href' => route('dexscan'), 'active' => request()->routeIs('dexscan')],
         ['label' => __('Exchanges'), 'href' => null, 'active' => false],
         ['label' => __('Watchlist'), 'href' => route('watchlist'), 'active' => request()->routeIs('watchlist')],
-        ['label' => __('Picks'), 'href' => route('home').'#picks', 'active' => false],
     ];
 
     if (request()->routeIs('coins.show')) {

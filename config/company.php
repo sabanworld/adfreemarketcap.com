@@ -43,6 +43,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Donations
+    |--------------------------------------------------------------------------
+    |
+    | Optional on-chain address shown in the public footer. Leave empty to hide
+    | the block. The QR encodes BIP21 bitcoin:<address>.
+    |
+    */
+
+    'donation' => [
+        'btc_address' => env('COMPANY_BTC_DONATION_ADDRESS', 'bc1qqaez603xp44gzl3ds4j4am62yp8sp2lhkz30ah'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Policy version
     |--------------------------------------------------------------------------
     |

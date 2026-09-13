@@ -18,12 +18,6 @@
             'icon' => 'star',
             'active' => request()->routeIs('watchlist'),
         ],
-        [
-            'label' => __('Picks'),
-            'href' => route('home').'#picks',
-            'icon' => 'bookmark',
-            'active' => false,
-        ],
     ];
 @endphp
 

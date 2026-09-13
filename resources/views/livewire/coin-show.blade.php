@@ -167,6 +167,8 @@
                     @endif
                 </div>
             </section>
+
+            <x-afmc.mining-block :coin="$coin" />
         </div>
 
         <div style="display:grid;gap:var(--space-4)">

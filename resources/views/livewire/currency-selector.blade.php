@@ -53,9 +53,18 @@
             <x-afmc.icon name="expand_more" size="16px" color="var(--text-faint)" />
         </button>
 
-        <template x-if="open && narrow">
-            <div>
-                <div class="afmc-currency__scrim" @click="open = false"></div>
+        {{--
+            The sheet is teleported to the body because the sticky header paints a
+            backdrop-filter, which makes it the containing block for fixed children:
+            left over, the sheet anchors to the header instead of the viewport.
+        --}}
+        <template x-teleport="body">
+            <div
+                x-show="open && narrow"
+                x-cloak
+                x-effect="document.body.style.overflow = (open && narrow) ? 'hidden' : ''"
+            >
+                <div class="afmc-currency__scrim" @click="open = false" x-transition.opacity></div>
                 <div class="afmc-currency__sheet" role="listbox" aria-label="{{ __('Display currency') }}">
                     <div class="afmc-currency__sheet-head">
                         <span class="afmc-currency__sheet-title">{{ __('Currency') }}</span>
@@ -75,9 +84,10 @@
                                         @if ($unit->code === $active->code) aria-selected="true" @endif
                                         @click="pick('{{ $unit->code }}')"
                                     >
-                                        <span>{{ $unit->displayCode() }} · {{ __($unit->label) }}</span>
+                                        <span class="afmc-currency__option-code">{{ $unit->displayCode() }}</span>
+                                        <span class="afmc-currency__option-label">{{ __($unit->label) }}</span>
                                         @if ($unit->code === $active->code)
-                                            <x-afmc.icon name="check" size="16px" color="var(--amber-600)" />
+                                            <x-afmc.icon name="check" size="18px" color="var(--amber-600)" />
                                         @endif
                                     </button>
                                 @endforeach
@@ -108,7 +118,8 @@
                                 @if ($unit->code === $active->code) aria-selected="true" @endif
                                 @click="pick('{{ $unit->code }}')"
                             >
-                                <span>{{ $unit->displayCode() }} · {{ __($unit->label) }}</span>
+                                <span class="afmc-currency__option-code">{{ $unit->displayCode() }}</span>
+                                <span class="afmc-currency__option-label">{{ __($unit->label) }}</span>
                                 @if ($unit->code === $active->code)
                                     <x-afmc.icon name="check" size="16px" color="var(--amber-600)" />
                                 @endif

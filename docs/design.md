@@ -18,7 +18,7 @@ The production front-end follows the **AdFreeMarketCap Design System** under `cl
 
 - Above 820px: sticky header with inline primary nav.
 - At and below 820px: header nav hides; `BottomTabBar` (`bottom-tab-bar.blade.php`) takes over. Sign-in and secondary links live in `NavDrawer` (`nav-drawer.blade.php`) via More.
-- At and below 700px: search collapses behind an icon button; currency picker uses a bottom sheet.
+- At and below 700px: search collapses behind an icon button; currency picker uses a bottom sheet, teleported to `<body>` (see [`docs/currency.md`](currency.md)).
 - Market tables pan horizontally with a sticky identity column; they do not reflow into cards. Columns marked `hide-narrow` drop below 700px.
 
 ## Non-negotiables
@@ -27,7 +27,8 @@ The production front-end follows the **AdFreeMarketCap Design System** under `cl
 - Amber is action/attention only; green/red only for price direction.
 - Figures use JetBrains Mono + tabular nums.
 - Pledge band + picks disclose funding and interests; never style picks as ad inventory.
-- DexScan and Watchlist are live in nav. Exchanges stays disabled until that surface ships. Watchlist requires `auth` on the `web` guard (see [`docs/public-accounts.md`](public-accounts.md)).
+- DexScan and Watchlist are live in nav. Exchanges stays disabled until that surface ships. Watchlist requires `auth` on the `web` guard (see [`docs/public-accounts.md`](public-accounts.md)). Primary nav carries pages only, so the home page anchors (`#pledge`, `#picks`, `#mining`) are reached by scrolling or from the footer.
+- The miners block (`<x-afmc.mining-block>`, `config/mining.php`) links to a company our creator is partnered with, so it carries the partner badge and the payout warning next to the link. Same rule as picks: it is a disclosure, not ad inventory. It sits at `#mining` on the home page, and under the Markets table on the coin pages listed in `MINING_COINS` (Bitcoin by default; pass `:coin` and the block hides itself elsewhere). Covered by `tests/Feature/MiningBlockTest.php`.
 
 ## Theme + cookie notice
 

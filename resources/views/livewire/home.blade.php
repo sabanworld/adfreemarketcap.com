@@ -227,6 +227,8 @@
         </div>
     </section>
 
+    <x-afmc.mining-block style="margin-top:var(--space-10)" />
+
     <section id="picks" style="margin-top:var(--space-10)">
         <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:var(--space-3);gap:var(--space-3);flex-wrap:wrap">
             <h2 style="margin:0;font:var(--type-h2)">{{ __('Picks, not ads') }}</h2>

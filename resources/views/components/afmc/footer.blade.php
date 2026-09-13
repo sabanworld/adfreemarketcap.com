@@ -11,6 +11,7 @@
                 <p class="afmc-footer__brand-note">
                     {{ __('Market data with no ads, no paid rankings and no sponsored listings. Paid for out of the creator\'s own pocket. Any strategic partnership our creator has with a company we link to is named on the link itself.') }}
                 </p>
+                <x-afmc.btc-donate />
             </div>
 
             <div data-afmc-footer-cols class="afmc-footer__cols">

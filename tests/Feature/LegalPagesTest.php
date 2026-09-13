@@ -221,6 +221,31 @@ class LegalPagesTest extends TestCase
         $response->assertSee('Cookie notice</button>', false);
     }
 
+    public function test_footer_shows_btc_donation_address_and_qr(): void
+    {
+        config(['company.donation.btc_address' => 'bc1q7qf286w470n5wyvmrelgu9ulf5m8q9lth9rjxk']);
+
+        $response = $this->get(route('home'));
+
+        $response->assertOk();
+        $response->assertSee('data-afmc-btc-donate', false);
+        $response->assertSee('bc1q7qf286w470n5wyvmrelgu9ulf5m8q9lth9rjxk', false);
+        $response->assertSee('data-btc-qr-payload="bitcoin:bc1q7qf286w470n5wyvmrelgu9ulf5m8q9lth9rjxk"', false);
+        $response->assertSee('<svg', false);
+        $response->assertSee('Donate BTC', false);
+    }
+
+    public function test_footer_hides_btc_donation_when_address_empty(): void
+    {
+        config(['company.donation.btc_address' => '']);
+
+        $response = $this->get(route('home'));
+
+        $response->assertOk();
+        $response->assertDontSee('data-afmc-btc-donate', false);
+        $response->assertDontSee('Donate BTC', false);
+    }
+
     public function test_terms_set_out_the_mica_position_and_consumer_protections(): void
     {
         $response = $this->get(route('legal.show', 'terms'));
