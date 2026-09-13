@@ -40,7 +40,34 @@ class MarketPagesTest extends TestCase
         Livewire::test(Home::class)
             ->assertSee('Bitcoin')
             ->assertSee('BTC')
+            ->assertSet('sort', 'rank')
+            ->assertSet('direction', 'asc')
             ->assertOk();
+    }
+
+    public function test_home_defaults_to_market_cap_rank_not_name(): void
+    {
+        Coin::query()->create([
+            'slug' => 'bitcoin',
+            'symbol' => 'BTC',
+            'name' => 'Bitcoin',
+            'rank' => 1,
+            'price' => 50000,
+            'market_cap' => 1_000_000_000,
+        ]);
+
+        Coin::query()->create([
+            'slug' => 'aaa-coin',
+            'symbol' => 'AAA',
+            'name' => 'Aaa Coin',
+            'rank' => 2,
+            'price' => 1,
+            'market_cap' => 500_000,
+        ]);
+
+        Livewire::test(Home::class)
+            ->assertSet('sort', 'rank')
+            ->assertSeeInOrder(['Bitcoin', 'Aaa Coin']);
     }
 
     public function test_coin_detail_page_renders(): void

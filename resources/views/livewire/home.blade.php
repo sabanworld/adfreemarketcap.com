@@ -108,12 +108,19 @@
                 <thead>
                     <tr>
                         <th class="is-sticky is-sticky--watch hide-narrow" style="width:38px;left:0"></th>
-                        <th class="is-sticky is-sticky--name {{ $sort === 'name' || $sort === 'rank' ? 'is-sorted' : '' }}" style="left:38px">
-                            <button type="button" wire:click="sortBy('name')">{{ __('Name') }}
-                                @if ($sort === 'name' || $sort === 'rank')
-                                    <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
-                                @endif
-                            </button>
+                        <th class="is-sticky is-sticky--name {{ in_array($sort, ['rank', 'name'], true) ? 'is-sorted' : '' }}" style="left:38px">
+                            <span class="afmc-table__sortpair">
+                                <button type="button" wire:click="sortBy('rank')" aria-label="{{ __('Sort by market-cap rank') }}">#
+                                    @if ($sort === 'rank')
+                                        <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
+                                    @endif
+                                </button>
+                                <button type="button" wire:click="sortBy('name')">{{ __('Name') }}
+                                    @if ($sort === 'name')
+                                        <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
+                                    @endif
+                                </button>
+                            </span>
                         </th>
                         <th class="is-right {{ $sort === 'price' ? 'is-sorted' : '' }}">
                             <button type="button" wire:click="sortBy('price')">{{ __('Price') }}
