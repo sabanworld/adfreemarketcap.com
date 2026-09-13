@@ -63,6 +63,11 @@ return [
         'api_key' => env('CRYPTO_APIS_IO_KEY'),
         'per_page' => (int) env('CRYPTO_APIS_IO_PER_PAGE', 50),
         'max_pages' => (int) env('CRYPTO_APIS_IO_MAX_PAGES', 5),
+        // Credits are metered per second; space pages and retry 429s so a burst
+        // does not trip throughput_limit_reached and drop the overlay.
+        'page_delay_ms' => (int) env('CRYPTO_APIS_IO_PAGE_DELAY_MS', 250),
+        'retry_times' => (int) env('CRYPTO_APIS_IO_RETRY_TIMES', 4),
+        'retry_sleep_ms' => (int) env('CRYPTO_APIS_IO_RETRY_SLEEP_MS', 250),
     ],
 
     'geckoterminal' => [

@@ -21,6 +21,9 @@ class CryptoApisProviderTest extends TestCase
             'marketdata.cryptoapis.api_key' => 'testing-crypto-apis-key',
             'marketdata.cryptoapis.per_page' => 50,
             'marketdata.cryptoapis.max_pages' => 5,
+            'marketdata.cryptoapis.page_delay_ms' => 0,
+            'marketdata.cryptoapis.retry_times' => 4,
+            'marketdata.cryptoapis.retry_sleep_ms' => 0,
         ]);
     }
 
@@ -118,6 +121,56 @@ class CryptoApisProviderTest extends TestCase
         $this->expectExceptionMessage('Crypto APIs assets failed: 401');
 
         app(CryptoApisProvider::class)->fetchPercentChangesBySymbol(10);
+    }
+
+    public function test_it_retries_a_429_then_succeeds(): void
+    {
+        Http::fake([
+            'rest.cryptoapis.io/market-data/metadata/assets*' => Http::sequence()
+                ->push(['error' => ['code' => 'throughput_limit_reached']], 429)
+                ->push($this->assets(['BTC' => '0.07964959'])),
+        ]);
+
+        $changes = app(CryptoApisProvider::class)->fetchPercentChangesBySymbol(10);
+
+        $this->assertSame(0.07964959, $changes->get('BTC')->percentChange1h);
+        Http::assertSentCount(2);
+    }
+
+    public function test_it_gives_up_after_exhausted_429_retries(): void
+    {
+        config(['marketdata.cryptoapis.retry_times' => 2]);
+
+        Http::fake([
+            'rest.cryptoapis.io/*' => Http::response(
+                ['error' => ['code' => 'throughput_limit_reached']],
+                429,
+            ),
+        ]);
+
+        $this->expectExceptionMessage('Crypto APIs assets failed: 429');
+
+        app(CryptoApisProvider::class)->fetchPercentChangesBySymbol(10);
+    }
+
+    public function test_it_keeps_earlier_pages_when_a_later_page_is_rate_limited(): void
+    {
+        config([
+            'marketdata.cryptoapis.max_pages' => 2,
+            'marketdata.cryptoapis.retry_times' => 1,
+        ]);
+
+        Http::fake([
+            'rest.cryptoapis.io/market-data/metadata/assets*' => Http::sequence()
+                ->push($this->assets(['BTC' => '0.07964959']))
+                ->push(['error' => ['code' => 'throughput_limit_reached']], 429),
+        ]);
+
+        $changes = app(CryptoApisProvider::class)->fetchPercentChangesBySymbol(60);
+
+        $this->assertSame(['BTC'], $changes->keys()->all());
+        $this->assertSame(0.07964959, $changes->get('BTC')->percentChange1h);
+        Http::assertSentCount(2);
     }
 
     public function test_it_is_unconfigured_without_a_key(): void

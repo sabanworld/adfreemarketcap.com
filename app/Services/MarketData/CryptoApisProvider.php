@@ -6,10 +6,12 @@ namespace App\Services\MarketData;
 
 use App\Services\MarketData\DTOs\PercentChangeData;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 /**
  * Crypto APIs serves CoinMarketCap market data. It is not a ranking source
@@ -34,6 +36,10 @@ class CryptoApisProvider
      * rather than guessed at, which keeps it off the wrong coin. One asset
      * arriving on two pages is not a conflict, because the windows overlap.
      *
+     * Pages are spaced and 429s are retried, because Crypto APIs meters credits
+     * per second and rejects a burst with throughput_limit_reached. A later
+     * page that still fails after retries keeps whatever earlier pages returned.
+     *
      * @return Collection<string, PercentChangeData>
      */
     public function fetchPercentChangesBySymbol(int $coins): Collection
@@ -44,8 +50,22 @@ class CryptoApisProvider
         $items = [];
 
         for ($page = 0; $page < $pages; $page++) {
-            foreach ($this->fetchPage($perPage, $page * $perPage) as $item) {
-                $items[] = $item;
+            if ($page > 0) {
+                $this->pauseBetweenPages();
+            }
+
+            try {
+                foreach ($this->fetchPage($perPage, $page * $perPage) as $item) {
+                    $items[] = $item;
+                }
+            } catch (Throwable $exception) {
+                if ($items === []) {
+                    throw $exception;
+                }
+
+                report($exception);
+
+                break;
             }
         }
 
@@ -145,11 +165,30 @@ class CryptoApisProvider
         return max(1, min(self::MAX_PER_PAGE, $perPage));
     }
 
+    private function pauseBetweenPages(): void
+    {
+        $delayMs = max(0, (int) config('marketdata.cryptoapis.page_delay_ms', 250));
+
+        if ($delayMs > 0) {
+            usleep($delayMs * 1000);
+        }
+    }
+
     private function client(): PendingRequest
     {
+        $retries = max(1, (int) config('marketdata.cryptoapis.retry_times', 4));
+        $baseSleep = max(0, (int) config('marketdata.cryptoapis.retry_sleep_ms', 250));
+
         return Http::baseUrl((string) config('marketdata.cryptoapis.base_url'))
             ->withHeaders(['X-API-Key' => (string) config('marketdata.cryptoapis.api_key')])
             ->acceptJson()
-            ->timeout(30);
+            ->timeout(30)
+            ->retry(
+                $retries,
+                fn (int $attempt): int => $baseSleep * $attempt,
+                fn (Throwable $exception): bool => $exception instanceof RequestException
+                    && $exception->response?->status() === 429,
+                throw: false,
+            );
     }
 }

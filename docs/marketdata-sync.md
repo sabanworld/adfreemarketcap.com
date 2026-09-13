@@ -80,6 +80,8 @@ Rules that keep the overlay honest:
 
 Settings live under `marketdata.cryptoapis` in [`config/marketdata.php`](../config/marketdata.php): `CRYPTO_APIS_IO_KEY`, `CRYPTO_APIS_IO_PER_PAGE` (50, the endpoint maximum), and `CRYPTO_APIS_IO_MAX_PAGES` (5). The window runs one page deeper than the ranking being synced, because the two market-cap orders drift apart: at the default 200 coins, CoinGecko's top 200 reaches to about index 240 on the Crypto APIs list. That costs 5 calls per markets sync and no CoinGecko credits.
 
+Crypto APIs meters credits per second and answers `429 throughput_limit_reached` when a second burns past the plan hard cap (Starter is 5000). Pages wait `CRYPTO_APIS_IO_PAGE_DELAY_MS` (default 250) between calls, and a 429 is retried up to `CRYPTO_APIS_IO_RETRY_TIMES` with a growing sleep of `CRYPTO_APIS_IO_RETRY_SLEEP_MS` × attempt. If a later page still fails after retries, earlier pages are kept so the top of the ranking still gets precise percentages.
+
 ## Coin detail and multi-range charts
 
 Coin descriptions still come from `SyncCoinDetail` (visit + `SyncStaleCoinDetails` backfill).
