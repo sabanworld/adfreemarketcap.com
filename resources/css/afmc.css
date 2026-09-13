@@ -101,11 +101,6 @@
   backdrop-filter: var(--blur-sticky);
 }
 
-.afmc-header__search-btn {
-  display: none;
-  place-items: center;
-}
-
 .afmc-header__search-row {
   display: none;
   width: 100%;
@@ -452,6 +447,13 @@
 .afmc-icon-btn:hover {
   background: var(--surface-hover);
   color: var(--text-strong);
+}
+
+/* After .afmc-icon-btn so display:none is not overridden by inline-flex.
+   base.css shows this control again below 700px when the search field collapses. */
+.afmc-header [data-afmc-searchbtn] {
+  display: none;
+  place-items: center;
 }
 
 .afmc-search {
