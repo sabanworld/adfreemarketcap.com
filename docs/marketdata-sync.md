@@ -33,7 +33,7 @@ Scheduled load is dominated by per-coin tickers. With the defaults above:
 
 Roughly **~110 scheduled calls/hour**, plus on-visit detail/ticker jobs for coins outside the hot list. Homepage prices and ranks for the top 200 still refresh via `/coins/markets`. Raise `MARKETDATA_HOT_TICKERS_INTERVAL` to 10 if ticker volume needs another cut.
 
-DexScan uses **GeckoTerminal** (`DexDataProvider` → `GeckoTerminalProvider`). Keep call volume low on the free tier (trending + new pages by default; optional comma-separated `MARKETDATA_DEX_NETWORKS`). Do not call GeckoTerminal from Livewire.
+DexScan uses **GeckoTerminal** (`DexDataProvider` → `GeckoTerminalProvider`). Keep call volume low on the free tier (trending + new pages by default; optional comma-separated `MARKETDATA_DEX_NETWORKS`). Do not call GeckoTerminal from Livewire. Fresh meme pools can report 24h moves far past `decimal(12, 4)` on `dex_pairs.percent_change_24h`; `DexSyncService` clamps those to ±99,999,999.9999 and continues the run if a single row still fails to write.
 
 ## Queue workers (Horizon)
 

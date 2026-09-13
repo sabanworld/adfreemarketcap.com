@@ -198,10 +198,51 @@ class SyncDexPairsTest extends TestCase
         $this->assertSame(0, $run->records_processed);
     }
 
+    public function test_extreme_percent_changes_are_clamped_to_the_column_range(): void
+    {
+        Http::fake([
+            'api.geckoterminal.com/api/v2/networks/trending_pools*' => Http::response([
+                'data' => [
+                    $this->solanaPool('solana_pool_pump', '3744620948379.6'),
+                    $this->solanaPool('solana_pool_dump', '-3744620948379.6'),
+                ],
+                'included' => [
+                    ['id' => 'sol_base', 'type' => 'token', 'attributes' => ['symbol' => 'THERSOL']],
+                    ['id' => 'sol_quote', 'type' => 'token', 'attributes' => ['symbol' => 'SOL']],
+                    ['id' => 'pumpfun', 'type' => 'dex', 'attributes' => ['name' => 'PumpFun']],
+                ],
+            ]),
+            'api.geckoterminal.com/api/v2/networks/new_pools*' => Http::response([
+                'data' => [],
+                'included' => [],
+            ]),
+        ]);
+
+        config([
+            'marketdata.sync.dex_trending_pages' => 1,
+            'marketdata.sync.dex_new_pages' => 0,
+            'marketdata.sync.dex_networks' => [],
+        ]);
+
+        $run = app(DexSyncService::class)->syncPairs();
+
+        $this->assertSame(SyncRun::STATUS_SUCCEEDED, $run->status);
+        $this->assertSame(2, $run->records_processed);
+
+        $this->assertSame(
+            '99999999.9999',
+            DexPair::query()->where('external_id', 'solana_pool_pump')->value('percent_change_24h'),
+        );
+        $this->assertSame(
+            '-99999999.9999',
+            DexPair::query()->where('external_id', 'solana_pool_dump')->value('percent_change_24h'),
+        );
+    }
+
     /**
      * @return array<string, mixed>
      */
-    private function solanaPool(string $id): array
+    private function solanaPool(string $id, string $percentChange24h = '9.5'): array
     {
         return [
             'id' => $id,
@@ -211,7 +252,7 @@ class SyncDexPairsTest extends TestCase
                 'address' => $id,
                 'name' => 'THERSOL / SOL',
                 'pool_created_at' => '2026-09-12T06:00:00Z',
-                'price_change_percentage' => ['h24' => '9.5'],
+                'price_change_percentage' => ['h24' => $percentChange24h],
                 'transactions' => ['h24' => ['buys' => 5, 'sells' => 4]],
                 'volume_usd' => ['h24' => '80000'],
                 'reserve_in_usd' => '30000',

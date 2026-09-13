@@ -12,6 +12,12 @@ use Throwable;
 
 class DexSyncService
 {
+    /**
+     * Matches decimal(12, 4) on dex_pairs.percent_change_24h. Fresh meme pools
+     * often report trillion-percent pumps that would otherwise abort the sync.
+     */
+    private const PERCENT_CHANGE_MAX = 99_999_999.9999;
+
     public function __construct(
         private readonly DexDataProvider $provider,
     ) {}
@@ -28,13 +34,24 @@ class DexSyncService
         try {
             $pairs = $this->collectPairs();
             $processed = 0;
+            $failed = 0;
 
             foreach ($pairs as $pair) {
-                $this->upsertPair($pair);
-                $processed++;
+                try {
+                    $this->upsertPair($pair);
+                    $processed++;
+                } catch (Throwable $exception) {
+                    $failed++;
+                    report($exception);
+                }
             }
 
-            $run->markSucceeded($processed, "Synced {$processed} DEX pairs.");
+            $message = "Synced {$processed} DEX pairs.";
+            if ($failed > 0) {
+                $message .= " Failed {$failed} after write errors.";
+            }
+
+            $run->markSucceeded($processed, $message);
 
             return $run->fresh();
         } catch (Throwable $exception) {
@@ -127,7 +144,7 @@ class DexSyncService
                 'contract_address' => $pair->contractAddress,
                 'audit_status' => $pair->auditStatus,
                 'price' => $pair->price,
-                'percent_change_24h' => $pair->percentChange24h,
+                'percent_change_24h' => $this->percentForStorage($pair->percentChange24h),
                 'liquidity_usd' => $pair->liquidityUsd,
                 'volume_24h' => $pair->volume24h,
                 'txns_24h' => $pair->txns24h,
@@ -137,6 +154,18 @@ class DexSyncService
                 'synced_at' => now(),
             ],
         );
+    }
+
+    /**
+     * Clamp to the column range. Non-finite values become null.
+     */
+    private function percentForStorage(?float $value): ?float
+    {
+        if ($value === null || ! is_finite($value)) {
+            return null;
+        }
+
+        return max(-self::PERCENT_CHANGE_MAX, min(self::PERCENT_CHANGE_MAX, $value));
     }
 
     /**
