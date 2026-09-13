@@ -39,7 +39,7 @@ Covered by `tests/Feature/AdminMfaTest.php`. PHPUnit forces `ADMIN_MFA_REQUIRED=
 
 - Table: `watchlist_items` (`user_id`, `coin_id`, unique pair).
 - Service: `App\Services\Watchlist\WatchlistService`.
-- UI: `/watchlist` Livewire page; star toggle via `App\Livewire\WatchToggle` on Markets (and Watchlist).
+- UI: `/watchlist` Livewire page; star toggle via parent Livewire actions (`Home` / `Watchlist`) and `<x-afmc.watch-star>` on Markets and Watchlist.
 - Guests who click the star are sent to login.
 - SEO: `noindex` on Watchlist; `/login`, `/register`, `/watchlist`, `/logout` in `config/seo.php` robots disallow.
 

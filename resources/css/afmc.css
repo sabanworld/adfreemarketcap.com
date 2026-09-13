@@ -1,5 +1,11 @@
 /* Affinity with design-system tokens: layout and primitives for Blade UI */
 
+.afmc-is-loading {
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
 .afmc-wordmark {
   display: inline-flex;
   align-items: baseline;

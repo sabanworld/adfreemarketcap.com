@@ -111,8 +111,28 @@ class MarketPagesTest extends TestCase
         ]);
 
         Livewire::test(CoinShow::class, ['coin' => $coin])
+            ->assertSet('coinId', $coin->id)
             ->assertSee('Ethereum')
             ->assertSee('Smart contract platform')
+            ->assertOk();
+    }
+
+    public function test_coin_detail_decodes_html_entities_in_description(): void
+    {
+        $coin = Coin::query()->create([
+            'slug' => 'the-open-network',
+            'symbol' => 'TON',
+            'name' => 'Toncoin',
+            'rank' => 20,
+            'price' => 5,
+            'description' => 'TON (The Open Network) is a general-purpose&nbsp;blockchain that allows developers to build decentralized apps and tokens.',
+            'detail_synced_at' => now(),
+            'tickers_synced_at' => now(),
+        ]);
+
+        Livewire::test(CoinShow::class, ['coin' => $coin])
+            ->assertSee('general-purpose blockchain that allows developers')
+            ->assertDontSee('&nbsp;', false)
             ->assertOk();
     }
 }

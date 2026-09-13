@@ -5,7 +5,7 @@
     $display = app(MarketDisplayService::class);
 @endphp
 
-<main data-afmc-page class="afmc-page" wire:poll.30s>
+<main data-afmc-page class="afmc-page" wire:poll.visible.60s>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-5);flex-wrap:wrap">
         <div style="display:grid;gap:var(--space-1)">
             <h1 style="font:var(--type-h1);margin:0">{{ __('Main') }}</h1>
@@ -14,7 +14,7 @@
                 · {{ __('saved to your account') }}
             </span>
         </div>
-        <a href="{{ route('home') }}" wire:navigate class="afmc-btn afmc-btn--secondary afmc-btn--sm">
+        <a href="{{ route('home') }" wire:navigate class="afmc-btn afmc-btn--secondary afmc-btn--sm">
             <x-afmc.icon name="add" size="16px" />
             {{ __('Add coins') }}
         </a>
@@ -43,7 +43,7 @@
             </div>
         </div>
 
-        <div class="afmc-card">
+        <div class="afmc-card" wire:loading.class="afmc-is-loading" wire:target="toggleWatch">
             <div class="afmc-card__header">
                 <div>
                     <span class="afmc-card__eyebrow">{{ __('Watchlist') }}</span>
@@ -64,14 +64,17 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($coins as $coin)
+                        @foreach ($coins as $index => $coin)
                             @php
                                 $change24 = $display->change($coin->percent_change_24h);
                                 $spark = $display->sparkline($coin->sparkline_7d);
                             @endphp
                             <tr wire:key="watch-{{ $coin->id }}">
                                 <td class="is-sticky is-sticky--watch hide-narrow" style="left:0">
-                                    <livewire:watch-toggle :coin="$coin" :key="'watch-toggle-'.$coin->id" />
+                                    <x-afmc.watch-star
+                                        :coin-id="$coin->id"
+                                        :watched="true"
+                                    />
                                 </td>
                                 <td class="is-sticky is-sticky--name" style="left:38px">
                                     <x-afmc.coin-identity
@@ -80,6 +83,7 @@
                                         :rank="$coin->rank"
                                         :image="$coin->image_url"
                                         :href="route('coins.show', $coin)"
+                                        :eager="$index < 8"
                                     />
                                 </td>
                                 <td class="is-right">{{ MarketNumberFormatter::money($coin->price !== null ? (float) $coin->price : null, 8) }}</td>

@@ -6,6 +6,8 @@ namespace App\Livewire;
 
 use App\Models\DexPair;
 use App\Services\Seo\SeoService;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -15,6 +17,8 @@ use Livewire\WithPagination;
 class DexScan extends Component
 {
     use WithPagination;
+
+    private const STATS_CACHE_SECONDS = 60;
 
     #[Url]
     public string $search = '';
@@ -82,18 +86,36 @@ class DexScan extends Component
             canonical: route('dexscan'),
         );
 
-        $chains = DexPair::query()->distinct()->orderBy('chain')->pluck('chain');
-
         return view('livewire.dex-scan', [
             'pairs' => $query->paginate(50),
-            'chains' => $chains,
-            'stats' => [
-                'volume' => (float) DexPair::query()->sum('volume_24h'),
-                'pairs' => DexPair::query()->count(),
-                'new_24h' => DexPair::query()->where('paired_at', '>=', now()->subDay())->count(),
-            ],
+            'chains' => $this->cachedChains(),
+            'stats' => $this->cachedStats(),
         ])
             ->title($pageSeo->title)
             ->layoutData(['seo' => $pageSeo]);
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    private function cachedChains(): Collection
+    {
+        return Cache::remember('dexscan.chains', self::STATS_CACHE_SECONDS, function () {
+            return DexPair::query()->distinct()->orderBy('chain')->pluck('chain');
+        });
+    }
+
+    /**
+     * @return array{volume: float, pairs: int, new_24h: int}
+     */
+    private function cachedStats(): array
+    {
+        return Cache::remember('dexscan.stats', self::STATS_CACHE_SECONDS, function () {
+            return [
+                'volume' => (float) DexPair::query()->sum('volume_24h'),
+                'pairs' => DexPair::query()->count(),
+                'new_24h' => DexPair::query()->where('paired_at', '>=', now()->subDay())->count(),
+            ];
+        });
     }
 }

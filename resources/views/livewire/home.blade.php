@@ -6,7 +6,7 @@
     $btcDominance = $global?->btc_dominance !== null ? (float) $global->btc_dominance : null;
 @endphp
 
-<main data-afmc-page class="afmc-page" wire:poll.30s>
+<main data-afmc-page class="afmc-page">
     <div style="display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;margin-bottom:var(--space-4)">
         <div style="display:flex;align-items:baseline;gap:var(--space-3);flex-wrap:wrap">
             <h1 style="font:var(--type-h2);margin:0">{{ __('Cryptocurrency prices by market cap') }}</h1>
@@ -68,24 +68,7 @@
         </div>
     @endif
 
-    <div class="afmc-kpi-row">
-        <div class="afmc-kpi">
-            <span class="afmc-ticker__label">{{ __('Market cap') }}</span>
-            <span class="afmc-ticker__value">{{ MarketNumberFormatter::money($global?->total_market_cap !== null ? (float) $global->total_market_cap : null) }}</span>
-        </div>
-        <div class="afmc-kpi">
-            <span class="afmc-ticker__label">{{ __('24h volume') }}</span>
-            <span class="afmc-ticker__value">{{ MarketNumberFormatter::money($global?->total_volume_24h !== null ? (float) $global->total_volume_24h : null) }}</span>
-        </div>
-        <div class="afmc-kpi">
-            <span class="afmc-ticker__label">{{ __('BTC dominance') }}</span>
-            <span class="afmc-ticker__value">{{ MarketNumberFormatter::percent($btcDominance) }}</span>
-        </div>
-        <div class="afmc-kpi">
-            <span class="afmc-ticker__label">{{ __('Assets tracked') }}</span>
-            <span class="afmc-ticker__value">{{ number_format($coinCount) }}</span>
-        </div>
-    </div>
+    <livewire:market-kpi-strip />
 
     <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-3);flex-wrap:wrap">
         <div class="afmc-tabs" role="tablist">
@@ -102,7 +85,7 @@
         </label>
     </div>
 
-    <div class="afmc-card">
+    <div class="afmc-card" wire:loading.class="afmc-is-loading" wire:target="sortBy,setTab,gotoPage,previousPage,nextPage,dense,search">
         <div class="afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('Cryptocurrency prices by market cap') }}" tabindex="0">
             <table class="afmc-table {{ $dense ? 'afmc-table--dense' : '' }}">
                 <thead>
@@ -148,14 +131,17 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($coins as $coin)
+                    @forelse ($coins as $index => $coin)
                         @php
                             $change24 = $display->change($coin->percent_change_24h);
                             $spark = $display->sparkline($coin->sparkline_7d);
                         @endphp
                         <tr wire:key="coin-{{ $coin->id }}">
                             <td class="is-sticky is-sticky--watch hide-narrow" style="left:0">
-                                <livewire:watch-toggle :coin="$coin" :key="'home-watch-'.$coin->id" />
+                                <x-afmc.watch-star
+                                    :coin-id="$coin->id"
+                                    :watched="in_array($coin->id, $watchedIds, true)"
+                                />
                             </td>
                             <td class="is-sticky is-sticky--name" style="left:38px">
                                 <span class="afmc-table__namecell">
@@ -165,6 +151,7 @@
                                         :symbol="$coin->symbol"
                                         :image="$coin->image_url"
                                         :href="route('coins.show', $coin)"
+                                        :eager="$index < 8"
                                     />
                                 </span>
                             </td>

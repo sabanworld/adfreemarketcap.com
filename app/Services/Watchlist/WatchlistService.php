@@ -53,6 +53,7 @@ final class WatchlistService
     public function coinsFor(User $user): Collection
     {
         return Coin::query()
+            ->select(Coin::LIST_COLUMNS)
             ->whereIn('id', $this->watchedCoinIds($user))
             ->orderBy('rank')
             ->get();

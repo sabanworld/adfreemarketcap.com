@@ -8,6 +8,7 @@ use App\Models\Coin;
 use App\Models\User;
 use App\Services\Seo\SeoService;
 use App\Services\Watchlist\WatchlistService;
+use App\Support\FormRateLimiter;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -15,8 +16,11 @@ use Livewire\Component;
 #[Layout('layouts.app')]
 class Watchlist extends Component
 {
-    public function toggle(int $coinId, WatchlistService $watchlist): void
+    public function toggleWatch(int $coinId, WatchlistService $watchlist): void
     {
+        FormRateLimiter::ensureIsNotRateLimited('watch_toggle', errorKey: 'watched');
+        FormRateLimiter::hit('watch_toggle');
+
         /** @var User $user */
         $user = Auth::user();
         $coin = Coin::query()->findOrFail($coinId);

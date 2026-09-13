@@ -50,4 +50,15 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Sitemap cache
+    |--------------------------------------------------------------------------
+    |
+    | Full sitemap XML is cached and invalidated after a markets sync.
+    |
+    */
+
+    'sitemap_cache_seconds' => (int) env('SEO_SITEMAP_CACHE_SECONDS', 600),
+
 ];

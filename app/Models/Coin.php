@@ -8,9 +8,35 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class Coin extends Model
 {
+    /**
+     * Columns needed for Markets / Watchlist rows (excludes chart_7d / description).
+     *
+     * @var list<string>
+     */
+    public const LIST_COLUMNS = [
+        'id',
+        'slug',
+        'symbol',
+        'name',
+        'image_url',
+        'rank',
+        'price',
+        'percent_change_1h',
+        'percent_change_24h',
+        'percent_change_7d',
+        'market_cap',
+        'volume_24h',
+        'sparkline_7d',
+    ];
+
+    public const RANKED_COUNT_CACHE_KEY = 'coins.ranked_count';
+
+    public const RANKED_COUNT_CACHE_SECONDS = 60;
+
     protected $fillable = [
         'slug',
         'symbol',
@@ -32,6 +58,18 @@ class Coin extends Model
         'detail_synced_at',
         'tickers_synced_at',
     ];
+
+    public static function rankedCount(): int
+    {
+        return (int) Cache::remember(self::RANKED_COUNT_CACHE_KEY, self::RANKED_COUNT_CACHE_SECONDS, function () {
+            return static::query()->whereNotNull('rank')->count();
+        });
+    }
+
+    public static function forgetRankedCountCache(): void
+    {
+        Cache::forget(self::RANKED_COUNT_CACHE_KEY);
+    }
 
     public function getRouteKeyName(): string
     {

@@ -6,8 +6,8 @@ namespace Tests\Feature;
 
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Register;
+use App\Livewire\Home;
 use App\Livewire\Watchlist;
-use App\Livewire\WatchToggle;
 use App\Models\Coin;
 use App\Models\User;
 use App\Services\Watchlist\WatchlistService;
@@ -69,14 +69,29 @@ class WatchlistAuthTest extends TestCase
 
         $this->actingAs($user);
 
-        Livewire::test(WatchToggle::class, ['coin' => $coin])
-            ->call('toggle')
-            ->assertSet('watched', true);
+        Livewire::test(Home::class)
+            ->call('toggleWatch', $coin->id)
+            ->assertSet('watchedIds', [$coin->id]);
 
         $this->assertTrue(app(WatchlistService::class)->isWatched($user, $coin));
 
         Livewire::test(Watchlist::class)
             ->assertSee('Bitcoin')
             ->assertOk();
+    }
+
+    public function test_guest_toggle_redirects_to_login(): void
+    {
+        $coin = Coin::query()->create([
+            'slug' => 'bitcoin',
+            'symbol' => 'BTC',
+            'name' => 'Bitcoin',
+            'rank' => 1,
+            'price' => 50000,
+        ]);
+
+        Livewire::test(Home::class)
+            ->call('toggleWatch', $coin->id)
+            ->assertRedirect(route('login'));
     }
 }

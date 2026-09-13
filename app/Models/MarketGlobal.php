@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class MarketGlobal extends Model
 {
+    public const LATEST_CACHE_KEY = 'market_global.latest';
+
+    public const LATEST_CACHE_SECONDS = 30;
+
     protected $fillable = [
         'total_market_cap',
         'total_volume_24h',
@@ -19,7 +24,14 @@ class MarketGlobal extends Model
 
     public static function latestSnapshot(): ?self
     {
-        return static::query()->latest('synced_at')->first();
+        return Cache::remember(self::LATEST_CACHE_KEY, self::LATEST_CACHE_SECONDS, function () {
+            return static::query()->latest('synced_at')->first();
+        });
+    }
+
+    public static function forgetLatestSnapshotCache(): void
+    {
+        Cache::forget(self::LATEST_CACHE_KEY);
     }
 
     protected function casts(): array

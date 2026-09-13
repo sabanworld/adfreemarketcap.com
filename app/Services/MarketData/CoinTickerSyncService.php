@@ -44,8 +44,7 @@ class CoinTickerSyncService
 
     public function syncTopCoins(): SyncRun
     {
-        $limit = max(1, (int) config('marketdata.sync.tickers_top_coins', 25));
-        $coins = Coin::query()->whereNotNull('rank')->orderBy('rank')->limit($limit)->get();
+        $limit = max(0, (int) config('marketdata.sync.tickers_top_coins', 0));
 
         $run = SyncRun::query()->create([
             'type' => 'coin_tickers_batch',
@@ -53,6 +52,14 @@ class CoinTickerSyncService
             'provider' => 'coingecko',
             'started_at' => now(),
         ]);
+
+        if ($limit < 1) {
+            $run->markSucceeded(0, 'Skipped top-coin ticker sync (MARKETDATA_TICKERS_TOP_COINS is 0).');
+
+            return $run->fresh();
+        }
+
+        $coins = Coin::query()->whereNotNull('rank')->orderBy('rank')->limit($limit)->get();
 
         try {
             $processed = 0;
@@ -81,6 +88,81 @@ class CoinTickerSyncService
             }
             if ($failed > 0) {
                 $message .= " Failed {$failed} after provider errors.";
+            }
+
+            $run->markSucceeded($processed, $message);
+
+            return $run->fresh();
+        } catch (Throwable $exception) {
+            $run->markFailed($exception->getMessage());
+
+            throw $exception;
+        }
+    }
+
+    public function syncHotCoins(): SyncRun
+    {
+        /** @var list<string> $slugs */
+        $slugs = array_values(array_filter(
+            array_map('strval', config('marketdata.sync.hot_coins', [])),
+        ));
+
+        $run = SyncRun::query()->create([
+            'type' => 'coin_tickers_hot',
+            'status' => SyncRun::STATUS_RUNNING,
+            'provider' => 'coingecko',
+            'started_at' => now(),
+            'message' => implode(',', $slugs),
+        ]);
+
+        if ($slugs === []) {
+            $run->markSucceeded(0, 'Skipped hot ticker sync (MARKETDATA_HOT_COINS is empty).');
+
+            return $run->fresh();
+        }
+
+        $coins = Coin::query()
+            ->where(function ($query) use ($slugs): void {
+                $query->whereIn('slug', $slugs)
+                    ->orWhereHas('providerIds', function ($providerQuery) use ($slugs): void {
+                        $providerQuery->where('provider', 'coingecko')->whereIn('external_id', $slugs);
+                    });
+            })
+            ->get()
+            ->unique('id')
+            ->values();
+
+        try {
+            $processed = 0;
+            $removed = 0;
+            $failed = 0;
+            $missing = count($slugs) - $coins->count();
+
+            foreach ($coins as $coin) {
+                try {
+                    $result = $this->persistTickers($coin);
+                    if ($result['removed']) {
+                        $removed++;
+                    } else {
+                        $processed++;
+                    }
+                } catch (Throwable $exception) {
+                    $failed++;
+                    report($exception);
+                }
+
+                usleep(200_000);
+            }
+
+            $message = "Synced tickers for {$processed} hot coins.";
+            if ($removed > 0) {
+                $message .= " Cleaned up {$removed} unknown or delisted ids.";
+            }
+            if ($failed > 0) {
+                $message .= " Failed {$failed} after provider errors.";
+            }
+            if ($missing > 0) {
+                $message .= " {$missing} configured hot slug(s) not in the database yet.";
             }
 
             $run->markSucceeded($processed, $message);

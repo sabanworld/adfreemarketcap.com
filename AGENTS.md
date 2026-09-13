@@ -16,7 +16,7 @@
   - `./vendor/bin/sail artisan marketdata:sync`
   - `./vendor/bin/sail artisan marketdata:sync --only-dex` (DexScan / GeckoTerminal)
   - `./vendor/bin/sail artisan marketdata:sync --only-insights` (Bitcoin treasury + market cycles)
-  - `./vendor/bin/sail artisan marketdata:sync --only-tickers` (exchange markets for top coins)
+  - `./vendor/bin/sail artisan marketdata:sync --only-tickers` (exchange markets for hot coins)
   - `./vendor/bin/sail artisan horizon` (if not started via Sail Supervisor)
   - `./vendor/bin/sail artisan schedule:work` (local alternative to container cron)
 - Do **not** assume host PHP/MySQL matches CI/Sail (Sail uses the project’s Docker PHP image).

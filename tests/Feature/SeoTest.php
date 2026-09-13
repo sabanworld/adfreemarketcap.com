@@ -29,6 +29,7 @@ class SeoTest extends TestCase
 
         $response->assertOk();
         $response->assertHeader('Content-Type', 'text/plain; charset=UTF-8');
+        $response->assertHeader('Cache-Control', 'max-age=3600, public');
         $response->assertSee('User-agent: *', false);
         $response->assertSee('Disallow: /admin', false);
         $response->assertSee('Disallow: /horizon', false);
@@ -57,9 +58,37 @@ class SeoTest extends TestCase
 
         $response->assertOk();
         $response->assertHeader('Content-Type', 'application/xml; charset=UTF-8');
+        $response->assertHeader('Cache-Control', 'max-age=300, public');
         $response->assertSee('<loc>' . route('home') . '</loc>', false);
         $response->assertSee('<loc>' . route('coins.show', 'bitcoin') . '</loc>', false);
         $response->assertSee('<changefreq>hourly</changefreq>', false);
+    }
+
+    public function test_sitemap_is_served_from_cache_on_repeat_hits(): void
+    {
+        Coin::query()->create([
+            'slug' => 'bitcoin',
+            'symbol' => 'BTC',
+            'name' => 'Bitcoin',
+            'rank' => 1,
+            'price' => 50000,
+        ]);
+
+        $this->get('/sitemap.xml')->assertOk();
+
+        Coin::query()->create([
+            'slug' => 'ethereum',
+            'symbol' => 'ETH',
+            'name' => 'Ethereum',
+            'rank' => 2,
+            'price' => 3000,
+        ]);
+
+        $response = $this->get('/sitemap.xml');
+
+        $response->assertOk();
+        $response->assertSee('<loc>' . route('coins.show', 'bitcoin') . '</loc>', false);
+        $response->assertDontSee('<loc>' . route('coins.show', 'ethereum') . '</loc>', false);
     }
 
     public function test_home_page_exposes_canonical_and_meta_description(): void

@@ -8,6 +8,7 @@ use App\Jobs\SyncCoinInsights;
 use App\Jobs\SyncCurrencyRates;
 use App\Jobs\SyncDexPairs;
 use App\Jobs\SyncGlobalData;
+use App\Jobs\SyncHotCoinTickers;
 use App\Jobs\SyncMarketData;
 use App\Jobs\SyncTopCoinTickers;
 use App\Models\Coin;
@@ -26,7 +27,7 @@ class SyncMarketDataCommand extends Command
                             {--only-dex : Sync DexScan pairs only}
                             {--insights : Also sync coin insights (treasury / market cycles)}
                             {--only-insights : Sync coin insights only}
-                            {--tickers : Also sync exchange tickers for top coins}
+                            {--tickers : Also sync exchange tickers (hot list, or top-N when configured)}
                             {--only-tickers : Sync exchange tickers only}
                             {--currencies : Also sync display currency rates}
                             {--only-currencies : Sync display currency rates only}
@@ -62,7 +63,11 @@ class SyncMarketDataCommand extends Command
             }
 
             if ($includeTickers) {
-                SyncTopCoinTickers::dispatch();
+                SyncHotCoinTickers::dispatch();
+
+                if ((int) config('marketdata.sync.tickers_top_coins', 0) > 0) {
+                    SyncTopCoinTickers::dispatch();
+                }
             }
 
             if ($includeCurrencies) {
@@ -96,11 +101,16 @@ class SyncMarketDataCommand extends Command
             if (is_string($slug) && $slug !== '') {
                 $coin = Coin::query()->where('slug', $slug)->firstOrFail();
                 $tickers = $tickerSync->syncCoin($coin);
+                $this->info("Tickers: {$tickers->status} ({$tickers->records_processed}) via {$tickers->provider}");
             } else {
-                $tickers = $tickerSync->syncTopCoins();
-            }
+                $hot = $tickerSync->syncHotCoins();
+                $this->info("Hot tickers: {$hot->status} ({$hot->records_processed}) via {$hot->provider}");
 
-            $this->info("Tickers: {$tickers->status} ({$tickers->records_processed}) via {$tickers->provider}");
+                if ((int) config('marketdata.sync.tickers_top_coins', 0) > 0) {
+                    $tickers = $tickerSync->syncTopCoins();
+                    $this->info("Top tickers: {$tickers->status} ({$tickers->records_processed}) via {$tickers->provider}");
+                }
+            }
         }
 
         if ($includeCurrencies) {

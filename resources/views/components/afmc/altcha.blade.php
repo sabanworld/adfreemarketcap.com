@@ -1,3 +1,7 @@
+@assets
+    @vite('resources/js/altcha.js')
+@endassets
+
 <div
     wire:ignore
     class="afmc-altcha"

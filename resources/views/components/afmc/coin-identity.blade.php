@@ -5,11 +5,13 @@
     'image' => null,
     'size' => 'md',
     'href' => null,
+    'eager' => false,
 ])
 
 @php
     $tag = $href ? 'a' : 'span';
     $initials = strtoupper(mb_substr((string) $symbol, 0, 2));
+    $dim = $size === 'lg' ? 32 : 24;
 @endphp
 
 <{{ $tag }}
@@ -17,7 +19,16 @@
     {{ $attributes->class('afmc-identity') }}
 >
     @if (filled($image))
-        <img src="{{ $image }}" alt="{{ $name }}" class="afmc-identity__logo {{ $size === 'lg' ? 'afmc-identity__logo--lg' : '' }}" loading="lazy" />
+        <img
+            src="{{ $image }}"
+            alt="{{ $name }}"
+            class="afmc-identity__logo {{ $size === 'lg' ? 'afmc-identity__logo--lg' : '' }}"
+            width="{{ $dim }}"
+            height="{{ $dim }}"
+            decoding="async"
+            loading="{{ $eager ? 'eager' : 'lazy' }}"
+            @if ($eager) fetchpriority="high" @endif
+        />
     @else
         <span class="afmc-identity__logo afmc-identity__fallback {{ $size === 'lg' ? 'afmc-identity__logo--lg' : '' }}">{{ $initials }}</span>
     @endif

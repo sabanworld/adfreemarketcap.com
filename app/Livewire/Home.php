@@ -6,7 +6,11 @@ namespace App\Livewire;
 
 use App\Models\Coin;
 use App\Models\MarketGlobal;
+use App\Models\User;
 use App\Services\Seo\SeoService;
+use App\Services\Watchlist\WatchlistService;
+use App\Support\FormRateLimiter;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -30,6 +34,23 @@ class Home extends Component
     public string $tab = 'all';
 
     public bool $dense = false;
+
+    /**
+     * @var list<int>
+     */
+    public array $watchedIds = [];
+
+    public function mount(WatchlistService $watchlist): void
+    {
+        $user = Auth::user();
+
+        if ($user instanceof User) {
+            $this->watchedIds = $watchlist->watchedCoinIds($user)
+                ->map(fn ($id): int => (int) $id)
+                ->values()
+                ->all();
+        }
+    }
 
     public function updatingSearch(): void
     {
@@ -69,11 +90,40 @@ class Home extends Component
         $this->resetPage();
     }
 
+    public function toggleWatch(int $coinId, WatchlistService $watchlist): void
+    {
+        if (! Auth::check()) {
+            $this->redirect(route('login'), navigate: true);
+
+            return;
+        }
+
+        FormRateLimiter::ensureIsNotRateLimited('watch_toggle', errorKey: 'watched');
+        FormRateLimiter::hit('watch_toggle');
+
+        /** @var User $user */
+        $user = Auth::user();
+        $coin = Coin::query()->findOrFail($coinId);
+        $watched = $watchlist->toggle($user, $coin);
+
+        if ($watched) {
+            $this->watchedIds[] = $coinId;
+            $this->watchedIds = array_values(array_unique($this->watchedIds));
+        } else {
+            $this->watchedIds = array_values(array_filter(
+                $this->watchedIds,
+                fn (int $id): bool => $id !== $coinId,
+            ));
+        }
+    }
+
     public function render(SeoService $seo)
     {
         // Markets is a ranked list. Unranked rows (null rank) must not appear:
         // MySQL ASC puts NULLs first, which looked like a broken A-Z page.
-        $query = Coin::query()->whereNotNull('rank');
+        $query = Coin::query()
+            ->select(Coin::LIST_COLUMNS)
+            ->whereNotNull('rank');
 
         if (filled($this->search)) {
             $term = '%' . $this->search . '%';
@@ -100,6 +150,7 @@ class Home extends Component
         }
 
         $featured = Coin::query()
+            ->select(Coin::LIST_COLUMNS)
             ->whereNotNull('rank')
             ->whereIn('symbol', ['BTC', 'ETH'])
             ->orderBy('rank')
@@ -107,7 +158,12 @@ class Home extends Component
             ->get();
 
         if ($featured->count() < 2) {
-            $featured = Coin::query()->whereNotNull('rank')->orderBy('rank')->limit(2)->get();
+            $featured = Coin::query()
+                ->select(Coin::LIST_COLUMNS)
+                ->whereNotNull('rank')
+                ->orderBy('rank')
+                ->limit(2)
+                ->get();
         }
 
         $pageSeo = $seo->forHome();
@@ -116,7 +172,7 @@ class Home extends Component
             'coins' => $query->paginate(50),
             'global' => MarketGlobal::latestSnapshot(),
             'featured' => $featured,
-            'coinCount' => Coin::query()->whereNotNull('rank')->count(),
+            'coinCount' => Coin::rankedCount(),
         ])
             ->title($pageSeo->title)
             ->layoutData(['seo' => $pageSeo]);

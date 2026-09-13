@@ -226,6 +226,104 @@ class CoinTickersTest extends TestCase
         $this->assertDatabaseMissing('coins', ['id' => $coin->id]);
     }
 
+    public function test_sync_hot_coins_only_requests_configured_slugs(): void
+    {
+        $bitcoin = Coin::query()->create([
+            'slug' => 'bitcoin',
+            'symbol' => 'BTC',
+            'name' => 'Bitcoin',
+            'rank' => 1,
+            'price' => 77000,
+            'detail_synced_at' => now(),
+        ]);
+
+        CoinProviderId::query()->create([
+            'coin_id' => $bitcoin->id,
+            'provider' => 'coingecko',
+            'external_id' => 'bitcoin',
+        ]);
+
+        $ethereum = Coin::query()->create([
+            'slug' => 'ethereum',
+            'symbol' => 'ETH',
+            'name' => 'Ethereum',
+            'rank' => 2,
+            'price' => 3000,
+            'detail_synced_at' => now(),
+        ]);
+
+        CoinProviderId::query()->create([
+            'coin_id' => $ethereum->id,
+            'provider' => 'coingecko',
+            'external_id' => 'ethereum',
+        ]);
+
+        $solana = Coin::query()->create([
+            'slug' => 'solana',
+            'symbol' => 'SOL',
+            'name' => 'Solana',
+            'rank' => 5,
+            'price' => 150,
+            'detail_synced_at' => now(),
+        ]);
+
+        CoinProviderId::query()->create([
+            'coin_id' => $solana->id,
+            'provider' => 'coingecko',
+            'external_id' => 'solana',
+        ]);
+
+        Http::fake([
+            'api.coingecko.com/api/v3/coins/bitcoin/tickers*' => Http::response(
+                $this->fixture('coingecko_bitcoin_tickers.json'),
+            ),
+            'api.coingecko.com/api/v3/coins/ethereum/tickers*' => Http::response([
+                'tickers' => [],
+            ]),
+            'api.coingecko.com/api/v3/coins/solana/tickers*' => Http::response([
+                'tickers' => [],
+            ]),
+        ]);
+
+        config([
+            'marketdata.sync.tickers_pages' => 1,
+            'marketdata.sync.hot_coins' => ['bitcoin', 'ethereum'],
+        ]);
+
+        $run = app(CoinTickerSyncService::class)->syncHotCoins();
+
+        $this->assertSame(SyncRun::STATUS_SUCCEEDED, $run->status);
+        $this->assertSame(2, $run->records_processed);
+        $this->assertSame('coin_tickers_hot', $run->type);
+
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/coins/bitcoin/tickers'));
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/coins/ethereum/tickers'));
+        Http::assertNotSent(fn ($request) => str_contains($request->url(), '/coins/solana/tickers'));
+    }
+
+    public function test_sync_top_coins_skips_when_limit_is_zero(): void
+    {
+        Coin::query()->create([
+            'slug' => 'bitcoin',
+            'symbol' => 'BTC',
+            'name' => 'Bitcoin',
+            'rank' => 1,
+            'price' => 77000,
+            'detail_synced_at' => now(),
+        ]);
+
+        Http::fake();
+
+        config(['marketdata.sync.tickers_top_coins' => 0]);
+
+        $run = app(CoinTickerSyncService::class)->syncTopCoins();
+
+        $this->assertSame(SyncRun::STATUS_SUCCEEDED, $run->status);
+        $this->assertSame(0, $run->records_processed);
+        $this->assertStringContainsString('TICKERS_TOP_COINS is 0', (string) $run->message);
+        Http::assertNothingSent();
+    }
+
     /**
      * @return array<string, mixed>
      */

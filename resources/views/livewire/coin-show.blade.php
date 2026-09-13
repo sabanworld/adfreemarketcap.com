@@ -35,6 +35,7 @@
                 :rank="$coin->rank"
                 :image="$coin->image_url"
                 size="lg"
+                eager
             />
             <div style="display:flex;align-items:flex-end;gap:var(--space-3);flex-wrap:wrap">
                 <span class="afmc-num-lg">{{ MarketNumberFormatter::money($coin->price !== null ? (float) $coin->price : null, 8) }}</span>
@@ -333,7 +334,7 @@
                         </div>
                     </div>
                     <div class="afmc-card__body">
-                        <p style="margin:0;font:var(--type-body-sm);color:var(--text-body);white-space:pre-line">{{ Str::limit(strip_tags((string) $coin->description), 2000) }}</p>
+                        <p style="margin:0;font:var(--type-body-sm);color:var(--text-body);white-space:pre-line">{{ Str::limit((string) \App\Support\PlainText::fromHtml($coin->description), 2000) }}</p>
                     </div>
                 </section>
             @endif
@@ -341,55 +342,6 @@
     </div>
 </main>
 
-@script
-<script>
-    const canvas = document.getElementById('coin-chart');
-    if (canvas && window.Chart) {
-        const labels = JSON.parse(canvas.dataset.labels || '[]');
-        const values = JSON.parse(canvas.dataset.values || '[]');
-        const up = canvas.dataset.up === '1';
-        const symbol = canvas.dataset.symbol || '$';
-        const symbolAfter = canvas.dataset.symbolAfter === '1';
-        const stroke = up ? '#0E9F6E' : '#D8433B';
-        const fill = up ? 'rgba(14, 159, 110, 0.12)' : 'rgba(216, 67, 59, 0.12)';
-
-        if (canvas._afmcChart) {
-            canvas._afmcChart.destroy();
-        }
-
-        canvas._afmcChart = new window.Chart(canvas, {
-            type: 'line',
-            data: {
-                labels,
-                datasets: [{
-                    data: values,
-                    borderColor: stroke,
-                    backgroundColor: fill,
-                    fill: true,
-                    pointRadius: 0,
-                    tension: 0.25,
-                    borderWidth: 1.75,
-                }],
-            },
-            options: {
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: {
-                        display: true,
-                        ticks: { maxTicksLimit: 5, color: '#ADA697', font: { family: 'Public Sans Variable', size: 11 } },
-                        grid: { color: '#EFEAE0' },
-                    },
-                    y: {
-                        ticks: {
-                            color: '#ADA697',
-                            font: { family: 'JetBrains Mono Variable', size: 11 },
-                            callback: (v) => (symbolAfter ? v + symbol : symbol + v),
-                        },
-                        grid: { color: '#EFEAE0' },
-                    },
-                },
-            },
-        });
-    }
-</script>
-@endscript
+@assets
+    @vite('resources/js/coin-chart.js')
+@endassets

@@ -13,6 +13,7 @@ final class RobotsController extends Controller
     {
         return response($seo->robotsTxt(), 200, [
             'Content-Type' => 'text/plain; charset=UTF-8',
+            'Cache-Control' => 'public, max-age=3600',
         ]);
     }
 }

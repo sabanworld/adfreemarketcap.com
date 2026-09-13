@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services\MarketData;
 
+use App\Http\Controllers\SitemapController;
 use App\Models\Coin;
 use App\Models\CoinProviderId;
 use App\Models\MarketGlobal;
 use App\Models\SyncRun;
 use App\Services\MarketData\DTOs\MarketCoinData;
 use App\Services\MarketData\Exceptions\ProviderCoinNotFoundException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -49,6 +51,9 @@ class MarketSyncService
             $run->update(['provider' => $providerUsed]);
             $run->markSucceeded($processed, "Synced {$processed} coins.");
 
+            Coin::forgetRankedCountCache();
+            Cache::forget(SitemapController::CACHE_KEY);
+
             return $run->fresh();
         } catch (Throwable $exception) {
             $run->markFailed($exception->getMessage());
@@ -77,6 +82,8 @@ class MarketSyncService
                 'provider' => $result['provider'],
                 'synced_at' => now(),
             ]);
+
+            MarketGlobal::forgetLatestSnapshotCache();
 
             $run->update(['provider' => $result['provider']]);
             $run->markSucceeded(1, 'Synced global market stats.');

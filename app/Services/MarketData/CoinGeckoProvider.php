@@ -10,6 +10,7 @@ use App\Services\MarketData\DTOs\CoinTickerData;
 use App\Services\MarketData\DTOs\GlobalMarketData;
 use App\Services\MarketData\DTOs\MarketCoinData;
 use App\Services\MarketData\Exceptions\ProviderCoinNotFoundException;
+use App\Support\PlainText;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -121,7 +122,7 @@ class CoinGeckoProvider implements ExchangeRateProvider, MarketDataProvider
 
         return new CoinDetailData(
             externalId: $externalId,
-            description: is_string($description) ? strip_tags($description) : null,
+            description: is_string($description) ? PlainText::fromHtml($description) : null,
             chart7d: is_array($prices) ? $prices : null,
         );
     }

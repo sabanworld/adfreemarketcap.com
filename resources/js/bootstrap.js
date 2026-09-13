@@ -1,4 +1,1 @@
-import axios from 'axios';
-window.axios = axios;
-
-window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+// Intentionally empty: public UI uses Livewire + Alpine, not axios.

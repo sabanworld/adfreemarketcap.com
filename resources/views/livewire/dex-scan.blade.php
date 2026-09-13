@@ -61,7 +61,7 @@
         @endforeach
     </div>
 
-    <div class="afmc-card">
+    <div class="afmc-card" wire:loading.class="afmc-is-loading" wire:target="setTab,setChain,gotoPage,previousPage,nextPage,verifiedOnly,search">
         <div class="afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('DexScan pairs') }}" tabindex="0">
             <table class="afmc-table afmc-table--dense">
                 <thead>
