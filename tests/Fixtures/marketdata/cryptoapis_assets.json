@@ -1,0 +1,77 @@
+{
+    "apiVersion": "2024-12-12",
+    "requestId": "6aa6f4902f6f68835e7d0dbb",
+    "data": {
+        "limit": 50,
+        "offset": 0,
+        "total": 3,
+        "items": [
+            {
+                "latestRate": {
+                    "amount": "77349.84750075366",
+                    "calculationTimestamp": 1789326360,
+                    "unit": "USD"
+                },
+                "name": "Bitcoin",
+                "originalSymbol": "BTC",
+                "referenceId": "630629f84e66ce0983f2cd4e",
+                "slug": "btc",
+                "specificData": {
+                    "1HourPriceChangeInPercentage": "0.07964959",
+                    "1WeekPriceChangeInPercentage": "-3.171002",
+                    "24HoursPriceChangeInPercentage": "0.27744657",
+                    "24HoursTradingVolume": "13170259635.975826",
+                    "circulatingSupply": "20083903",
+                    "marketCapInUSD": "1553486834269.929",
+                    "maxSupply": "21000000",
+                    "type": "coin"
+                },
+                "symbol": "BTC"
+            },
+            {
+                "latestRate": {
+                    "amount": "2510.0925387625257",
+                    "calculationTimestamp": 1789326300,
+                    "unit": "USD"
+                },
+                "name": "Ethereum",
+                "originalSymbol": "ETH",
+                "referenceId": "630629da4e66ce0983f2cd4d",
+                "slug": "eth",
+                "specificData": {
+                    "1HourPriceChangeInPercentage": "0.23024102",
+                    "1WeekPriceChangeInPercentage": "0.69171094",
+                    "24HoursPriceChangeInPercentage": "-0.43986628",
+                    "24HoursTradingVolume": "8955228508.177263",
+                    "circulatingSupply": "122044301.968694",
+                    "marketCapInUSD": "306342491770.0994",
+                    "maxSupply": "122044301.968694",
+                    "type": "coin"
+                },
+                "symbol": "ETH"
+            },
+            {
+                "latestRate": {
+                    "amount": "0.42",
+                    "calculationTimestamp": 1789326300,
+                    "unit": "USD"
+                },
+                "name": "Ethereum Wrapped",
+                "originalSymbol": "ETH",
+                "referenceId": "630629da4e66ce0983f2cd99",
+                "slug": "eth-wrapped",
+                "specificData": {
+                    "1HourPriceChangeInPercentage": "12.5",
+                    "1WeekPriceChangeInPercentage": "44.25",
+                    "24HoursPriceChangeInPercentage": "9.75",
+                    "24HoursTradingVolume": "125000.5",
+                    "circulatingSupply": "1000000",
+                    "marketCapInUSD": "420000",
+                    "maxSupply": "1000000",
+                    "type": "coin"
+                },
+                "symbol": "ETH"
+            }
+        ]
+    }
+}

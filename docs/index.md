@@ -13,7 +13,7 @@ Ad-free cryptocurrency market rankings and coin detail pages.
 - Laravel 12 + Livewire (v4 via Filament) public UI
 - Filament 5 admin
 - **Laravel Sail** for local Docker (MySQL, Redis, Mailpit)
-- Market data via provider strategy: CoinGecko (primary) → CoinPaprika (failover); optional CMC cross-check
+- Market data via provider strategy: CoinGecko (primary) → CoinPaprika (failover); Crypto APIs supplies the 1h and 7d percentages, which CoinGecko rounds to 0.1
 - Public pages read from the database only; scheduled/queued jobs sync providers ([`docs/marketdata-sync.md`](marketdata-sync.md))
 
 ## Local runtime

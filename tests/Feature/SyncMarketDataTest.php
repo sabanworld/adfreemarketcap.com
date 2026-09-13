@@ -8,6 +8,7 @@ use App\Models\Coin;
 use App\Models\SyncRun;
 use App\Services\MarketData\MarketSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -77,6 +78,91 @@ class SyncMarketDataTest extends TestCase
         ]);
     }
 
+    public function test_crypto_apis_replaces_the_rounded_coingecko_percentages(): void
+    {
+        Http::fake([
+            'api.coingecko.com/api/v3/coins/markets*' => Http::response([
+                $this->coinGeckoCoin('bitcoin', 'btc', 'Bitcoin', 1),
+            ]),
+            'rest.cryptoapis.io/market-data/metadata/assets*' => Http::response(
+                $this->fixture('cryptoapis_assets.json'),
+            ),
+        ]);
+
+        $this->syncWithCryptoApisKey();
+
+        $coin = Coin::query()->where('slug', 'bitcoin')->sole();
+
+        $this->assertSame('0.0796', $coin->percent_change_1h);
+        $this->assertSame('-3.1710', $coin->percent_change_7d);
+        // 24h is precise enough on CoinGecko, so it stays where the ranking comes from.
+        $this->assertSame('2.2000', $coin->percent_change_24h);
+    }
+
+    public function test_a_crypto_apis_outage_keeps_the_coingecko_percentages(): void
+    {
+        Http::fake([
+            'api.coingecko.com/api/v3/coins/markets*' => Http::response([
+                $this->coinGeckoCoin('bitcoin', 'btc', 'Bitcoin', 1),
+            ]),
+            'rest.cryptoapis.io/*' => Http::response(['error' => 'down'], 500),
+        ]);
+
+        $run = $this->syncWithCryptoApisKey();
+
+        $coin = Coin::query()->where('slug', 'bitcoin')->sole();
+
+        $this->assertSame(SyncRun::STATUS_SUCCEEDED, $run->status);
+        $this->assertSame('0.1000', $coin->percent_change_1h);
+        $this->assertSame('-1.1000', $coin->percent_change_7d);
+    }
+
+    public function test_a_ticker_two_coins_share_keeps_the_coingecko_percentages(): void
+    {
+        Http::fake([
+            'api.coingecko.com/api/v3/coins/markets*' => Http::response([
+                $this->coinGeckoCoin('bitcoin', 'btc', 'Bitcoin', 1),
+                $this->coinGeckoCoin('bitcoin-clone', 'btc', 'Bitcoin Clone', 2),
+                // Crypto APIs lists this ticker twice, so it cannot resolve either.
+                $this->coinGeckoCoin('ethereum', 'eth', 'Ethereum', 3),
+            ]),
+            'rest.cryptoapis.io/market-data/metadata/assets*' => Http::response(
+                $this->fixture('cryptoapis_assets.json'),
+            ),
+        ]);
+
+        $this->syncWithCryptoApisKey();
+
+        foreach (['bitcoin', 'bitcoin-clone', 'ethereum'] as $slug) {
+            $coin = Coin::query()->where('slug', $slug)->sole();
+
+            $this->assertSame('0.1000', $coin->percent_change_1h, "Expected [{$slug}] to keep the CoinGecko value.");
+            $this->assertSame('-1.1000', $coin->percent_change_7d, "Expected [{$slug}] to keep the CoinGecko value.");
+        }
+    }
+
+    public function test_crypto_apis_is_not_called_without_an_api_key(): void
+    {
+        Http::fake([
+            'api.coingecko.com/api/v3/coins/markets*' => Http::response([
+                $this->coinGeckoCoin('bitcoin', 'btc', 'Bitcoin', 1),
+            ]),
+        ]);
+
+        config([
+            'marketdata.primary' => 'coingecko',
+            'marketdata.failover' => 'coinpaprika',
+            'marketdata.sync.markets_pages' => 1,
+            'marketdata.sync.per_page' => 100,
+            'marketdata.cryptoapis.api_key' => '',
+        ]);
+
+        app(MarketSyncService::class)->syncMarkets();
+
+        Http::assertNotSent(fn (Request $request): bool => str_contains($request->url(), 'cryptoapis.io'));
+        $this->assertSame('0.1000', Coin::query()->where('slug', 'bitcoin')->sole()->percent_change_1h);
+    }
+
     public function test_failover_to_coinpaprika_when_coingecko_fails(): void
     {
         Http::fake([
@@ -117,5 +203,52 @@ class SyncMarketDataTest extends TestCase
             'last_provider' => 'coinpaprika',
         ]);
         $this->assertTrue(Coin::query()->where('symbol', 'BTC')->exists());
+    }
+
+    private function syncWithCryptoApisKey(): SyncRun
+    {
+        config([
+            'marketdata.primary' => 'coingecko',
+            'marketdata.failover' => 'coinpaprika',
+            'marketdata.sync.markets_pages' => 1,
+            'marketdata.sync.per_page' => 100,
+            'marketdata.cryptoapis.api_key' => 'testing-crypto-apis-key',
+        ]);
+
+        return app(MarketSyncService::class)->syncMarkets();
+    }
+
+    /**
+     * A CoinGecko markets row, with the 1h and 7d percentages rounded to 0.1 the
+     * way that endpoint reports them.
+     *
+     * @return array<string, mixed>
+     */
+    private function coinGeckoCoin(string $id, string $symbol, string $name, int $rank): array
+    {
+        return [
+            'id' => $id,
+            'symbol' => $symbol,
+            'name' => $name,
+            'current_price' => 50000.12,
+            'market_cap' => 1_000_000_000,
+            'market_cap_rank' => $rank,
+            'total_volume' => 25_000_000,
+            'circulating_supply' => 19_000_000,
+            'price_change_percentage_1h_in_currency' => 0.1,
+            'price_change_percentage_24h_in_currency' => 2.2,
+            'price_change_percentage_7d_in_currency' => -1.1,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function fixture(string $name): array
+    {
+        $decoded = json_decode((string) file_get_contents(base_path('tests/Fixtures/marketdata/' . $name)), true);
+        $this->assertIsArray($decoded);
+
+        return $decoded;
     }
 }

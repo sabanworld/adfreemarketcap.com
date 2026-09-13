@@ -370,7 +370,8 @@
 .afmc-currency__quick-item.is-active {
   border-color: var(--ink-900);
   background: var(--ink-900);
-  color: var(--text-inverse);
+  /* paper-0, not text-inverse: ink-900 and text-inverse both invert to cream in dark mode. */
+  color: var(--paper-0);
 }
 
 .afmc-currency__empty {
@@ -1472,7 +1473,7 @@
 
 .afmc-pagination__links [aria-current="page"] {
   background: var(--ink-900);
-  color: var(--text-inverse);
+  color: var(--paper-0);
   border-color: var(--ink-900);
 }
 
@@ -2584,7 +2585,8 @@ button.afmc-tag:hover:not(.is-active) {
 .afmc-tag.is-active {
   background: var(--ink-900);
   border-color: var(--ink-900);
-  color: var(--text-inverse);
+  /* paper-0, not text-inverse: ink-900 and text-inverse both invert to cream in dark mode. */
+  color: var(--paper-0);
 }
 
 .afmc-altcha {

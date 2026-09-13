@@ -46,6 +46,25 @@ return [
         'api_key' => env('COINMARKETCAP_API_KEY'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Crypto APIs (percent change precision)
+    |--------------------------------------------------------------------------
+    |
+    | CoinGecko rounds the 1h and 7d percentages on /coins/markets to 0.1, so a
+    | quiet hour renders as 0.00%. Crypto APIs serves CoinMarketCap figures at
+    | full precision, and only those two columns are taken from it. Leave the
+    | key empty to keep the CoinGecko values.
+    |
+    */
+
+    'cryptoapis' => [
+        'base_url' => env('CRYPTO_APIS_IO_BASE_URL', 'https://rest.cryptoapis.io'),
+        'api_key' => env('CRYPTO_APIS_IO_KEY'),
+        'per_page' => (int) env('CRYPTO_APIS_IO_PER_PAGE', 50),
+        'max_pages' => (int) env('CRYPTO_APIS_IO_MAX_PAGES', 5),
+    ],
+
     'geckoterminal' => [
         'base_url' => env('GECKOTERMINAL_BASE_URL', 'https://api.geckoterminal.com/api/v2'),
         'api_key' => env('GECKOTERMINAL_API_KEY', env('COINGECKO_API_KEY')),

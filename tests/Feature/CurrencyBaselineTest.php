@@ -21,11 +21,6 @@ class CurrencyBaselineTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * @var list<array{0: int, 1: float}>
-     */
-    private const CHART = [[1_757_000_000_000, 60000.0], [1_757_003_600_000, 70000.0], [1_757_007_200_000, 50000.0]];
-
-    /**
      * @var list<float>
      */
     private const SPARKLINE = [60000.0, 70000.0, 50000.0];
@@ -45,7 +40,7 @@ class CurrencyBaselineTest extends TestCase
         $display = $this->displayIn('btc');
 
         $this->assertTrue($display->usesBaselineHistory());
-        $this->assertSame([1.0, 1.0, 1.0], array_column($display->chart(self::CHART), 1));
+        $this->assertSame([1.0, 1.0, 1.0], array_column($display->chart($this->chart()), 1));
         $this->assertSame([1.0, 1.0, 1.0], $display->sparkline(self::SPARKLINE));
         $this->assertSame(0.0, $display->change(5.0));
         $this->assertSame(0.0, $display->change(-10.0, '7d'));
@@ -74,7 +69,7 @@ class CurrencyBaselineTest extends TestCase
         $this->assertEqualsWithDelta(-4.7619, $display->change(0.0), 0.0001);
 
         // Half the dollar price at the same timestamp is half a bitcoin.
-        $halved = array_map(static fn (array $point): array => [$point[0], $point[1] / 2], self::CHART);
+        $halved = array_map(static fn (array $point): array => [$point[0], $point[1] / 2], $this->chart());
         $this->assertSame([0.5, 0.5, 0.5], array_column($display->chart($halved), 1));
     }
 
@@ -88,7 +83,7 @@ class CurrencyBaselineTest extends TestCase
         $this->assertFalse($display->usesBaselineHistory());
         $this->assertNull($display->baselineCode());
         $this->assertSame(10.0, $display->change(10.0));
-        $this->assertEqualsWithDelta(60000 * (66000 / 77000), $display->chart(self::CHART)[0][1], 0.0001);
+        $this->assertEqualsWithDelta(60000 * (66000 / 77000), $display->chart($this->chart())[0][1], 0.0001);
     }
 
     public function test_missing_baseline_data_falls_back_to_the_current_rate(): void
@@ -99,7 +94,7 @@ class CurrencyBaselineTest extends TestCase
 
         $this->assertFalse($display->usesBaselineHistory());
         $this->assertSame(10.0, $display->change(10.0));
-        $this->assertCount(3, $display->chart(self::CHART));
+        $this->assertCount(3, $display->chart($this->chart()));
     }
 
     public function test_coin_page_shows_a_flat_series_without_the_conversion_caveat(): void
@@ -115,10 +110,28 @@ class CurrencyBaselineTest extends TestCase
             ->assertSee('0.00%')
             ->assertDontSee('at the current');
 
-        preg_match('/data-values=.([^\'"]+)./', $response->getContent(), $matches);
+        // Chart.js is handed the series inline, as values: JSON.parse('[…]').
+        preg_match(
+            '/values:\s*JSON\.parse\(\'(\[.*?\])\'\)/',
+            html_entity_decode((string) $response->getContent()),
+            $matches,
+        );
         $values = json_decode($matches[1] ?? '[]', true);
 
         $this->assertSame([1, 1, 1], $values);
+    }
+
+    /**
+     * Three hourly points. The coin page plots the last seven days only, so the
+     * fixture moves with the clock instead of sitting on fixed timestamps.
+     *
+     * @return list<array{0: int, 1: float}>
+     */
+    private function chart(): array
+    {
+        $start = (int) now()->subDay()->getTimestampMs();
+
+        return [[$start, 60000.0], [$start + 3_600_000, 70000.0], [$start + 7_200_000, 50000.0]];
     }
 
     private function displayIn(string $code): MarketDisplayService
@@ -163,7 +176,7 @@ class CurrencyBaselineTest extends TestCase
             'percent_change_7d' => -10,
             'market_cap' => 1_000_000_000_000,
             'volume_24h' => 20_000_000,
-            'chart_7d' => self::CHART,
+            'chart_7d' => $this->chart(),
             'sparkline_7d' => self::SPARKLINE,
             'detail_synced_at' => now(),
             'tickers_synced_at' => now(),

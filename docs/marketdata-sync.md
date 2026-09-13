@@ -63,6 +63,23 @@ If CoinGecko returns 404 for a coin id (delisted or remapped), `UnknownProviderC
 
 The public markets table only lists coins with a non-null `rank`. Unranked rows are excluded because MySQL sorts `NULL` first under `ORDER BY rank ASC`, which pushed demoted coins above Bitcoin.
 
+## Percent change precision (1h and 7d)
+
+CoinGecko rounds `price_change_percentage_1h_in_currency` and the 7d field on `/coins/markets` to 0.1. A quiet hour therefore arrives as `0.0` and the table reads `0.00%` for most coins, which is not what CoinMarketCap or the CoinGecko site shows. The 24h figure keeps five decimals, so only 1h and 7d need help.
+
+`App\Services\MarketData\CryptoApisProvider` reads those two percentages from Crypto APIs (`GET /market-data/metadata/assets`, CoinMarketCap-sourced, ranked by market cap) and `MarketSyncService` writes them over the CoinGecko values. Everything else on the row, including rank, price, market cap, volume, 24h, and the sparkline, stays with the provider that owns the ranking.
+
+Rules that keep the overlay honest:
+
+- A ticker that more than one coin in the ranking uses, or that Crypto APIs lists twice, is skipped for every coin involved. A shared symbol never lands on the wrong coin.
+- Rows written by the failover provider are left alone, because CoinPaprika already reports both percentages at usable precision.
+- A Crypto APIs error is reported and the run continues on the CoinGecko values. The sync never fails because of this call.
+- An empty `CRYPTO_APIS_IO_KEY` disables the call entirely.
+
+- A coin Crypto APIs does not list, or one that sits past the requested window, keeps the CoinGecko value. Tokenized funds and several newer listings fall in this group, and a page that comes back short can end the window early.
+
+Settings live under `marketdata.cryptoapis` in [`config/marketdata.php`](../config/marketdata.php): `CRYPTO_APIS_IO_KEY`, `CRYPTO_APIS_IO_PER_PAGE` (50, the endpoint maximum), and `CRYPTO_APIS_IO_MAX_PAGES` (5). The window runs one page deeper than the ranking being synced, because the two market-cap orders drift apart: at the default 200 coins, CoinGecko's top 200 reaches to about index 240 on the Crypto APIs list. That costs 5 calls per markets sync and no CoinGecko credits.
+
 ## Coin detail and multi-range charts
 
 Coin descriptions still come from `SyncCoinDetail` (visit + `SyncStaleCoinDetails` backfill).

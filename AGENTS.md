@@ -6,22 +6,26 @@
 
 ## Laravel Sail (required local runtime)
 
-- **Use Sail for PHP/Artisan/Composer/tests in this repo.** Prefer `./vendor/bin/sail …` (or the `sail` shell alias) over host `php` / `composer` once containers are up.
-- Start stack: `./vendor/bin/sail up -d`
-- Common commands:
-  - `./vendor/bin/sail artisan …`
-  - `./vendor/bin/sail composer …`
-  - `./vendor/bin/sail test` (or `./vendor/bin/sail artisan test`)
-  - `./vendor/bin/sail yarn …` / `./vendor/bin/sail yarn build`
-  - `./vendor/bin/sail artisan marketdata:sync`
-  - `./vendor/bin/sail artisan marketdata:sync --only-dex` (DexScan / GeckoTerminal)
-  - `./vendor/bin/sail artisan marketdata:sync --only-insights` (Bitcoin treasury + market cycles)
-  - `./vendor/bin/sail artisan marketdata:sync --only-tickers` (exchange markets for hot coins)
-  - `./vendor/bin/sail artisan marketdata:sync --only-charts` (multi-range charts for hot majors)
-  - `./vendor/bin/sail artisan horizon` (if not started via Sail Supervisor)
-  - `./vendor/bin/sail artisan schedule:work` (local alternative to container cron)
-- Do **not** assume host PHP/MySQL matches CI/Sail (Sail uses the project’s Docker PHP image).
-- Frontend package manager remains **Yarn** (on the host or via Sail’s Node), not npm.
+**You are already inside the Sail container.** Your shell runs in the `laravel.test` app container as `root`, with the repository mounted at `/var/www/html`. Check it yourself if you are unsure: `/.dockerenv` exists, the hostname is a container id, and `which php composer yarn` resolves to `/usr/bin/…`.
+
+- **Run PHP/Artisan/Composer/Node commands directly. Never prefix them with `./vendor/bin/sail`.** There is no `docker` binary in this container, so the `sail` wrapper cannot start or shell into anything from here. It fails with a Docker error instead of running your command.
+- `./vendor/bin/sail …` is for the **user on the host**. Write it in docs and in instructions you hand back to the user, but do not run it yourself.
+- Container commands to run as-is:
+  - `php artisan …`
+  - `composer …`
+  - `php artisan test`
+  - `yarn …` / `yarn build`
+  - `php artisan marketdata:sync`
+  - `php artisan marketdata:sync --only-dex` (DexScan / GeckoTerminal)
+  - `php artisan marketdata:sync --only-insights` (Bitcoin treasury + market cycles)
+  - `php artisan marketdata:sync --only-tickers` (exchange markets for hot coins)
+  - `php artisan marketdata:sync --only-charts` (multi-range charts for hot majors)
+  - `php artisan horizon` (if not started via Sail Supervisor)
+  - `php artisan schedule:work` (local alternative to container cron)
+- Reach sibling services by their **compose service name**, not `localhost` from the host's point of view: `mysql`, `redis`, `meilisearch`, `mailpit`. Host port forwards (`FORWARD_*`) do not apply inside the network.
+- Starting or stopping the stack (`sail up -d`, `sail down`) is the user's job on the host. If a service looks down, say so and ask, rather than trying to start Docker from inside.
+- The container's PHP is the project's PHP, so it matches CI. Do **not** reason about a host PHP/MySQL version.
+- Frontend package manager remains **Yarn**, not npm. Running it in here is what keeps optional native packages (Rollup, esbuild) matched to the Linux image.
 
 ## Git
 
@@ -34,7 +38,7 @@
 - **Append-only is allowed:** you may append new `KEY=value` lines to `.env` (for example `printf '\nKEY=value\n' >> .env`) when a setup step needs local values that are already documented in `.env.example`. Do not modify, reorder, or delete existing lines.
 - Before appending, document the key in `.env.example` and wire it through a `config/` file when it is application config. Prefer appending only keys the user has not necessarily set yet (ports, Sail forwards, new feature flags). Never append secrets the user must supply themselves unless they explicitly asked you to write a specific value.
 - **Infer configuration from checked-in sources instead of reading `.env`:** `config/*.php`, `.env.example`, and `phpunit.xml`.
-- **PHPUnit / feature tests:** run `./vendor/bin/sail artisan test` (or `./vendor/bin/phpunit`). PHPUnit reads `phpunit.xml`, which forces `DB_DATABASE=testing`.
+- **PHPUnit / feature tests:** run `php artisan test` (or `./vendor/bin/phpunit`) from inside the container. PHPUnit reads `phpunit.xml`, which forces `DB_DATABASE=testing`.
   - **Do not pass `--env=testing` to `artisan test`.** Collision only clears inherited `.env` vars when `--env` is omitted; with `--env=testing`, `RefreshDatabase` can migrate/wipe the local Sail app database.
   - Tests must use the separate MySQL schema `testing` (created by `docker/mysql/create-testing-database.sh`). `Tests\TestCase` refuses to run if the live connection is not `testing`.
   - `phpunit.xml` DB-related `<env … force="true">` entries are required so PHPUnit overrides shell/`.env` values when using `./vendor/bin/phpunit` directly.
@@ -45,10 +49,10 @@
 - **Always run PHPUnit via Artisan (without `--env=testing`) or PHPUnit directly:**
 
   ```bash
-  ./vendor/bin/sail artisan test
+  php artisan test
   ```
 
-  Append paths, filters, or groups as needed (for example `./vendor/bin/sail artisan test tests/Feature/SyncMarketDataTest.php`).
+  Append paths, filters, or groups as needed (for example `php artisan test tests/Feature/SyncMarketDataTest.php`). The host equivalent for the user is `./vendor/bin/sail artisan test`.
 
 - Do not rely on a default `.env` for test runs; `phpunit.xml` + `Tests\TestCase` keep the suite on the `testing` database.
 
@@ -98,9 +102,9 @@ Everything a human reads should sound like a person wrote it: product copy, lega
 
 ## JavaScript package manager (Yarn only)
 
-- **Use Yarn exclusively** for installing dependencies, adding/removing packages, and running package scripts. Prefer **`./vendor/bin/sail yarn …`** so optional native packages (Rollup, esbuild) match the Sail Linux image.
+- **Use Yarn exclusively** for installing dependencies, adding/removing packages, and running package scripts. Run **`yarn …`** inside this container (the host equivalent is `./vendor/bin/sail yarn …`) so optional native packages (Rollup, esbuild) match the Sail Linux image.
 - **Do not use npm** (`npm install`, `npm ci`, `npm run`, `npx`, …) or other Node package managers (pnpm, bun) in this repository.
-- Prefer Yarn equivalents when adapting docs or examples that show npm commands (for example `./vendor/bin/sail yarn add <pkg>` instead of `npm install <pkg>`).
+- Prefer Yarn equivalents when adapting docs or examples that show npm commands (for example `yarn add <pkg>` instead of `npm install <pkg>`).
 
 ## Laravel and project conventions
 
@@ -114,7 +118,7 @@ Everything a human reads should sound like a person wrote it: product copy, lega
   - **Type:** Archivo (display), Public Sans (body), JetBrains Mono (every figure, tabular-nums).
   - **Fonts are self-hosted and stay that way.** `resources/css/design-system/fonts.css` imports the fontsource packages from `node_modules`; no font, style, or image may load from a third-party CDN. A remote request would send visitor IPs to another party and would contradict the privacy and cookie policies.
  - **The visitor counter is the only permitted third-party request.** `<x-afmc.analytics />` in `resources/views/layouts/app.blade.php` loads Simple Analytics from `config/analytics.php`, gated on `ANALYTICS_ENABLED` (on by default only when `APP_ENV=production`). Both policy pages say it is the only company a visitor's browser contacts, so adding a second tag, embed, or CDN asset means rewriting those pages in the same change. Do not add a tag manager or an analytics tool that writes to the device.
-  - **Icons:** `<x-afmc.icon name="search" />` (`App\Support\Icons` + `resources/fonts/material-symbols.json`). Never type a Material Symbols ligature into a view, because the shipped font is subset to the icons in that manifest. Adding an icon means adding the name to the manifest and running `./vendor/bin/sail yarn icons:build`.
+  - **Icons:** `<x-afmc.icon name="search" />` (`App\Support\Icons` + `resources/fonts/material-symbols.json`). Never type a Material Symbols ligature into a view, because the shipped font is subset to the icons in that manifest. Adding an icon means adding the name to the manifest and running `yarn icons:build`.
   - When changing Markets or Coin Detail layout, match `ui_kits/web/MarketsScreen.jsx` / `CoinDetailScreen.jsx` and keep pledge + picks disclosure copy honest (no ad-slot styling).
   - Prefer extending `afmc-*` classes over one-off Tailwind slate/indigo utility stacks on public pages.
 
