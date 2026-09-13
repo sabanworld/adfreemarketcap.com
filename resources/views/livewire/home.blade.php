@@ -68,8 +68,6 @@
         </div>
     @endif
 
-    <livewire:market-kpi-strip />
-
     <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-3);flex-wrap:wrap">
         <div class="afmc-tabs" role="tablist">
             <button type="button" class="afmc-tabs__item {{ $tab === 'all' ? 'is-active' : '' }}" wire:click="setTab('all')">
@@ -127,7 +125,7 @@
                         <th class="is-right {{ $sort === 'volume_24h' ? 'is-sorted' : '' }}">
                             <button type="button" wire:click="sortBy('volume_24h')">{{ __('Volume (24h)') }}</button>
                         </th>
-                        <th class="is-right hide-narrow">{{ __('Last 7 days') }}</th>
+                        <th class="is-right hide-narrow"><span>{{ __('Last 7 days') }}</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -192,10 +190,13 @@
     </div>
 
     <div class="afmc-callout afmc-callout--risk" style="margin-top:var(--space-4)">
-        <p class="afmc-callout__title">{{ __('Most of the long tail is worthless') }}</p>
-        <p class="afmc-callout__body">
-            {{ __('Of the assets we track, many have thin books, short history, or unverified contracts. Assume a total loss is possible, and never size a position on a 24h percentage.') }}
-        </p>
+        <x-afmc.icon name="report" filled class="afmc-callout__icon" />
+        <div class="afmc-callout__content">
+            <p class="afmc-callout__title">{{ __('Most of the long tail is worthless') }}</p>
+            <p class="afmc-callout__body">
+                {{ __('Of the assets we track, many have thin books, short history, or unverified contracts. Assume a total loss is possible, and never size a position on a 24h percentage.') }}
+            </p>
+        </div>
     </div>
 
     <section id="pledge" class="afmc-pledge" style="margin-top:var(--space-10)">
@@ -247,13 +248,13 @@
                 >
                     <div class="afmc-pick__head">
                         <span class="afmc-pick__kind">{{ __($pick['kind']) }}</span>
-                        <span class="afmc-pick__badge{{ $isPartner ? ' afmc-pick__badge--warn' : '' }}">{{ $isPartner ? __('Creator is a partner') : __('We use this') }}</span>
+                        <span class="afmc-pick__badge{{ $isPartner ? ' afmc-pick__badge--interest' : '' }}">{{ $isPartner ? __('Creator is a partner') : __('We use this') }}</span>
                     </div>
                     <h3 class="afmc-pick__title">{{ $pick['name'] }}</h3>
                     <p class="afmc-pick__note">{{ __($pick['note']) }}</p>
                     <div class="afmc-pick__foot">
                         <span>{{ parse_url($pick['url'], PHP_URL_HOST) }}<span class="afmc-visually-hidden">{{ __(', opens in a new tab') }}</span></span>
-                        <x-afmc.icon name="arrow_outward" size="16px" />
+                        <x-afmc.icon name="arrow_outward" size="14px" />
                     </div>
                 </a>
             @endforeach

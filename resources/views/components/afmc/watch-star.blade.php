@@ -23,6 +23,7 @@
         name="star"
         :filled="$watched"
         size="18px"
-        :color="$watched ? 'var(--amber-500)' : 'var(--text-faint)'"
+        {{-- amber-600, not 500: an interactive glyph needs 3:1 against paper. --}}
+        :color="$watched ? 'var(--amber-600)' : 'var(--text-faint)'"
     />
 </button>

@@ -93,18 +93,35 @@
   clip: rect(0 0 0 0);
 }
 
+/* Opaque on purpose. A backdrop-filter here would make the header a containing block for
+   every position:fixed descendant, so the currency sheet would land inside the 60px bar
+   instead of covering the viewport. */
 .afmc-header {
   display: flex;
   align-items: center;
-  gap: var(--space-4) var(--space-6);
+  flex-wrap: wrap;
+  gap: var(--space-3);
   min-height: var(--layout-header);
   padding: 0 var(--space-5);
-  background: color-mix(in srgb, var(--surface-card) 88%, transparent);
+  background: var(--surface-card);
   border-bottom: 1px solid var(--border-card);
   position: sticky;
   top: 0;
   z-index: 30;
-  backdrop-filter: var(--blur-sticky);
+}
+
+/* The give-way order is fixed: brand, nav and actions never shrink, the spacer absorbs
+   slack, and the search field is the only item allowed to give ground. */
+.afmc-header > .afmc-brand,
+.afmc-header .afmc-nav,
+.afmc-header .afmc-header__right,
+.afmc-header [data-afmc-searchbtn] {
+  flex: none;
+}
+
+.afmc-header__spacer {
+  flex: 1 1 var(--space-4);
+  min-width: var(--space-4);
 }
 
 .afmc-header__search-row {
@@ -128,14 +145,16 @@
   margin-bottom: var(--space-3);
 }
 
+/* base.css drops this to one column under 1000px, before either column gets too narrow. */
 .afmc-grid--detail {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-4);
   align-items: start;
 }
 
+/* Fixed column count so the tiles never break into orphans of different widths. */
 .afmc-grid--stats {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .afmc-grid--picks {
@@ -146,13 +165,17 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  flex: 1;
-  min-width: 0;
+  margin-left: var(--space-3);
 }
 
 .afmc-nav__item {
   all: unset;
+  box-sizing: border-box;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
   padding: 7px 10px;
   border-radius: var(--radius-sm);
   font: var(--weight-semibold) var(--text-sm) / 1 var(--font-sans);
@@ -174,9 +197,22 @@
   background: var(--surface-sunken);
 }
 
+/* No "disabled grey": any value light enough to read as inactive drops below the contrast
+   floor. The text stays readable and a Soon marker carries the state instead. */
 .afmc-nav__item.is-disabled {
-  opacity: 0.45;
+  color: var(--text-faint);
   cursor: not-allowed;
+}
+
+.afmc-soon {
+  font: var(--weight-semibold) 9px / 1 var(--font-sans);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-brand);
+  background: var(--amber-50);
+  border: 1px solid var(--amber-300);
+  border-radius: var(--radius-xs);
+  padding: 2px 4px;
 }
 
 .afmc-header__right {
@@ -214,19 +250,134 @@
   white-space: nowrap;
 }
 
+/* Row variant: on a phone a 32px mono chip between a logo and a theme toggle is not a
+   usable control, so the picker moves into the navigation drawer as a full-width row. */
+.afmc-currency--row {
+  display: block;
+  width: 100%;
+}
+
+.afmc-currency__row-trigger {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  font: var(--weight-medium) var(--text-base) / 1.2 var(--font-sans);
+  color: var(--text-body);
+}
+
+.afmc-currency__row-trigger:hover {
+  background: var(--surface-hover);
+}
+
+.afmc-currency__row-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.afmc-currency__row-value {
+  font: var(--weight-semibold) var(--text-sm) / 1 var(--font-mono);
+  color: var(--text-strong);
+}
+
 .afmc-currency__popover {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
   z-index: 60;
-  width: 210px;
-  max-height: 340px;
-  overflow-y: auto;
+  width: 264px;
+  overflow: hidden;
   background: var(--surface-card);
   border: 1px solid var(--border-card);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-popover);
+}
+
+.afmc-currency__popover .afmc-currency__head {
+  display: grid;
+  gap: var(--space-2);
   padding: var(--space-2);
+  border-bottom: 1px solid var(--border-divider);
+}
+
+.afmc-currency__popover .afmc-currency__scroll {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+
+/* The filter is what makes a 16-currency list usable; copy this for any long list. */
+.afmc-currency__filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 7px 10px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+}
+
+.afmc-currency__filter input {
+  all: unset;
+  flex: 1;
+  min-width: 0;
+  font: var(--type-body-sm);
+  color: var(--text-strong);
+}
+
+.afmc-currency__filter input::placeholder {
+  color: var(--text-faint);
+}
+
+.afmc-currency__filter-clear {
+  all: unset;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: var(--text-faint);
+}
+
+.afmc-currency__quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.afmc-currency__quick-item {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-card);
+  background: var(--surface-card);
+  color: var(--text-body);
+  font: var(--weight-semibold) var(--text-sm) / 1 var(--font-mono);
+}
+
+.afmc-currency__quick-item.is-active {
+  border-color: var(--ink-900);
+  background: var(--ink-900);
+  color: var(--text-inverse);
+}
+
+.afmc-currency__empty {
+  margin: 0;
+  padding: var(--space-4) var(--space-3);
+  font: var(--type-body-sm);
+  color: var(--text-faint);
 }
 
 .afmc-currency__scrim {
@@ -242,29 +393,45 @@
   right: 0;
   bottom: 0;
   z-index: 89;
-  max-height: 85dvh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  max-height: 84dvh;
   background: var(--surface-card);
   border-top: 1px solid var(--border-card);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   box-shadow: var(--shadow-lg);
-  padding: 0 var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+}
+
+.afmc-currency__sheet .afmc-currency__head {
+  flex: none;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-divider);
+}
+
+.afmc-currency__sheet .afmc-currency__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--space-3) var(--space-3) calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+}
+
+.afmc-currency__sheet .afmc-currency__filter {
+  padding: 10px 12px;
+}
+
+.afmc-currency__sheet .afmc-currency__quick-item {
+  min-height: 44px;
 }
 
 .afmc-currency__sheet-head {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3) 0;
-  margin-bottom: var(--space-2);
-  background: var(--surface-card);
-  border-bottom: 1px solid var(--border-divider);
 }
 
 .afmc-currency__sheet-title {
@@ -272,10 +439,14 @@
   color: var(--text-strong);
 }
 
+.afmc-currency__groups {
+  display: grid;
+  gap: var(--space-4);
+}
+
 .afmc-currency__group {
   display: grid;
   gap: 2px;
-  margin-bottom: var(--space-3);
 }
 
 .afmc-currency__group-label {
@@ -283,24 +454,12 @@
   letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   color: var(--text-faint);
-  padding: 0 var(--space-2) var(--space-1);
+  padding: 0 var(--space-3) var(--space-1);
 }
 
 .afmc-currency__options {
   display: grid;
   gap: 2px;
-}
-
-/* One column, so a long name like South Korean Won is never cut off. */
-.afmc-currency__options--sheet {
-  grid-template-columns: 1fr;
-  gap: 4px;
-}
-
-.afmc-currency__options--sheet .afmc-currency__option {
-  min-height: 48px;
-  padding: 0 var(--space-3);
-  font-size: var(--text-base);
 }
 
 .afmc-currency__option {
@@ -309,11 +468,11 @@
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  min-height: 32px;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-xs);
-  font: var(--weight-regular) var(--text-sm) / 1.2 var(--font-sans);
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 34px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
   color: var(--text-body);
 }
 
@@ -323,23 +482,33 @@
 
 .afmc-currency__option.is-active {
   background: var(--surface-active);
-  font-weight: var(--weight-semibold);
-  color: var(--text-strong);
 }
 
 .afmc-currency__option-code {
-  flex: 0 0 auto;
-  min-width: 3.4em;
-  font: var(--weight-semibold) var(--text-xs) / 1 var(--font-mono);
+  flex: none;
+  width: 44px;
+  font: var(--weight-semibold) var(--text-sm) / 1.2 var(--font-mono);
   color: var(--text-strong);
 }
 
+/* The row shows code and full name, so a picker never asks anyone to recognise "KRW". */
 .afmc-currency__option-label {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font: var(--weight-regular) var(--text-sm) / 1.3 var(--font-sans);
+  color: var(--text-muted);
+}
+
+.afmc-currency__sheet .afmc-currency__option {
+  min-height: 52px;
+}
+
+.afmc-currency__sheet .afmc-currency__option-code {
+  width: 54px;
+  font-size: var(--text-base);
 }
 
 .afmc-ticker {
@@ -350,6 +519,12 @@
   overflow-x: auto;
   background: var(--surface-page);
   border-bottom: 1px solid var(--border-divider);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.afmc-ticker::-webkit-scrollbar {
+  display: none;
 }
 
 .afmc-ticker__item {
@@ -669,6 +844,12 @@
   flex: 1 1 8rem;
 }
 
+/* A block-level SVG ignores the cell's text-align, so in a right-aligned column it would
+   drift left and break the vertical line the numbers above it sit on. */
+.afmc-table .is-right .afmc-sparkline {
+  margin-left: auto;
+}
+
 .afmc-feature__stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr));
@@ -736,8 +917,11 @@
   font-size: var(--text-base);
 }
 
+/* flex, not inline-flex: an inline-flex root sizes to max-content, so a narrow cell's
+   overflow:hidden amputates the trailing element, the ticker that names the asset.
+   Laid out as a block the constraint reaches the children and the name ellipsises instead. */
 .afmc-identity {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
@@ -752,6 +936,8 @@
   align-items: baseline;
   gap: var(--space-2);
   min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .afmc-identity:hover {
@@ -788,6 +974,8 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 .afmc-identity__name--lg {
@@ -843,6 +1031,140 @@
   word-break: break-word;
 }
 
+/* Five or more values laid out as tiles break into orphans of three different widths, so
+   past four the boxes are dropped for hairline-separated rows on one right-aligned edge. */
+.afmc-statlist {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.afmc-statlist > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 44px;
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border-divider);
+}
+
+.afmc-statlist > div:first-child {
+  border-top: none;
+}
+
+.afmc-statlist dt {
+  font: var(--type-label);
+  color: var(--text-muted);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.afmc-statlist dd {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  text-align: right;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.afmc-statlist__note {
+  font: var(--type-body-sm);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+.afmc-statlist__value {
+  font: var(--type-num);
+  font-size: var(--text-md);
+  color: var(--text-strong);
+}
+
+/* Four values in a card: a fixed 2 x 2 grid divides evenly, and the cells carry no fill,
+   because a paper-2 box inside a paper-1 card is a layer with nothing to say. */
+.afmc-statpairs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+}
+
+.afmc-statpairs > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-3);
+}
+
+.afmc-statpairs > div:nth-child(n + 3) {
+  border-top: 1px solid var(--border-divider);
+}
+
+.afmc-statpairs > div:nth-child(even) {
+  border-left: 1px solid var(--border-divider);
+}
+
+.afmc-statpairs dt {
+  font: var(--type-eyebrow);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.afmc-statpairs dd {
+  margin: 0;
+  font: var(--type-num);
+  font-size: var(--text-md);
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Reaches the card edges so the hairlines read as a grid, not as a floating box. */
+.afmc-statpairs--bleed {
+  margin: calc(-1 * var(--space-2)) calc(-1 * var(--space-4)) var(--space-4);
+}
+
+/* Short comparable values: space-between would strand three 6-character percentages
+   hundreds of pixels from their labels, so they go in an n-up column group instead. */
+.afmc-statcols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.afmc-statcols > div {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: center;
+  text-align: center;
+  padding: var(--space-1) var(--space-2);
+}
+
+.afmc-statcols > div + div {
+  border-left: 1px solid var(--border-divider);
+}
+
+.afmc-statcols dt {
+  font: var(--type-eyebrow);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.afmc-statcols dd {
+  margin: 0;
+}
+
 .afmc-kpi-row {
   display: flex;
   flex-wrap: wrap;
@@ -863,14 +1185,29 @@
 .afmc-tabs {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  flex-wrap: wrap;
+  gap: var(--space-4);
+  max-width: 100%;
+  flex: 0 1 auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-bottom: 1px solid var(--border-divider);
+  scrollbar-width: none;
+}
+
+.afmc-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .afmc-tabs__item {
   all: unset;
   cursor: pointer;
-  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  white-space: nowrap;
+  padding: 9px 0 11px;
+  margin-bottom: -1px;
   font: var(--weight-semibold) var(--text-sm) / 1 var(--font-sans);
   color: var(--text-muted);
   border-bottom: 2px solid transparent;
@@ -886,14 +1223,14 @@
   font: var(--type-num);
   font-size: var(--text-2xs);
   color: var(--text-faint);
-  margin-left: 4px;
 }
 
 .afmc-chart-ranges {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
   flex-wrap: wrap;
+  justify-content: flex-end;
   max-width: 100%;
 }
 
@@ -901,9 +1238,14 @@
   all: unset;
   box-sizing: border-box;
   cursor: pointer;
-  padding: 6px 8px;
-  border-radius: var(--radius-sm, 6px);
-  font: var(--weight-semibold) var(--text-2xs) / 1 var(--font-mono);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  min-width: 34px;
+  padding: 0 8px;
+  border-radius: var(--radius-xs);
+  font: var(--weight-semibold) var(--text-xs) / 1 var(--font-mono);
   color: var(--text-muted);
   transition: var(--transition-color);
 }
@@ -916,12 +1258,16 @@
 .afmc-chart-ranges__item.is-active {
   color: var(--text-strong);
   background: var(--surface-sunken);
-  box-shadow: inset 0 0 0 1px var(--border-card);
 }
 
+/* A range with no history keeps readable text and carries a hairline strikethrough,
+   because any grey light enough to read as "off" fails the contrast floor for a control. */
 .afmc-chart-ranges__item:disabled {
-  opacity: 0.35;
   cursor: not-allowed;
+  color: var(--text-faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--line-strong);
+  text-decoration-thickness: 1px;
 }
 
 .afmc-chart-frame {
@@ -1006,6 +1352,13 @@
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+/* The identity column carries the row's name, so it gets a floor. With table-layout:auto a
+   wrapping cell can be squeezed to its min-content, and overflow-wrap:anywhere makes that one
+   character per line as soon as a sibling column wants room. */
+.afmc-table .is-sticky--name {
+  min-width: 180px;
 }
 
 .afmc-table tbody tr {
@@ -1124,22 +1477,53 @@
 }
 
 .afmc-callout {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-4);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-card);
-  background: var(--surface-card);
+  background: var(--surface-sunken);
+}
+
+.afmc-callout__icon {
+  margin-top: 1px;
+  font-size: 18px;
+  color: var(--text-muted);
+}
+
+.afmc-callout__content {
+  display: grid;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 0;
 }
 
 .afmc-callout--risk {
-  background: var(--down-100);
-  border-color: color-mix(in srgb, var(--down-500) 28%, var(--border-card));
+  background: var(--surface-down-soft);
+  border-color: transparent;
 }
 
-.afmc-callout--note {
-  background: var(--info-100);
-  border-color: color-mix(in srgb, var(--info-500) 24%, var(--border-card));
+.afmc-callout--risk .afmc-callout__icon {
+  color: var(--text-down);
+}
+
+.afmc-callout--brand {
+  background: var(--surface-brand-soft);
+  border-color: var(--amber-300);
+}
+
+.afmc-callout--brand .afmc-callout__icon {
+  color: var(--text-brand);
+}
+
+.afmc-callout--warn {
+  background: var(--warn-100);
+  border-color: transparent;
+}
+
+.afmc-callout--warn .afmc-callout__icon {
+  color: var(--warn-500);
 }
 
 .afmc-callout__title {
@@ -1151,7 +1535,7 @@
 .afmc-callout__body {
   margin: 0;
   font: var(--type-body-sm);
-  color: var(--text-body);
+  color: var(--text-muted);
 }
 
 .afmc-pledge {
@@ -1241,8 +1625,8 @@
 .afmc-pick__head {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--space-2);
+  align-items: baseline;
+  gap: var(--space-3);
   flex-wrap: wrap;
   min-width: 0;
 }
@@ -1261,22 +1645,21 @@
   color: var(--text-brand);
 }
 
+/* The disclosure sits on the card as plain text, not a pill. A bordered chip next to a
+   company name reads as a sponsor label, which is the one thing this section must not
+   look like. Amber marks a commercial tie; everything else stays faint. */
 .afmc-pick__badge {
-  font: var(--type-eyebrow);
+  font: var(--weight-semibold) var(--text-2xs) / 1.4 var(--font-sans);
   letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
-  color: var(--text-muted);
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-xs);
-  padding: 2px 5px;
+  color: var(--text-faint);
+  text-align: right;
   max-width: 100%;
   overflow-wrap: anywhere;
 }
 
-.afmc-pick__badge--warn {
-  color: var(--warn-500);
-  background: var(--warn-100);
-  border-color: transparent;
+.afmc-pick__badge--interest {
+  color: var(--text-brand);
 }
 
 .afmc-pick__title {
@@ -1296,66 +1679,119 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  margin-top: var(--space-1);
   font: var(--type-body-sm);
   font-size: var(--text-xs);
   color: var(--text-faint);
 }
 
+.afmc-pick__foot .afmc-icon {
+  transition: var(--transition-transform);
+}
+
+.afmc-pick:hover .afmc-pick__foot .afmc-icon {
+  transform: translateX(2px);
+}
+
+/* The only block-level promotional unit, and it is built so it cannot be mistaken for an ad
+   slot: amber ground, the interest badge on the top line, hard numbers instead of feature
+   bullets, and the disclosure sentence beside the call to action. No accent stripe. */
 .afmc-mining {
   display: grid;
   gap: var(--space-4);
-  padding: var(--space-6);
-  background: var(--surface-sunken);
-  border: 1px solid var(--border-card);
-  border-left: 3px solid var(--amber-500);
-  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  background: var(--surface-brand-soft);
+  border: 1px solid var(--amber-300);
+  border-radius: var(--radius-md);
 }
 
 .afmc-mining__head {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
   gap: var(--space-3);
   flex-wrap: wrap;
 }
 
 .afmc-mining__eyebrow {
-  display: block;
   font: var(--type-eyebrow);
   letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
   color: var(--text-brand);
-  margin-bottom: var(--space-1);
+}
+
+.afmc-mining__badge {
+  font: var(--weight-semibold) var(--text-2xs) / 1.4 var(--font-sans);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-brand);
+  text-align: right;
+}
+
+.afmc-mining__body {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 640px;
 }
 
 .afmc-mining__title {
   margin: 0;
-  font: var(--type-h2);
+  font: var(--weight-bold) var(--text-lg) / 1.2 var(--font-display);
+  letter-spacing: var(--tracking-snug);
   color: var(--text-strong);
+  text-wrap: balance;
 }
 
 .afmc-mining__lead {
   margin: 0;
-  max-width: 60ch;
-  font: var(--type-body);
+  font: var(--type-body-sm);
   color: var(--text-body);
   text-wrap: pretty;
 }
 
 .afmc-mining__stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
-  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.afmc-mining__stat {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-3);
+  background: var(--surface-card);
+  border: 1px solid var(--amber-300);
+  border-radius: var(--radius-sm);
+}
+
+.afmc-mining__stat dt {
+  font: var(--type-eyebrow);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.afmc-mining__stat dd {
+  margin: 0;
+  font: var(--weight-semibold) var(--text-lg) / 1.15 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
 }
 
 .afmc-mining__block-link {
-  color: inherit;
+  color: var(--text-brand);
   text-decoration: none;
-  border-bottom: 1px solid var(--amber-500);
+  border-bottom: 1px solid var(--amber-300);
 }
 
 .afmc-mining__block-link:hover {
   color: var(--text-brand);
+  border-bottom-color: var(--amber-600);
 }
 
 .afmc-mining__foot {
@@ -1365,9 +1801,15 @@
   flex-wrap: wrap;
 }
 
+.afmc-mining__cta {
+  flex: none;
+  min-height: 40px;
+  padding: 0 16px;
+}
+
 .afmc-mining__note {
   margin: 0;
-  flex: 1 1 22rem;
+  flex: 1 1 260px;
   min-width: 0;
   font: var(--type-body-sm);
   font-size: var(--text-xs);
@@ -1444,6 +1886,21 @@
 .afmc-footer__link:hover {
   color: var(--text-strong);
   border-bottom: none;
+}
+
+/* A destination that exists but is not live reads as coming, never as a dead link. */
+.afmc-footer__link.is-muted {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-faint);
+}
+
+.afmc-footer__soon {
+  font: var(--weight-semibold) 9px / 1 var(--font-sans);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-brand);
 }
 
 .afmc-footer__legal-nav {
@@ -1616,7 +2073,6 @@
 
 .afmc-tabbar__list {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1739,7 +2195,7 @@
 }
 
 .afmc-drawer__row.is-disabled {
-  opacity: 0.45;
+  color: var(--text-faint);
   cursor: not-allowed;
 }
 
@@ -1850,6 +2306,24 @@
   gap: var(--space-2);
 }
 
+.afmc-supply__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.afmc-supply__label {
+  font: var(--type-label);
+  color: var(--text-muted);
+}
+
+.afmc-supply__right {
+  font: var(--type-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+
 .afmc-supply__track {
   height: 6px;
   background: var(--paper-3);
@@ -1858,10 +2332,21 @@
 }
 
 .afmc-supply__fill {
+  display: block;
   height: 100%;
   background: var(--amber-500);
   border-radius: var(--radius-pill);
   transition: width var(--duration-slow-ms) var(--ease-standard);
+}
+
+.afmc-supply__foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font: var(--type-body-sm);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
 }
 
 .afmc-check {
@@ -1888,7 +2373,12 @@
 
 .afmc-live .afmc-icon {
   font-size: 13px;
-  color: var(--up-500);
+  color: var(--up-700);
+}
+
+/* Freshness, not direction: green is reserved for price movement. */
+.afmc-live--neutral .afmc-icon {
+  color: var(--text-faint);
 }
 
 .afmc-input {
@@ -1939,7 +2429,7 @@
 
 .afmc-badge--warn {
   background: var(--warn-100);
-  color: var(--warn-500);
+  color: var(--text-warn);
 }
 
 .afmc-legal-prose {
@@ -1973,6 +2463,8 @@
   width: 100%;
   border-collapse: collapse;
   font: var(--type-body-sm);
+  display: block;
+  overflow-x: auto;
 }
 
 .afmc-legal-table th,
@@ -2003,36 +2495,6 @@
   padding: 1px 5px;
 }
 
-.afmc-legal-table {
-  width: 100%;
-  border-collapse: collapse;
-  font: var(--type-body-sm);
-  display: block;
-  overflow-x: auto;
-}
-
-.afmc-legal-table th,
-.afmc-legal-table td {
-  border-bottom: 1px solid var(--border-card);
-  padding: var(--space-2);
-  text-align: left;
-  vertical-align: top;
-}
-
-.afmc-legal-table th {
-  font: var(--type-label);
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.afmc-legal-warning {
-  border-left: 3px solid var(--warn-500);
-  background: var(--warn-100);
-  color: var(--text-body);
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-}
-
 .afmc-tag {
   display: inline-flex;
   align-items: center;
@@ -2042,6 +2504,87 @@
   background: var(--surface-card);
   font: var(--type-label);
   color: var(--text-muted);
+}
+
+/* Quality meter on DexScan. Four bars that climb with the risk, so the shape carries the
+   reading before the colour does, and colour-blind users are not left with only a hue.
+   Derived in App\Services\MarketData\DexQualityAssessor, never in a view. */
+.afmc-risk {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+}
+
+.afmc-risk--compact {
+  padding: 0;
+  background: none;
+}
+
+.afmc-risk__bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 9px;
+}
+
+.afmc-risk__bar {
+  width: 3px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--line-strong);
+}
+
+.afmc-risk__bar.is-lit {
+  height: 9px;
+  background: currentcolor;
+}
+
+.afmc-risk__label {
+  font: var(--weight-semibold) var(--text-2xs) / 1.4 var(--font-sans);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: currentcolor;
+  white-space: nowrap;
+}
+
+.afmc-risk--blue-chip {
+  color: var(--text-up);
+  background: var(--surface-up-soft);
+}
+
+.afmc-risk--established {
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+}
+
+.afmc-risk--speculative {
+  color: var(--text-warn);
+  background: var(--warn-100);
+}
+
+.afmc-risk--high-risk {
+  color: var(--text-down);
+  background: var(--surface-down-soft);
+}
+
+button.afmc-tag {
+  cursor: pointer;
+  transition: var(--transition-color);
+}
+
+button.afmc-tag:hover:not(.is-active) {
+  border-color: var(--line-strong);
+  color: var(--text-strong);
+}
+
+/* The selected filter reads as ink, not amber: amber is the brand accent, and a chain filter
+   is not a market direction or a promotion. */
+.afmc-tag.is-active {
+  background: var(--ink-900);
+  border-color: var(--ink-900);
+  color: var(--text-inverse);
 }
 
 .afmc-altcha {
@@ -2054,28 +2597,6 @@
   color: var(--text-down);
 }
 
-.afmc-cycle-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-}
-
-.afmc-cycle-grid .afmc-stat {
-  padding: var(--space-3);
-}
-
-.afmc-cycle-grid .afmc-stat__value {
-  font-size: clamp(0.95rem, 2.4vw, 1.15rem);
-}
-
-.afmc-meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: var(--space-2);
-}
-
 @media (max-width: 700px) {
   .afmc-table .hide-narrow {
     display: none;
@@ -2083,6 +2604,7 @@
 
   .afmc-table .is-sticky--name {
     left: 0 !important;
+    min-width: 150px;
   }
 
   .afmc-currency__option {
@@ -2136,23 +2658,17 @@
 }
 
 @media (max-width: 420px) {
-  .afmc-cycle-grid {
+  .afmc-statpairs {
     grid-template-columns: 1fr;
   }
-}
 
-.afmc-progress {
-  height: 8px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-muted, #efeae0);
-  overflow: hidden;
-}
+  .afmc-statpairs > div:nth-child(n + 2) {
+    border-top: 1px solid var(--border-divider);
+  }
 
-.afmc-progress > span {
-  display: block;
-  height: 100%;
-  background: var(--amber-500, #d4a017);
-  border-radius: inherit;
+  .afmc-statpairs > div:nth-child(even) {
+    border-left: none;
+  }
 }
 
 .afmc-table tr.is-muted td {

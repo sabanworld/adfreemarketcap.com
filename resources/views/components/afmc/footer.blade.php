@@ -19,7 +19,10 @@
                     <span class="afmc-footer__col-title">{{ __('Markets') }}</span>
                     <a class="afmc-footer__link" href="{{ route('home') }}" wire:navigate>{{ __('Coins') }}</a>
                     <a class="afmc-footer__link" href="{{ route('dexscan') }}" wire:navigate>{{ __('DexScan') }}</a>
-                    <span class="afmc-footer__link" style="opacity:.45">{{ __('Exchanges') }}</span>
+                    <span class="afmc-footer__link is-muted">
+                        {{ __('Exchanges') }}
+                        <span class="afmc-footer__soon">{{ __('soon') }}</span>
+                    </span>
                     <a class="afmc-footer__link" href="{{ route('watchlist') }}" wire:navigate>{{ __('Watchlist') }}</a>
                 </nav>
 

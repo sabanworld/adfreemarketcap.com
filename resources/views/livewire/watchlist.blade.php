@@ -21,9 +21,12 @@
     </div>
 
     @if ($coins->isEmpty())
-        <div class="afmc-callout afmc-callout--note">
-            <p class="afmc-callout__title">{{ __('Nothing here yet') }}</p>
-            <p class="afmc-callout__body">{{ __('Star any coin on Markets to track it here. Your list is tied to this account.') }}</p>
+        <div class="afmc-callout">
+            <x-afmc.icon name="info" class="afmc-callout__icon" />
+            <div class="afmc-callout__content">
+                <p class="afmc-callout__title">{{ __('Nothing here yet') }}</p>
+                <p class="afmc-callout__body">{{ __('Star any coin on Markets to track it here. Your list is tied to this account.') }}</p>
+            </div>
         </div>
     @else
         <div class="afmc-grid afmc-grid--stats" style="margin-bottom:var(--space-5)">
@@ -55,12 +58,12 @@
                     <thead>
                         <tr>
                             <th class="is-sticky is-sticky--watch hide-narrow" style="width:38px;left:0"></th>
-                            <th class="is-sticky is-sticky--name" style="left:38px">{{ __('Name') }}</th>
-                            <th class="is-right">{{ __('Price') }}</th>
-                            <th class="is-right">24h %</th>
-                            <th class="is-right">7d %</th>
-                            <th class="is-right">{{ __('Market cap') }}</th>
-                            <th class="is-right hide-narrow">{{ __('Last 7 days') }}</th>
+                            <th class="is-sticky is-sticky--name" style="left:38px"><span>{{ __('Name') }}</span></th>
+                            <th class="is-right"><span>{{ __('Price') }}</span></th>
+                            <th class="is-right"><span>24h %</span></th>
+                            <th class="is-right"><span>7d %</span></th>
+                            <th class="is-right"><span>{{ __('Market cap') }}</span></th>
+                            <th class="is-right hide-narrow"><span>{{ __('Last 7 days') }}</span></th>
                         </tr>
                     </thead>
                     <tbody>

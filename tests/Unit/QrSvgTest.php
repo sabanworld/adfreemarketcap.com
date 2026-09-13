@@ -11,7 +11,7 @@ class QrSvgTest extends TestCase
 {
     public function test_make_returns_inline_svg_without_xml_declaration(): void
     {
-        $svg = QrSvg::make('bitcoin:bc1q7qf286w470n5wyvmrelgu9ulf5m8q9lth9rjxk', 64);
+        $svg = QrSvg::make('bitcoin:' . config('company.donation.btc_address'), 64);
 
         $this->assertStringStartsWith('<svg', $svg);
         $this->assertStringNotContainsString('<?xml', $svg);

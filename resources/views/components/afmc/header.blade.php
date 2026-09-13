@@ -24,10 +24,15 @@
                     @if ($item['active']) aria-current="page" @endif
                 >{{ $item['label'] }}</a>
             @else
-                <span class="afmc-nav__item is-disabled" title="{{ __('Coming soon') }}">{{ $item['label'] }}</span>
+                <span class="afmc-nav__item is-disabled" title="{{ __('Coming soon') }}">
+                    {{ $item['label'] }}
+                    <span class="afmc-soon">{{ __('Soon') }}</span>
+                </span>
             @endif
         @endforeach
     </nav>
+
+    <span class="afmc-header__spacer" aria-hidden="true"></span>
 
     <form data-afmc-search action="{{ route('home') }}" method="get" class="afmc-search" role="search">
         <button type="submit" class="afmc-search__submit" aria-label="{{ __('Search') }}">
@@ -55,7 +60,7 @@
     </button>
 
     <div data-afmc-actions class="afmc-header__right">
-        <livewire:currency-selector />
+        <livewire:currency-selector key="currency-header" />
 
         <button
             type="button"

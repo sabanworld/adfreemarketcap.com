@@ -4,7 +4,12 @@
 
 <p>{{ __('Last updated: :date', ['date' => $company['policies_updated_at']]) }}</p>
 
-<p class="afmc-legal-warning">{{ __('Crypto-assets are highly risky and largely unregulated. Their value can move sharply and you can lose all the money you put in.') }}</p>
+<div class="afmc-callout afmc-callout--warn">
+    <x-afmc.icon name="warning" filled class="afmc-callout__icon" />
+    <div class="afmc-callout__content">
+        <p class="afmc-callout__body">{{ __('Crypto-assets are highly risky and largely unregulated. Their value can move sharply and you can lose all the money you put in.') }}</p>
+    </div>
+</div>
 
 <h2>{{ __('What you are not protected by') }}</h2>
 <ul>

@@ -165,7 +165,7 @@ class LegalPagesTest extends TestCase
         $response = $this->get(route('home'));
 
         $response->assertOk();
-        $response->assertSee('afmc-pick__badge afmc-pick__badge--warn', false);
+        $response->assertSee('afmc-pick__badge afmc-pick__badge--interest', false);
         $response->assertSee('Creator is a partner', false);
         $response->assertDontSee('We use this', false);
     }
@@ -223,14 +223,14 @@ class LegalPagesTest extends TestCase
 
     public function test_footer_shows_btc_donation_address_and_qr(): void
     {
-        config(['company.donation.btc_address' => 'bc1q7qf286w470n5wyvmrelgu9ulf5m8q9lth9rjxk']);
+        $address = (string) config('company.donation.btc_address');
 
         $response = $this->get(route('home'));
 
         $response->assertOk();
         $response->assertSee('data-afmc-btc-donate', false);
-        $response->assertSee('bc1q7qf286w470n5wyvmrelgu9ulf5m8q9lth9rjxk', false);
-        $response->assertSee('data-btc-qr-payload="bitcoin:bc1q7qf286w470n5wyvmrelgu9ulf5m8q9lth9rjxk"', false);
+        $response->assertSee($address, false);
+        $response->assertSee('data-btc-qr-payload="bitcoin:' . $address . '"', false);
         $response->assertSee('<svg', false);
         $response->assertSee('Donate BTC', false);
     }

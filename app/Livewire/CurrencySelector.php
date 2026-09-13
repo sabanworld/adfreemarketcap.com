@@ -13,9 +13,17 @@ class CurrencySelector extends Component
 {
     public string $currency = 'usd';
 
-    public function mount(CurrencyService $currency): void
+    /**
+     * `chip` for the header, `row` for the navigation drawer. Below 700px the header chip is
+     * hidden, because a 32px mono control between a logo and a theme toggle is not usable
+     * on a phone, so the drawer carries the full-width row instead.
+     */
+    public string $variant = 'chip';
+
+    public function mount(CurrencyService $currency, string $variant = 'chip'): void
     {
         $this->currency = $currency->activeCode();
+        $this->variant = $variant === 'row' ? 'row' : 'chip';
     }
 
     public function updatedCurrency(CurrencyService $currency): void

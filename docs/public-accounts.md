@@ -52,6 +52,27 @@ Covered by `tests/Feature/AdminMfaTest.php`. PHPUnit forces `ADMIN_MFA_REQUIRED=
 - `DexPairSeeder` remains for offline demos; production freshness comes from the scheduled job.
 - Optional: `php artisan marketdata:sync --only-dex` or `--dex`.
 
+### Quality column
+
+`App\Services\MarketData\DexQualityAssessor` derives the tier shown in the Quality column, and it is the only place that decides it. Never re-derive a tier in a Blade view or a Livewire component.
+
+It reads three stored fields, and nothing else:
+
+| Input | Column |
+|-------|--------|
+| Pool liquidity | `liquidity_usd` |
+| How long the pair has existed | `paired_at` |
+| Contract verification | `audit_status` |
+
+Rules worth knowing before you change a threshold:
+
+- An unverified contract caps the pair at **high risk** no matter how deep the pool is, because a pool can be drained and a contract can block selling.
+- A `partial` audit can reach **speculative** at best, never established or blue chip.
+- A missing `paired_at` or `liquidity_usd` is treated as the worst case, so an absent field can never promote a pair into a calmer tier.
+- The tier ignores price performance entirely. Nothing a project can pay for is an input.
+
+The footnote under the table names those three inputs. If you add or drop an input, change that sentence in the same commit, and update `tests/Unit/DexQualityAssessorTest.php` plus the footnote assertions in `tests/Feature/DexScanTest.php`.
+
 ## Legal / company
 
 - Operator details: `config/company.php` (defaults match The Saban Company B.V.; override via `COMPANY_*` in `.env`).

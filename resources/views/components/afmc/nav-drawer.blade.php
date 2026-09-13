@@ -46,8 +46,9 @@
             <div class="afmc-drawer__section">
                 <span class="afmc-drawer__eyebrow">{{ __('Markets') }}</span>
                 <span class="afmc-drawer__row is-disabled" title="{{ __('Coming soon') }}">
-                    <x-afmc.icon name="account_balance" size="20px" color="var(--text-muted)" />
+                    <x-afmc.icon name="account_balance" size="20px" color="var(--text-faint)" />
                     <span class="afmc-drawer__row-label">{{ __('Exchanges') }}</span>
+                    <span class="afmc-soon">{{ __('Soon') }}</span>
                 </span>
             </div>
 
@@ -96,6 +97,7 @@
             </div>
 
             <div class="afmc-drawer__footer">
+                <livewire:currency-selector variant="row" key="currency-drawer" />
                 <label class="afmc-switch">
                     <input
                         type="checkbox"

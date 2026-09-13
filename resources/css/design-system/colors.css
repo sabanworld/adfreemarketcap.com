@@ -3,17 +3,20 @@
   --paper-0:#FBF9F4;--paper-1:#FFFFFF;--paper-2:#F5F2EB;--paper-3:#EDE8DD;--paper-4:#E3DCCD;
   /* --- base: ink --- */
   --ink-900:#14120E;--ink-800:#26231C;--ink-700:#3B372E;--ink-600:#575246;--ink-500:#6C6659;
-  --ink-400:#8E877A;--ink-300:#ADA697;--ink-200:#CFC8B8;
+  --ink-400:#726B5E;--ink-300:#ADA697;--ink-200:#CFC8B8;
   --line-strong:#D8D1C0;--line:#E4DECE;--line-soft:#EFEAE0;
   /* --- base: amber (brand) --- */
-  --amber-700:#B85200;--amber-600:#E06A00;--amber-500:#FF7A00;--amber-300:#FFB870;--amber-100:#FFE9D2;--amber-50:#FFF5EA;
+  --amber-700:#AD4D00;--amber-600:#E06A00;--amber-500:#FF7A00;--amber-300:#FFB870;--amber-100:#FFE9D2;--amber-50:#FFF5EA;
   /* --- base: market semantics --- */
   --up-700:#0A6B49;--up-500:#0E9F6E;--up-100:#DCF5EA;
   --down-700:#9E2B24;--down-500:#D8433B;--down-100:#FBE3E1;
   /* --- base: informational --- */
   --violet-500:#6D4AD1;--violet-100:#EDE6FC;
   --info-500:#2563C9;--info-100:#E1EBFB;
-  --warn-500:#B4820A;--warn-100:#FBF0D2;
+  /* warn-500 is the graphics step, like up-500/down-500: fine for an icon or a bar, but only
+     3:1 on warn-100, so it must not carry a label. warn-700 is the text step this palette was
+     missing (4.7:1 on warn-100, 4.9:1 on paper-0). */
+  --warn-700:#8A6407;--warn-500:#B4820A;--warn-100:#FBF0D2;
   /* --- semantic: surfaces --- */
   --surface-page:var(--paper-0);
   --surface-card:var(--paper-1);
@@ -26,15 +29,27 @@
   --surface-brand-soft:var(--amber-50);
   --surface-up-soft:var(--up-100);
   --surface-down-soft:var(--down-100);
-  /* --- semantic: text --- */
+  /* --- semantic: text ---
+     Contrast contract (verified, not assumed):
+     · --text-body/strong/muted/faint all clear 4.5:1 on paper-0/1/2.
+     · --text-disabled and --chart-axis are NON-TEXT only (disabled glyphs, axes, rules).
+     · Text on the ink band (pledge band, toast) uses the --ink-200/300 steps, which invert
+       with the theme; --ink-400 is tuned for light grounds and fails on ink.
+     · Interactive glyphs need 3:1, so the active watch star uses --amber-600, not --amber-500. */
   --text-body:var(--ink-800);
   --text-strong:var(--ink-900);
   --text-muted:var(--ink-500);
+  /* Labels, captions and footnotes. Clears 4.5:1 on paper-0/1/2. Do not lighten. */
   --text-faint:var(--ink-400);
+  /* Non-text ONLY: decorative rules, chart axes, an icon whose meaning is also in text.
+     Never for a label or a control's text: a disabled control keeps --text-faint and carries
+     the unavailable state some other way (strikethrough, a "Soon" marker). */
+  --text-disabled:var(--ink-300);
   --text-inverse:var(--paper-0);
   --text-brand:var(--amber-700);
   --text-up:var(--up-700);
   --text-down:var(--down-700);
+  --text-warn:var(--warn-700);
   --text-link:var(--amber-700);
   --text-link-hover:var(--ink-900);
   /* --- semantic: borders --- */
@@ -52,12 +67,14 @@
 [data-theme="dark"]{
   --paper-0:#0C0D0B;--paper-1:#151613;--paper-2:#1D1E1A;--paper-3:#262722;--paper-4:#32332C;
   --ink-900:#F7F4EC;--ink-800:#EAE6DA;--ink-700:#D2CDBF;--ink-500:#96907F;
-  --ink-400:#7C7667;--ink-300:#615C50;--ink-200:#474339;
+  --ink-400:#97907F;--ink-300:#615C50;--ink-200:#474339;
   --line-strong:#3A3B33;--line:#2A2B25;--line-soft:#222319;
   --amber-700:#FFB870;--amber-600:#FF9430;--amber-500:#FF7A00;--amber-100:#40280E;--amber-50:#241809;
   --up-700:#3FD69B;--up-500:#12B981;--up-100:#10301F;
   --down-700:#FF7B72;--down-500:#E8564D;--down-100:#3A1815;
   --violet-100:#241A3D;--info-100:#12233D;--warn-100:#2E2408;
+  /* Inverts with the theme the way up-700/down-700 do. 6.9:1 on the dark warn ground. */
+  --warn-700:#DCA62B;
   --surface-card:var(--paper-1);--surface-inverse:var(--paper-4);--text-inverse:var(--ink-900);
   --chart-volume:var(--paper-3);
 }

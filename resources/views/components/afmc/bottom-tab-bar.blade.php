@@ -22,7 +22,8 @@
 @endphp
 
 <nav data-afmc-tabbar class="afmc-tabbar" aria-label="{{ __('Primary') }}">
-    <ul class="afmc-tabbar__list">
+    {{-- One column per tab, counting More: a hardcoded count leaves a dead column behind. --}}
+    <ul class="afmc-tabbar__list" style="grid-template-columns:repeat({{ count($tabs) + 1 }}, 1fr)">
         @foreach ($tabs as $tab)
             <li class="afmc-tabbar__item">
                 <a

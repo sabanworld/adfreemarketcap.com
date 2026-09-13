@@ -1,4 +1,6 @@
 @php
+    use App\Services\Currency\DTOs\CurrencyUnit;
+
     $hint = $active->code === 'usd'
         ? __('Market data is stored in US dollars.')
         : ($ratesSyncedAt
@@ -8,126 +10,118 @@
     $groups = [];
 
     if ($fiatUnits->isNotEmpty()) {
-        $groups[] = [
-            'label' => __('Fiat'),
-            'units' => $fiatUnits,
-        ];
+        $groups[] = ['label' => __('Fiat'), 'units' => $fiatUnits];
     }
 
     if ($cryptoUnits->isNotEmpty()) {
-        $groups[] = [
-            'label' => __('Crypto'),
-            'units' => $cryptoUnits,
-        ];
+        $groups[] = ['label' => __('Crypto'), 'units' => $cryptoUnits];
     }
+
+    $all = $fiatUnits->concat($cryptoUnits);
+
+    // A short row of the codes most people want, so the common case is one tap.
+    $quick = collect(['usd', 'eur', 'gbp', 'btc'])
+        ->map(fn (string $code): ?CurrencyUnit => $all->firstWhere('code', $code))
+        ->filter()
+        ->values();
+
+    $isRow = $variant === 'row';
+    $hasChoice = count($groups) > 0 && $all->count() > 1;
 @endphp
 
 <div
-    class="afmc-currency"
+    class="afmc-currency {{ $isRow ? 'afmc-currency--row' : '' }}"
     x-data="{
         open: false,
-        narrow: window.matchMedia('(max-width: 640px)').matches,
+        query: '',
+        narrow: window.matchMedia('(max-width: 700px)').matches,
         init() {
-            const mq = window.matchMedia('(max-width: 640px)');
+            const mq = window.matchMedia('(max-width: 700px)');
             const sync = () => { this.narrow = mq.matches };
             mq.addEventListener ? mq.addEventListener('change', sync) : mq.addListener(sync);
+            window.addEventListener('resize', sync);
+            window.addEventListener('orientationchange', sync);
+        },
+        get filtering() {
+            return this.query.trim() !== '';
+        },
+        get empty() {
+            return this.filtering
+                && this.$refs.list
+                && this.$refs.list.querySelectorAll('[data-currency]:not([hidden])').length === 0;
+        },
+        matches(haystack) {
+            return ! this.filtering || haystack.includes(this.query.trim().toLowerCase());
+        },
+        toggle() {
+            this.open = ! this.open;
+            this.query = '';
+
+            if (this.open && ! this.narrow) {
+                this.$nextTick(() => this.$refs.filter?.focus());
+            }
         },
         pick(code) {
             this.open = false;
             $wire.set('currency', code);
         },
     }"
-    @keydown.escape.window="if (open) open = false"
+    @keydown.escape.window="if (open) { open = false }"
 >
-    @if (count($groups) > 0 && ($fiatUnits->count() + $cryptoUnits->count()) > 1)
-        <button
-            type="button"
-            class="afmc-currency__trigger"
-            @click="open = !open"
-            :aria-expanded="open"
-            aria-haspopup="listbox"
-            aria-label="{{ __('Display currency') }}: {{ $active->displayCode() }}"
-            title="{{ $hint }}"
-        >
-            {{ $active->displayCode() }}
-            <x-afmc.icon name="expand_more" size="16px" color="var(--text-faint)" />
-        </button>
+    @if ($hasChoice)
+        @if ($isRow)
+            <button
+                type="button"
+                class="afmc-currency__row-trigger"
+                @click="toggle()"
+                :aria-expanded="open"
+                aria-haspopup="dialog"
+            >
+                <x-afmc.icon name="payments" size="20px" color="var(--text-muted)" />
+                <span class="afmc-currency__row-label">{{ __('Currency') }}</span>
+                <span class="afmc-currency__row-value">{{ $active->displayCode() }}</span>
+                <x-afmc.icon name="chevron_right" size="18px" color="var(--text-faint)" />
+            </button>
+        @else
+            <button
+                type="button"
+                data-afmc-curchip
+                class="afmc-currency__trigger"
+                @click="toggle()"
+                :aria-expanded="open"
+                aria-haspopup="dialog"
+                aria-label="{{ __('Display currency') }}: {{ $active->displayCode() }}"
+                title="{{ $hint }}"
+            >
+                {{ $active->displayCode() }}
+                <x-afmc.icon name="expand_more" size="16px" color="var(--text-faint)" />
+            </button>
+        @endif
 
         {{--
-            The sheet is teleported to the body because the sticky header paints a
-            backdrop-filter, which makes it the containing block for fixed children:
-            left over, the sheet anchors to the header instead of the viewport.
+            Teleported to the body: an overlay that has to cover the viewport must not be
+            rendered inside a sticky bar, where an ancestor filter or transform would make
+            itself the containing block for position:fixed and pin the sheet to that bar.
         --}}
         <template x-teleport="body">
-            <div
-                x-show="open && narrow"
-                x-cloak
-                x-effect="document.body.style.overflow = (open && narrow) ? 'hidden' : ''"
-            >
+            <div x-show="open && narrow" x-cloak x-effect="document.body.style.overflow = (open && narrow) ? 'hidden' : ''">
                 <div class="afmc-currency__scrim" @click="open = false" x-transition.opacity></div>
-                <div class="afmc-currency__sheet" role="listbox" aria-label="{{ __('Display currency') }}">
-                    <div class="afmc-currency__sheet-head">
+
+                <div class="afmc-currency__sheet" role="dialog" aria-modal="true" aria-label="{{ __('Currency') }}">
+                    <div class="afmc-currency__sheet-head" style="padding:var(--space-3) var(--space-4) 0">
                         <span class="afmc-currency__sheet-title">{{ __('Currency') }}</span>
                         <button type="button" class="afmc-icon-btn afmc-icon-btn--lg" @click="open = false" aria-label="{{ __('Close') }}">
                             <x-afmc.icon name="close" size="22px" />
                         </button>
                     </div>
-                    @foreach ($groups as $group)
-                        <div class="afmc-currency__group">
-                            <span class="afmc-currency__group-label">{{ $group['label'] }}</span>
-                            <div class="afmc-currency__options afmc-currency__options--sheet">
-                                @foreach ($group['units'] as $unit)
-                                    <button
-                                        type="button"
-                                        class="afmc-currency__option {{ $unit->code === $active->code ? 'is-active' : '' }}"
-                                        role="option"
-                                        @if ($unit->code === $active->code) aria-selected="true" @endif
-                                        @click="pick('{{ $unit->code }}')"
-                                    >
-                                        <span class="afmc-currency__option-code">{{ $unit->displayCode() }}</span>
-                                        <span class="afmc-currency__option-label">{{ __($unit->label) }}</span>
-                                        @if ($unit->code === $active->code)
-                                            <x-afmc.icon name="check" size="18px" color="var(--amber-600)" />
-                                        @endif
-                                    </button>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endforeach
+
+                    <x-afmc.currency-list :groups="$groups" :quick="$quick" :active="$active" check-size="20px" />
                 </div>
             </div>
         </template>
 
-        <div
-            class="afmc-currency__popover"
-            role="listbox"
-            aria-label="{{ __('Display currency') }}"
-            x-show="open && !narrow"
-            x-cloak
-            @click.outside="open = false"
-        >
-            @foreach ($groups as $group)
-                <div class="afmc-currency__group">
-                    <span class="afmc-currency__group-label">{{ $group['label'] }}</span>
-                    <div class="afmc-currency__options">
-                        @foreach ($group['units'] as $unit)
-                            <button
-                                type="button"
-                                class="afmc-currency__option {{ $unit->code === $active->code ? 'is-active' : '' }}"
-                                role="option"
-                                @if ($unit->code === $active->code) aria-selected="true" @endif
-                                @click="pick('{{ $unit->code }}')"
-                            >
-                                <span class="afmc-currency__option-code">{{ $unit->displayCode() }}</span>
-                                <span class="afmc-currency__option-label">{{ __($unit->label) }}</span>
-                                @if ($unit->code === $active->code)
-                                    <x-afmc.icon name="check" size="16px" color="var(--amber-600)" />
-                                @endif
-                            </button>
-                        @endforeach
-                    </div>
-                </div>
-            @endforeach
+        <div class="afmc-currency__popover" x-show="open && ! narrow" x-cloak @click.outside="open = false">
+            <x-afmc.currency-list :groups="$groups" :quick="$quick" :active="$active" />
         </div>
     @else
         <span class="afmc-currency__label">{{ $active->displayCode() }}</span>

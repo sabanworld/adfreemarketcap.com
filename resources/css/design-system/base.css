@@ -37,16 +37,20 @@ table{border-collapse:collapse;width:100%}
   [data-afmc-page]{padding-bottom:calc(var(--space-16) + 64px + env(safe-area-inset-bottom,0px))!important}
   [data-afmc-footer]{padding-bottom:calc(var(--space-6) + 64px + env(safe-area-inset-bottom,0px))!important}
 }
-/* Below 700px search collapses behind an icon; Sign in moves into the More sheet */
-@media (max-width:700px){
-  [data-afmc-header]{flex-wrap:wrap}
+/* Search is the first thing to give way, so collapse it before anything can overlap */
+@media (max-width:1080px){
   [data-afmc-header] [data-afmc-search]{display:none!important}
   [data-afmc-header] [data-afmc-searchbtn]{display:grid!important}
   [data-afmc-header] [data-afmc-searchrow]{display:block!important}
   [data-afmc-header] [data-afmc-searchrow]>div,
   [data-afmc-header] [data-afmc-searchrow]>form{width:100%!important;max-width:none!important}
-  [data-afmc-header] [data-afmc-actions]{margin-left:auto}
+}
+/* Below 700px Sign in moves into the More sheet */
+@media (max-width:700px){
+  [data-afmc-header] [data-afmc-search]{display:none!important}
   [data-afmc-header] [data-afmc-signin]{display:none}
+  /* Currency lives in the More sheet on phones, because the header is too tight for it */
+  [data-afmc-header] [data-afmc-curchip]{display:none!important}
 }
 @media (max-width:560px){
   [data-afmc-header] [data-afmc-wordmark]{display:none}
@@ -57,6 +61,11 @@ table{border-collapse:collapse;width:100%}
   [data-afmc-tabs]{width:100%}
   [data-afmc-footer]>div{padding-left:var(--space-4)!important;padding-right:var(--space-4)!important}
 }
+
+/* CSS spec: a non-visible overflow on one axis forces the other axis to compute to `auto`,
+   which paints a phantom scrollbar over any content that overflows by even 1px. Every
+   horizontal scroller in this system pairs its axes explicitly. */
+[data-afmc-tabs],[data-afmc-ticker],[data-afmc-tablescroll]{overflow-y:hidden}
 
 /* Table pan region: visible focus, momentum scroll, no scrollbar gutter on touch */
 [data-afmc-tablescroll]:focus-visible{outline:none;box-shadow:inset var(--ring-focus)}
@@ -72,6 +81,11 @@ table{border-collapse:collapse;width:100%}
   [data-afmc-tabbar] button,[data-afmc-tabbar] a{min-height:56px}
 }
 
+/* Coin page: the two-column rail collapses before the columns get too narrow to read */
+@media (max-width:1000px){
+  [data-afmc-coingrid]{grid-template-columns:1fr!important}
+}
+
 /* Footer: brand block stops competing with the link columns on narrow viewports */
 @media (max-width:860px){
   [data-afmc-footer-top]{grid-template-columns:1fr!important;gap:var(--space-8)!important}
@@ -81,8 +95,8 @@ table{border-collapse:collapse;width:100%}
   [data-afmc-footer-legal] ul{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
 
-/* Narrow phones: the asset name truncates, the ticker never does */
+/* Narrow tables: the rank digit yields before the asset name does. Name truncation is
+   intrinsic to the coin identity component, so it does not depend on viewport width. */
 @media (max-width:420px){
-  [data-afmc-coinname]>span:first-child{max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   [data-afmc-rankcell]{display:none}
 }

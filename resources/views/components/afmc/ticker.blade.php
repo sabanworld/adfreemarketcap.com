@@ -1,25 +1,29 @@
 @php
+    use App\Models\Coin;
     use App\Models\MarketGlobal;
     use App\Services\MarketData\MarketNumberFormatter;
 
     $global = MarketGlobal::latestSnapshot();
+
+    // Every number has one owner. These four global figures live here and nowhere else, so a
+    // page must not restate them in its own header strip.
+    $items = [
+        [__('Market cap'), MarketNumberFormatter::money($global?->total_market_cap !== null ? (float) $global->total_market_cap : null)],
+        [__('24h volume'), MarketNumberFormatter::money($global?->total_volume_24h !== null ? (float) $global->total_volume_24h : null)],
+        [__('BTC dominance'), MarketNumberFormatter::percent($global?->btc_dominance !== null ? (float) $global->btc_dominance : null)],
+        [__('Assets tracked'), number_format(Coin::rankedCount())],
+    ];
 @endphp
 
-<div class="afmc-ticker" aria-label="{{ __('Market summary') }}">
-    <span class="afmc-ticker__item">
-        <span class="afmc-ticker__label">{{ __('Market cap') }}</span>
-        <span class="afmc-ticker__value">{{ MarketNumberFormatter::money($global?->total_market_cap !== null ? (float) $global->total_market_cap : null) }}</span>
-    </span>
-    <span class="afmc-ticker__item">
-        <span class="afmc-ticker__label">{{ __('24h volume') }}</span>
-        <span class="afmc-ticker__value">{{ MarketNumberFormatter::money($global?->total_volume_24h !== null ? (float) $global->total_volume_24h : null) }}</span>
-    </span>
-    <span class="afmc-ticker__item">
-        <span class="afmc-ticker__label">{{ __('BTC dominance') }}</span>
-        <span class="afmc-ticker__value">{{ MarketNumberFormatter::percent($global?->btc_dominance !== null ? (float) $global->btc_dominance : null) }}</span>
-    </span>
+<div data-afmc-ticker class="afmc-ticker" aria-label="{{ __('Market summary') }}">
+    @foreach ($items as [$label, $value])
+        <span class="afmc-ticker__item">
+            <span class="afmc-ticker__label">{{ $label }}</span>
+            <span class="afmc-ticker__value">{{ $value }}</span>
+        </span>
+    @endforeach
     <span class="afmc-ticker__note">
-        <x-afmc.icon name="bolt" filled size="14px" color="var(--up-500)" />
+        <x-afmc.icon name="bolt" filled size="14px" />
         {{ __('Live · from the database') }}
     </span>
 </div>

@@ -20,12 +20,17 @@
     "expand_more": "e5cf",
     "fiber_manual_record": "e061",
     "gavel": "e90e",
+    "info": "e88e",
     "light_mode": "e518",
     "login": "ea77",
     "menu": "e5d2",
+    "payments": "ef63",
+    "report": "e160",
     "savings": "e2eb",
     "search": "e8b6",
+    "sensors": "e51e",
     "star": "e838",
     "swap_horiz": "e8d4",
-    "visibility": "e417"
+    "visibility": "e417",
+    "warning": "e002"
 }

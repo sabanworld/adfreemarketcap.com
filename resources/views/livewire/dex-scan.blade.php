@@ -1,8 +1,10 @@
 @php
     use App\Services\Currency\MarketDisplayService;
+    use App\Services\MarketData\DexQualityAssessor;
     use App\Services\MarketData\MarketNumberFormatter;
 
     $display = app(MarketDisplayService::class);
+    $quality = app(DexQualityAssessor::class);
 @endphp
 
 <main data-afmc-page class="afmc-page">
@@ -18,12 +20,15 @@
     </div>
 
     <div class="afmc-callout afmc-callout--risk" style="margin-bottom:var(--space-5)">
-        <p class="afmc-callout__title">{{ __('Read this before you trade anything on this page') }}</p>
-        <p class="afmc-callout__body">
-            {{ __('Most tokens listed here will go to zero. A pool can be drained, a contract can block selling, and a chart that looks like a large gain in a few hours is usually thin liquidity. Check the contract address rather than the ticker, and never put in money you need back.') }}
-        </p>
-        <div style="margin-top:var(--space-2)">
-            <button type="button" class="afmc-btn afmc-btn--secondary afmc-btn--sm" wire:click="$set('verifiedOnly', true)">{{ __('Hide unverified') }}</button>
+        <x-afmc.icon name="report" filled class="afmc-callout__icon" />
+        <div class="afmc-callout__content">
+            <p class="afmc-callout__title">{{ __('Read this before you trade anything on this page') }}</p>
+            <p class="afmc-callout__body">
+                {{ __('Most tokens listed here will go to zero. A pool can be drained, a contract can block selling, and a chart that looks like a large gain in a few hours is usually thin liquidity. Check the contract address rather than the ticker, and never put in money you need back.') }}
+            </p>
+            <div style="margin-top:var(--space-1)">
+                <button type="button" class="afmc-btn afmc-btn--secondary afmc-btn--sm" wire:click="$set('verifiedOnly', true)">{{ __('Hide unverified') }}</button>
+            </div>
         </div>
     </div>
 
@@ -48,16 +53,17 @@
                 <button type="button" class="afmc-tabs__item {{ $tab === $value ? 'is-active' : '' }}" wire:click="setTab('{{ $value }}')">{{ $label }}</button>
             @endforeach
         </div>
-        <label class="afmc-check">
-            <input type="checkbox" wire:model.live="verifiedOnly" />
-            {{ __('Verified only') }}
+        <label class="afmc-switch" title="{{ __('Hides pairs whose contract is unverified.') }}">
+            <input type="checkbox" role="switch" wire:model.live="verifiedOnly" />
+            <span class="afmc-switch__track" aria-hidden="true"><span class="afmc-switch__thumb"></span></span>
+            <span class="afmc-switch__label">{{ __('Hide unverified') }}</span>
         </label>
     </div>
 
     <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;margin-bottom:var(--space-4)">
-        <button type="button" class="afmc-tag {{ $chain === 'all' ? 'is-active' : '' }}" wire:click="setChain('all')" style="{{ $chain === 'all' ? 'background:var(--ink-900);color:var(--text-inverse);border-color:var(--ink-900)' : '' }}">{{ __('All chains') }}</button>
+        <button type="button" @class(['afmc-tag', 'is-active' => $chain === 'all']) wire:click="setChain('all')" aria-pressed="{{ $chain === 'all' ? 'true' : 'false' }}">{{ __('All chains') }}</button>
         @foreach ($chains as $chainName)
-            <button type="button" class="afmc-tag" wire:click="setChain('{{ $chainName }}')" style="{{ $chain === $chainName ? 'background:var(--ink-900);color:var(--text-inverse);border-color:var(--ink-900)' : '' }}">{{ $chainName }}</button>
+            <button type="button" @class(['afmc-tag', 'is-active' => $chain === $chainName]) wire:click="setChain('{{ $chainName }}')" aria-pressed="{{ $chain === $chainName ? 'true' : 'false' }}">{{ $chainName }}</button>
         @endforeach
     </div>
 
@@ -66,14 +72,15 @@
             <table class="afmc-table afmc-table--dense">
                 <thead>
                     <tr>
-                        <th class="is-sticky is-sticky--name" style="left:0">{{ __('Pair') }}</th>
-                        <th class="is-right">{{ __('Price') }}</th>
-                        <th class="is-right">24h %</th>
-                        <th class="is-right">{{ __('Liquidity') }}</th>
-                        <th class="is-right hide-narrow">{{ __('Volume 24h') }}</th>
-                        <th class="is-right hide-narrow">{{ __('Txns 24h') }}</th>
-                        <th class="is-right hide-narrow">{{ __('Age') }}</th>
-                        <th class="is-right">{{ __('Contract') }}</th>
+                        <th class="is-sticky is-sticky--name" style="left:0"><span>{{ __('Pair') }}</span></th>
+                        <th class="hide-narrow"><span>{{ __('Quality') }}</span></th>
+                        <th class="is-right"><span>{{ __('Price') }}</span></th>
+                        <th class="is-right"><span>24h %</span></th>
+                        <th class="is-right"><span>{{ __('Liquidity') }}</span></th>
+                        <th class="is-right hide-narrow"><span>{{ __('Volume 24h') }}</span></th>
+                        <th class="is-right hide-narrow"><span>{{ __('Txns 24h') }}</span></th>
+                        <th class="is-right hide-narrow"><span>{{ __('Age') }}</span></th>
+                        <th class="is-right"><span>{{ __('Contract') }}</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -98,6 +105,14 @@
                                     <span style="font:var(--type-num);font-size:var(--text-2xs);color:var(--text-faint)">{{ $pair->dex }} · {{ $pair->chain }}</span>
                                 </span>
                             </td>
+                            <td class="hide-narrow">
+                                @php($tier = $quality->describe($pair))
+                                <x-afmc.risk-level
+                                    :tier="$tier['tier']"
+                                    :label="__($tier['label'])"
+                                    :why="__($tier['why'])"
+                                />
+                            </td>
                             <td class="is-right">{{ MarketNumberFormatter::money($pair->price !== null ? (float) $pair->price : null, 8) }}</td>
                             <td class="is-right"><x-afmc.price-change :value="$display->change($pair->percent_change_24h)" size="sm" /></td>
                             <td class="is-right">{{ MarketNumberFormatter::money($pair->liquidity_usd !== null ? (float) $pair->liquidity_usd : null) }}</td>
@@ -110,7 +125,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" style="height:auto;padding:var(--space-8);text-align:center;color:var(--text-faint);font:var(--type-body-sm)">
+                            <td colspan="9" style="height:auto;padding:var(--space-8);text-align:center;color:var(--text-faint);font:var(--type-body-sm)">
                                 {{ __('No DEX pairs yet. Sync with php artisan marketdata:sync --only-dex') }}
                             </td>
                         </tr>
@@ -130,8 +145,11 @@
         @endif
     </div>
 
-    <div class="afmc-callout afmc-callout--note" style="margin-top:var(--space-4)">
-        <p class="afmc-callout__title">{{ __('How the Quality column is set') }}</p>
-        <p class="afmc-callout__body">{{ __('Pool liquidity, pair age, venue count and contract verification. Nothing about price performance, and nothing a project can pay to change.') }}</p>
+    <div class="afmc-callout" style="margin-top:var(--space-4)">
+        <x-afmc.icon name="info" class="afmc-callout__icon" />
+        <div class="afmc-callout__content">
+            <p class="afmc-callout__title">{{ __('How the Quality column is set') }}</p>
+            <p class="afmc-callout__body">{{ __('Pool liquidity, how long the pair has existed, and whether the contract is verified. Nothing about price performance, and nothing a project can pay to change.') }}</p>
+        </div>
     </div>
 </main>
