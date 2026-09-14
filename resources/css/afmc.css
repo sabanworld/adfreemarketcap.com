@@ -897,6 +897,15 @@
   color: var(--text-down);
 }
 
+/* A change that rounds to zero carries no direction, so it gets neutral ink and no tint. */
+.afmc-change--flat {
+  color: var(--text-muted);
+}
+
+.afmc-change--empty {
+  color: var(--text-faint);
+}
+
 .afmc-change--chip {
   padding: 2px 5px;
   border-radius: var(--radius-xs);
@@ -908,6 +917,10 @@
 
 .afmc-change--chip.afmc-change--down {
   background: var(--surface-down-soft);
+}
+
+.afmc-change--chip.afmc-change--flat {
+  background: var(--surface-sunken);
 }
 
 .afmc-change--sm {
@@ -1475,6 +1488,34 @@
   background: var(--ink-900);
   color: var(--paper-0);
   border-color: var(--ink-900);
+}
+
+/* Rows per page. Density and page size are reader settings, so they sit with the pager
+   rather than in a settings screen. */
+.afmc-perpage {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: var(--space-2);
+  color: var(--text-body);
+}
+
+.afmc-perpage select {
+  appearance: none;
+  padding: 4px 26px 4px 8px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-xs);
+  background: var(--surface-card);
+  color: var(--text-body);
+  font: var(--weight-medium) var(--text-xs) / 1 var(--font-mono);
+  cursor: pointer;
+}
+
+.afmc-perpage .afmc-icon {
+  position: absolute;
+  right: 6px;
+  color: var(--text-faint);
+  pointer-events: none;
 }
 
 .afmc-callout {
@@ -2284,15 +2325,20 @@
   margin-left: auto;
 }
 
+/* 44px tall because this is the first thing a thumb reaches for on a coin page. The negative
+   inline margin keeps the caret optically aligned with the heading below it. */
 .afmc-back {
   all: unset;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  min-height: 44px;
+  padding-inline: var(--space-2);
+  margin-inline-start: calc(var(--space-2) * -1);
   font: var(--type-label);
   color: var(--text-muted);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
   text-decoration: none;
   border-bottom: none;
 }
@@ -2438,6 +2484,25 @@
   color: var(--text-body);
   display: grid;
   gap: var(--space-3);
+}
+
+.afmc-why__head {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 46rem;
+}
+
+.afmc-why__eyebrow {
+  font: var(--type-eyebrow);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.afmc-why__lead {
+  margin: 0;
+  font: var(--weight-medium) var(--text-lg) / var(--leading-normal) var(--font-sans);
+  color: var(--text-muted);
 }
 
 .afmc-legal-prose h2 {
@@ -2675,6 +2740,494 @@ button.afmc-tag:hover:not(.is-active) {
 
 .afmc-table tr.is-muted td {
   opacity: 0.55;
+}
+
+/* Market status (markets home). The three-column grid and its dividers live in
+   design-system/base.css under [data-afmc-status], so one media query can turn the dividers
+   from vertical to horizontal. Everything here is the shape inside a panel. */
+.afmc-market-status {
+  overflow: hidden;
+}
+
+/* Every panel is the same silhouette: LABEL / figure / caption. The 1fr middle row pins the
+   captions of all three to a shared baseline. Four metrics in four different shapes is what
+   makes a status strip read as a pile of unrelated boxes. */
+.afmc-status-panel {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  min-width: 0;
+}
+
+.afmc-status-panel__label {
+  margin: 0;
+  font: var(--type-eyebrow);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.afmc-status-panel__body {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  min-width: 0;
+}
+
+.afmc-status-panel__body--center {
+  justify-items: center;
+}
+
+.afmc-status-panel__caption {
+  margin: 0;
+  font: var(--type-body-sm);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  text-wrap: pretty;
+}
+
+.afmc-status-panel__caption a {
+  color: var(--text-brand);
+  text-decoration: none;
+}
+
+.afmc-status-panel__caption a:hover,
+.afmc-status-panel__caption a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.afmc-status-panel__figure {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  font: var(--weight-semibold) var(--text-2xl) / 1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+
+.afmc-status-panel__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-divider);
+}
+
+.afmc-status-panel__row-label {
+  font: var(--type-label);
+  color: var(--text-muted);
+}
+
+.afmc-status-panel__row-value {
+  font: var(--type-num);
+  font-size: var(--text-md);
+  color: var(--text-strong);
+}
+
+/* Five short percentages in a fixed five-column group, label above value. space-between would
+   strand each figure a card's width away from the period it belongs to. */
+.afmc-status-panel__periods {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-divider);
+}
+
+.afmc-status-panel__periods > div {
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  min-width: 0;
+}
+
+.afmc-status-panel__periods dt {
+  font: var(--type-eyebrow);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.afmc-status-panel__periods dd {
+  margin: 0;
+}
+
+/* A horizontal scale gets its own full-width row: squeezed into a third of the card its zone
+   labels are unreadable. */
+.afmc-market-status__season {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-top: 1px solid var(--border-divider);
+}
+
+.afmc-market-status__season-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* Fear and greed dial */
+.afmc-gauge {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+}
+
+/* Drawn at its measured pixel size: an SVG scaled to a percentage width shrinks everything
+   inside it, and the reading below is HTML for exactly that reason. */
+.afmc-gauge__svg {
+  display: block;
+  overflow: visible;
+  max-width: 100%;
+}
+
+.afmc-gauge__reading,
+.afmc-threshold__reading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.afmc-gauge__value,
+.afmc-threshold__value {
+  font: var(--weight-semibold) var(--text-xl) / 1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+
+.afmc-gauge__zone,
+.afmc-threshold__zone {
+  font: var(--type-label);
+  color: var(--text-body);
+}
+
+/* Index against named zones: the boundaries are drawn and labelled, so nobody has to hold
+   "below 25 means Bitcoin season" in their head while reading the bar. */
+.afmc-threshold {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.afmc-threshold__track {
+  position: relative;
+  padding: 4px 0;
+}
+
+.afmc-threshold__zones {
+  display: flex;
+  height: 10px;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.afmc-threshold__band {
+  background: var(--surface-sunken);
+}
+
+.afmc-threshold__band + .afmc-threshold__band {
+  border-left: 1px solid var(--border-card);
+}
+
+.afmc-threshold__band.is-active {
+  background: var(--amber-100);
+}
+
+.afmc-threshold__marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background: var(--ink-900);
+  box-shadow: 0 0 0 1.5px var(--surface-card);
+}
+
+.afmc-threshold__labels {
+  display: flex;
+  min-width: 0;
+  margin: 0;
+}
+
+.afmc-threshold__label {
+  padding: 0 2px;
+  min-width: 0;
+  font: var(--type-body-sm);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.afmc-threshold__label.is-active {
+  color: var(--text-body);
+}
+
+/* The point of a named zone is that it can be read. On a phone a quarter of the row is not
+   wide enough for "Bitcoin season" on one line, so it wraps instead of ellipsising away. */
+@media (max-width: 560px) {
+  .afmc-threshold__label {
+    white-space: normal;
+    text-wrap: balance;
+  }
+}
+
+/* Network filter. The More menu is a sibling of the chip row, never a child: a popover inside
+   an overflow-x:auto parent is clipped by it. */
+.afmc-network-filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.afmc-network-filter__chips {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 2px 0;
+  overflow-x: auto;
+}
+
+.afmc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  color: var(--text-body);
+  font: var(--weight-semibold) var(--text-sm) / 1 var(--font-sans);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition-color);
+}
+
+.afmc-chip:hover:not(.is-active) {
+  border-color: var(--line-strong);
+  color: var(--text-strong);
+}
+
+/* The selected filter reads as ink, not amber: amber is the brand accent, and a chain filter
+   is neither a market direction nor a promotion. */
+.afmc-chip.is-active {
+  background: var(--ink-900);
+  border-color: var(--ink-900);
+  /* paper-0, not text-inverse: ink-900 and text-inverse both invert to cream in dark mode. */
+  color: var(--paper-0);
+}
+
+.afmc-chip--more {
+  padding: 0 12px;
+}
+
+.afmc-chip__count {
+  font: var(--type-num);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+}
+
+.afmc-chip.is-active .afmc-chip__count {
+  color: var(--ink-300);
+}
+
+.afmc-chip__caret {
+  font-size: 16px;
+  color: var(--text-muted);
+  transition: var(--transition-transform);
+}
+
+.afmc-chip--more[aria-expanded="true"] .afmc-chip__caret {
+  transform: rotate(180deg);
+}
+
+.afmc-network-filter__more {
+  position: relative;
+  flex: none;
+}
+
+.afmc-network-filter__popover {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 272px;
+  max-width: 80vw;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-popover);
+  overflow: hidden;
+}
+
+.afmc-network-filter__popover .afmc-currency__filter {
+  margin: var(--space-2);
+  width: calc(100% - var(--space-2) * 2);
+}
+
+.afmc-network-filter__list {
+  max-height: 264px;
+  overflow-y: auto;
+  padding: var(--space-1);
+  border-top: 1px solid var(--border-divider);
+}
+
+.afmc-network-filter__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-body);
+  font: var(--type-body-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.afmc-network-filter__option:hover {
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+
+.afmc-network-filter__option.is-active {
+  background: var(--surface-sunken);
+  color: var(--text-strong);
+}
+
+.afmc-network-filter__option-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.afmc-network-filter__option-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.afmc-network-filter__empty {
+  margin: 0;
+  padding: var(--space-3) var(--space-2);
+  font: var(--type-body-sm);
+  color: var(--text-faint);
+}
+
+/* Table empty state: explain the mechanic and offer the way out, never a shrug. */
+.afmc-table__empty {
+  height: auto;
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+}
+
+.afmc-empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  max-width: 46ch;
+  margin: 0 auto;
+}
+
+.afmc-empty__title {
+  margin: 0;
+  font: var(--type-h3);
+  color: var(--text-strong);
+}
+
+.afmc-empty__detail {
+  margin: 0;
+  font: var(--type-body-sm);
+  color: var(--text-faint);
+  text-wrap: pretty;
+}
+
+/* Community / Nostr */
+.afmc-community {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.afmc-community__note {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border-divider);
+  border-radius: var(--radius-md);
+  background: var(--paper-50, var(--paper-0));
+  overflow: hidden;
+}
+
+.afmc-community__meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.afmc-community__meta > div {
+  min-width: 0;
+}
+
+.afmc-community__author {
+  margin: 0;
+  font: var(--weight-semibold) var(--text-sm) / 1.3 var(--font-sans);
+  color: var(--text-strong);
+}
+
+.afmc-community__time {
+  margin: 2px 0 0;
+  font: var(--type-body-sm);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+.afmc-community__link {
+  flex-shrink: 0;
+  font: var(--type-body-sm);
+  font-size: var(--text-xs);
+  color: var(--text-body);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.afmc-community__content {
+  margin: 0;
+  font: var(--type-body-sm);
+  color: var(--text-body);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.afmc-community__credit {
+  margin: var(--space-2) 0 0;
+  font: var(--type-body-sm);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
 }
 
 /* Soften Tailwind preflight conflicts on public chrome links */

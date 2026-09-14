@@ -11,6 +11,7 @@ use App\Models\SyncRun;
 use App\Services\MarketData\CoinTickerSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -102,6 +103,10 @@ class CoinTickersTest extends TestCase
 
     public function test_coin_detail_shows_markets_table(): void
     {
+        // Visiting a coin with a Nostr feed dispatches that sync, which would hit a relay
+        // gateway. The test queue runs inline, so it has to be faked here.
+        Queue::fake();
+
         $coin = Coin::query()->create([
             'slug' => 'ethereum',
             'symbol' => 'ETH',

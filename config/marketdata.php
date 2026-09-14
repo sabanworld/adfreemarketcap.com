@@ -82,6 +82,48 @@ return [
         'pi_cycle_limit' => (int) env('BITCOIN_CHARTS_PI_CYCLE_LIMIT', 365),
     ],
 
+    'alternative_me' => [
+        'base_url' => env('ALTERNATIVE_ME_BASE_URL', 'https://api.alternative.me'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | AFMC10 basket
+    |--------------------------------------------------------------------------
+    |
+    | Market-cap-weighted index of these CoinGecko slug ids (also our coin slugs
+    | when the primary provider is CoinGecko). First successful sync stores the
+    | basket market-cap sum as the base so the level starts near 100.
+    |
+    */
+
+    'afmc10' => array_values(array_filter(array_map(
+        trim(...),
+        explode(',', (string) env(
+            'MARKETDATA_AFMC10',
+            'bitcoin,ethereum,dogecoin,litecoin,bitcoin-cash,ripple,binancecoin,hedera-hashgraph,near,sui',
+        )),
+    ))),
+
+    'altcoin_season' => [
+        'top_n' => (int) env('MARKETDATA_ALTCOIN_SEASON_TOP_N', 50),
+
+        /*
+         * A coin needs roughly a full window of history before its 90-day return means anything.
+         * Below this many days of price data it is left out of the index rather than compared on
+         * a shorter period than everything around it.
+         */
+        'minimum_history_days' => (int) env('MARKETDATA_ALTCOIN_SEASON_MIN_HISTORY_DAYS', 80),
+
+        'exclude_symbols' => array_values(array_filter(array_map(
+            strtoupper(...),
+            array_map(trim(...), explode(',', (string) env(
+                'MARKETDATA_ALTCOIN_SEASON_EXCLUDE',
+                'USDT,USDC,DAI,FDUSD,USDE,USDS,BUSD,TUSD,USDD,PYUSD,EURC,WBTC,WETH,STETH,WSTETH,WEETH,CBETH,RETH,TBTC,BTCB',
+            ))),
+        ))),
+    ],
+
     'sync' => [
         'markets_pages' => (int) env('MARKETDATA_MARKETS_PAGES', 2),
         'per_page' => (int) env('MARKETDATA_PER_PAGE', 100),
@@ -116,6 +158,16 @@ return [
         'chart_short_stale_minutes' => (int) env('MARKETDATA_CHART_SHORT_STALE_MINUTES', 120),
         'chart_daily_stale_minutes' => (int) env('MARKETDATA_CHART_DAILY_STALE_MINUTES', 720),
         'hot_charts_interval_minutes' => (int) env('MARKETDATA_HOT_CHARTS_INTERVAL', 60),
+        'market_status_interval_minutes' => (int) env('MARKETDATA_STATUS_INTERVAL', 60),
+        /*
+         * The 90-day change behind the altcoin season index costs one chart request per sampled
+         * coin, so it refreshes daily and skips coins derived within the stale window. Keep the
+         * stale window under the interval or a retried run re-fetches everything.
+         */
+        'ninety_day_interval_hours' => (int) env('MARKETDATA_NINETY_DAY_INTERVAL_HOURS', 24),
+        'ninety_day_stale_hours' => (int) env('MARKETDATA_NINETY_DAY_STALE_HOURS', 20),
+        'platforms_interval_hours' => (int) env('MARKETDATA_PLATFORMS_INTERVAL_HOURS', 24),
+        'nostr_interval_minutes' => (int) env('MARKETDATA_NOSTR_INTERVAL', 30),
     ],
 
 ];

@@ -20,13 +20,13 @@ class NetworkCatalogService
      * coin maps to it, and each one carries the number of coins behind it so a reader can see
      * the size of a filter before choosing it.
      *
-     * @return list<array{id: string, label: string, icon: string, count: int, pinned: bool}>
+     * @return list<array{id: string, label: string, count: int, pinned: bool}>
      */
     public function availableNetworks(): array
     {
         return Cache::remember(self::AVAILABLE_CACHE_KEY, self::AVAILABLE_CACHE_SECONDS, function (): array {
-            /** @var array<string, array{label?: string, icon?: string}> $catalog */
-            $catalog = config('networks.catalog', []);
+            /** @var array<string, string> $names */
+            $names = config('networks.names', []);
             /** @var list<string> $pinned */
             $pinned = config('networks.pinned', []);
             /** @var list<string> $hidden */
@@ -43,8 +43,10 @@ class NetworkCatalogService
                 ->reject(fn ($count, $id): bool => ! is_string($id) || in_array($id, $hidden, true))
                 ->map(fn ($count, string $id): array => [
                     'id' => $id,
-                    'label' => $this->label($id, $catalog),
-                    'icon' => (string) ($catalog[$id]['icon'] ?? 'token'),
+                    // A platform id is a storage key, not a label: "adi-chain" in a filter chip
+                    // reads like a bug. Ids that do not title-case cleanly carry an explicit
+                    // name in config/networks.php.
+                    'label' => (string) ($names[$id] ?? Str::headline($id)),
                     'count' => (int) $count,
                     'pinned' => in_array($id, $pinned, true),
                 ]);
@@ -89,7 +91,7 @@ class NetworkCatalogService
      * selected chain is promoted into the chip row when it came from that menu, so the active
      * filter is never hidden behind a button that looks untouched.
      *
-     * @return array{shown: Collection<int, array{id: string, label: string, icon: string, count: int, pinned: bool}>, rest: Collection<int, array{id: string, label: string, icon: string, count: int, pinned: bool}>}
+     * @return array{shown: Collection<int, array{id: string, label: string, count: int, pinned: bool}>, rest: Collection<int, array{id: string, label: string, count: int, pinned: bool}>}
      */
     public function chipRow(string $selected = 'all', int $visible = 4): array
     {
@@ -111,19 +113,5 @@ class NetworkCatalogService
                 ->reject(fn (array $row): bool => in_array($row['id'], $shownIds, true))
                 ->values(),
         ];
-    }
-
-    /**
-     * A platform id is a storage key, not a label: "arbitrum-nova" in a filter chip reads like
-     * a bug. Ids that do not title-case cleanly (BSC, TON, TRON) carry an explicit name in
-     * config/networks.php.
-     *
-     * @param  array<string, array{label?: string, icon?: string}>  $catalog
-     */
-    private function label(string $id, array $catalog): string
-    {
-        $label = $catalog[$id]['label'] ?? null;
-
-        return filled($label) ? (string) $label : Str::headline($id);
     }
 }

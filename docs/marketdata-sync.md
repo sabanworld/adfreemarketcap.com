@@ -9,6 +9,7 @@ Public pages read rankings and coin details from MySQL only. Freshness comes fro
 | `App\Jobs\SyncMarketData` | every `MARKETDATA_MARKETS_INTERVAL` minutes (default 10) | `config/marketdata.php` → `sync.markets_interval_minutes` |
 | `App\Jobs\SyncGlobalData` | same interval | same; also stores 24h market-cap change |
 | `App\Jobs\SyncMarketStatus` | every `MARKETDATA_STATUS_INTERVAL` minutes (default 60) | Fear & Greed (Alternative.me), AFMC10, altcoin season |
+| `App\Jobs\SyncNinetyDayChanges` | every `MARKETDATA_NINETY_DAY_INTERVAL_HOURS` hours (default 24) | 90-day change per sampled coin from CoinGecko `market_chart`; one request per coin |
 | `App\Jobs\SyncCoinPlatforms` | every `MARKETDATA_PLATFORMS_INTERVAL_HOURS` hours (default 24) | CoinGecko `/coins/list?include_platform=true` → `coin_platforms` |
 | `App\Jobs\SyncNostrFeed` | every `MARKETDATA_NOSTR_INTERVAL` minutes (default 30) | Server-side Nostr indexer; config in `config/nostr.php` |
 | `App\Jobs\SyncDexPairs` | every `MARKETDATA_DEX_INTERVAL` minutes (default 5) | `sync.dex_interval_minutes`, `dex_trending_pages`, `dex_new_pages`, `dex_networks` |
@@ -68,15 +69,30 @@ Manual one-shot:
 
 - **Fear & Greed** from Alternative.me (`ALTERNATIVE_ME_BASE_URL`). Credit Alternative.me in the widget. Server-side only.
 - **AFMC10** is a market-cap-weighted index of the configured basket (`MARKETDATA_AFMC10`, default BTC/ETH/DOGE/LTC/BCH/XRP/BNB/HBAR/NEAR/SUI). The first successful basket sum is the base so the level starts near 100. Period returns (24h, 7d, 1m/30d, 6m via CoinGecko’s 200d, 1y) are market-cap-weighted averages of each constituent’s matching `percent_change_*` column from the markets sync.
-- **Altcoin season** uses the top `MARKETDATA_ALTCOIN_SEASON_TOP_N` ranked coins (default 50), excluding BTC and `MARKETDATA_ALTCOIN_SEASON_EXCLUDE` symbols (stables and wrapped). Index = share of those alts whose `percent_change_90d` beats Bitcoin's. Markets sync requests CoinGecko `90d` for that column. Thresholds in the UI: below 25 leans Bitcoin season, above 75 leans altcoin season.
+- **Altcoin season** = share of the sampled alts whose `percent_change_90d` beats Bitcoin's. `App\Services\MarketData\AltcoinSeasonSampler` owns membership (top `MARKETDATA_ALTCOIN_SEASON_TOP_N` ranked coins, default 50, excluding Bitcoin and the `MARKETDATA_ALTCOIN_SEASON_EXCLUDE` symbols, which are stables and wrapped or staked derivatives). Thresholds in the UI: below 25 leans Bitcoin season, above 75 leans altcoin season.
+
+### Where the 90-day change comes from
+
+**No ranking endpoint reports a 90-day window.** CoinGecko's `/coins/markets` accepts `1h,24h,7d,14d,30d,200d,1y` in `price_change_percentage` and **silently omits anything else** rather than erroring, so an earlier version that requested `90d` left `coins.percent_change_90d` null for every coin and the altcoin season index read `—` indefinitely. `/coins/{id}` has no 90d field either. Do not put `90d` (or `60d`) back into that request.
+
+`App\Services\MarketData\NinetyDayChangeSyncService` derives the column instead: one `market_chart?days=90` request per sampled coin, oldest point against newest. Consequences worth knowing:
+
+- **It costs one HTTP request per coin** (about 51 for Bitcoin plus a top-50 sample), so it runs on its own daily schedule instead of with the hourly snapshot, and skips coins whose figure is newer than `MARKETDATA_NINETY_DAY_STALE_HOURS` (default 20). Keep that window under the interval or a retry refetches everything.
+- **A coin needs a near-full window to qualify.** Under `MARKETDATA_ALTCOIN_SEASON_MIN_HISTORY_DAYS` days of history (default 80) it is left out of the index rather than compared on a shorter period. Recent listings therefore shrink `altcoin_season_sample_size`, which the card states in its caption.
+- **The markets sync must never write this column.** It fills every other `percent_change_*` field, so listing this one would overwrite the derived figure with null every ten minutes. `tests/Feature/NinetyDayChangeSyncTest.php` guards both that and the request parameter.
+- Order matters when running by hand: `--only-season` before `--only-status`, or the snapshot scores yesterday's numbers. Passing both to one command already runs them in that order.
 
 ### Network filter
 
-`SyncCoinPlatforms` maps CoinGecko platform contracts onto coins that already have a `coin_provider_ids` row. Markets (`Home`) filters with `?network=` via `whereHas('platforms')`. Pinned pills and labels live in `config/networks.php`. This is not DexScan's `dex_pairs.chain`.
+`SyncCoinPlatforms` maps CoinGecko platform contracts onto coins that already have a `coin_provider_ids` row. Markets (`Home`) filters with `?network=` via `whereHas('platforms')`. This is not DexScan's `dex_pairs.chain`.
+
+The chip row is **derived, never hand-listed**: `App\Services\MarketData\NetworkCatalogService` counts ranked coins per `platform_id` (cached 5 minutes, cleared by the platform sync), so a chain reaches the filter only once a coin in the table maps to it, and each option carries that count. `MARKETDATA_NETWORK_PINNED` leads the row in the order given; everything else falls in behind, largest first, and lands in the More menu. `MARKETDATA_NETWORK_HIDDEN` drops a chain entirely.
+
+A `platform_id` is a storage key, not a label, so ids are title-cased for display and `networks.names` in `config/networks.php` only carries the ones that do not convert cleanly (`the-open-network` → TON, `zksync` → zkSync, `xdai` → Gnosis). Add a name there when a new chain shows up reading like a slug. `chipRow()` promotes the chain a reader picked in the More menu into the visible chips, so the active filter is never hidden behind an untouched button.
 
 ### Nostr community remarks
 
-`config/nostr.php` lists per-coin author npubs and hashtags. `SyncNostrFeed` pulls kind-1 notes through configured HTTP backends in order (default: Divine gateway, then Nostr.Band), stores them in `nostr_notes`, and prunes by `NOSTR_RETENTION_DAYS`. A single author timeout is reported and skipped; the run fails only when every author fails. Coin detail reads MySQL only; visiting a coin with a configured feed may dispatch a sync when the cache is stale. The visitor browser never opens a relay.
+`config/nostr.php` lists curated authors (NIP-05 verified Bitcoin voices where possible) plus one feed per AFMC10 coin slug with topic terms (`btc` / `bitcoin`, `eth`, …). `SyncNostrFeed` fetches each author's recent kind-1 notes once through configured HTTP backends (default: Divine gateway, then Nostr.Band), then applies per-coin topic filters. A note is kept only when it matches a topic term as a `#hashtag` / `t` tag, or as a whole word in the leading characters of the note (so a late "Bitcoin" mention in an off-topic rant does not qualify). Notes older than `NOSTR_MAX_AGE_DAYS` are dropped. A single author timeout is reported and skipped; the run fails only when every author request errors. Empty feeds after filtering clear the prior cache so off-topic notes do not linger. Coin detail reads MySQL only; visiting a coin with a configured feed may dispatch a sync when the cache is stale. The visitor browser never opens a relay.
 
 Every monetary column holds USD. Visitors can display those figures in another currency or in BTC, converted at render time from `currency_rates`: [`docs/currency.md`](currency.md).
 

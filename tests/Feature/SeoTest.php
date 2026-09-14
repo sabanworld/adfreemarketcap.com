@@ -60,6 +60,7 @@ class SeoTest extends TestCase
         $response->assertHeader('Content-Type', 'application/xml; charset=UTF-8');
         $response->assertHeader('Cache-Control', 'max-age=300, public');
         $response->assertSee('<loc>' . route('home') . '</loc>', false);
+        $response->assertSee('<loc>' . route('why-ad-free') . '</loc>', false);
         $response->assertSee('<loc>' . route('coins.show', 'bitcoin') . '</loc>', false);
         $response->assertSee('<changefreq>hourly</changefreq>', false);
     }

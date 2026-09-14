@@ -38,7 +38,11 @@ class CoinGeckoProvider implements ExchangeRateProvider, MarketDataProvider
             'per_page' => $perPage,
             'page' => $page,
             'sparkline' => 'true',
-            'price_change_percentage' => '1h,24h,7d',
+            // CoinGecko accepts 1h, 24h, 7d, 14d, 30d, 200d and 1y here. An unsupported window
+            // is not an error: the field is simply missing from the response, so asking for 90d
+            // returned nothing and looked like a provider outage. The 90-day change the altcoin
+            // season index needs is derived from chart history instead.
+            'price_change_percentage' => '1h,24h,7d,30d,200d,1y',
         ]);
 
         throw_unless($response->successful(), new RuntimeException(
@@ -68,6 +72,15 @@ class CoinGeckoProvider implements ExchangeRateProvider, MarketDataProvider
                 volume24h: isset($row['total_volume']) ? (float) $row['total_volume'] : null,
                 circulatingSupply: isset($row['circulating_supply']) ? (float) $row['circulating_supply'] : null,
                 sparkline7d: is_array($sparkline) ? array_values(array_map('floatval', $sparkline)) : null,
+                percentChange30d: isset($row['price_change_percentage_30d_in_currency'])
+                    ? (float) $row['price_change_percentage_30d_in_currency']
+                    : null,
+                percentChange200d: isset($row['price_change_percentage_200d_in_currency'])
+                    ? (float) $row['price_change_percentage_200d_in_currency']
+                    : null,
+                percentChange1y: isset($row['price_change_percentage_1y_in_currency'])
+                    ? (float) $row['price_change_percentage_1y_in_currency']
+                    : null,
             );
         })->filter(fn (MarketCoinData $coin): bool => filled($coin->externalId));
     }
@@ -87,7 +100,61 @@ class CoinGeckoProvider implements ExchangeRateProvider, MarketDataProvider
             totalVolume24h: isset($data['total_volume']['usd']) ? (float) $data['total_volume']['usd'] : null,
             btcDominance: isset($data['market_cap_percentage']['btc']) ? (float) $data['market_cap_percentage']['btc'] : null,
             activeCryptocurrencies: isset($data['active_cryptocurrencies']) ? (int) $data['active_cryptocurrencies'] : null,
+            marketCapChangePercentage24h: isset($data['market_cap_change_percentage_24h_usd'])
+                ? (float) $data['market_cap_change_percentage_24h_usd']
+                : null,
         );
+    }
+
+    /**
+     * @return list<array{external_id: string, platforms: array<string, string>}>
+     */
+    public function fetchCoinPlatforms(): array
+    {
+        $response = $this->client()->get('/coins/list', [
+            'include_platform' => 'true',
+        ]);
+
+        throw_unless($response->successful(), new RuntimeException(
+            'CoinGecko coins list failed: ' . $response->status() . ' ' . $response->body()
+        ));
+
+        $rows = [];
+        foreach ($response->json() ?? [] as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $externalId = isset($row['id']) && is_string($row['id']) ? $row['id'] : null;
+            if (! filled($externalId)) {
+                continue;
+            }
+
+            $platforms = [];
+            $rawPlatforms = $row['platforms'] ?? null;
+            if (is_array($rawPlatforms)) {
+                foreach ($rawPlatforms as $platformId => $contract) {
+                    if (! is_string($platformId) || $platformId === '') {
+                        continue;
+                    }
+                    if (! is_string($contract) || $contract === '') {
+                        continue;
+                    }
+                    $platforms[$platformId] = $contract;
+                }
+            }
+
+            if ($platforms === []) {
+                continue;
+            }
+
+            $rows[] = [
+                'external_id' => $externalId,
+                'platforms' => $platforms,
+            ];
+        }
+
+        return $rows;
     }
 
     public function fetchCoinDetail(string $externalId): CoinDetailData

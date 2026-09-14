@@ -9,7 +9,9 @@
             <div class="afmc-footer__brand">
                 <x-afmc.brand-mark :href="route('home')" size="md" />
                 <p class="afmc-footer__brand-note">
-                    {{ __('Market data with no ads, no paid rankings and no sponsored listings. Paid for out of the creator\'s own pocket. Any strategic partnership our creator has with a company we link to is named on the link itself.') }}
+                    {{ __('Market data with no ads, no paid rankings and no sponsored listings. :person pays for it out of his own pocket. Any partnership he has with a company we link to is named on the card itself.', [
+                        'person' => $company['person'],
+                    ]) }}
                 </p>
                 <x-afmc.btc-donate />
             </div>
@@ -28,9 +30,9 @@
 
                 <nav aria-label="{{ __('About') }}">
                     <span class="afmc-footer__col-title">{{ __('About') }}</span>
-                    <a class="afmc-footer__link" href="{{ route('home') }}#pledge">{{ __('Why ad-free') }}</a>
+                    <a class="afmc-footer__link" href="{{ route('why-ad-free') }}" wire:navigate>{{ __('Why ad-free') }}</a>
                     <a class="afmc-footer__link" href="{{ route('legal.show', 'disclosure-of-interests') }}" wire:navigate>{{ __('Picks policy') }}</a>
-                    <a class="afmc-footer__link" href="{{ $company['website'] }}" rel="noopener noreferrer" target="_blank">{{ __('Creator / host') }}</a>
+                    <a class="afmc-footer__link" href="{{ $company['website'] }}" rel="noopener noreferrer" target="_blank">{{ $company['person'] }}</a>
                     <a class="afmc-footer__link" href="{{ route('legal.show', 'imprint') }}" wire:navigate>{{ __('Imprint') }}</a>
                 </nav>
 

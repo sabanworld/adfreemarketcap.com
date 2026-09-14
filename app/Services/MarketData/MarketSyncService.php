@@ -94,6 +94,7 @@ class MarketSyncService
                 'total_market_cap' => $global->totalMarketCap,
                 'total_volume_24h' => $global->totalVolume24h,
                 'btc_dominance' => $global->btcDominance,
+                'market_cap_change_percentage_24h' => $global->marketCapChangePercentage24h,
                 'active_cryptocurrencies' => $global->activeCryptocurrencies,
                 'provider' => $result['provider'],
                 'synced_at' => now(),
@@ -214,6 +215,12 @@ class MarketSyncService
                 'percent_change_1h' => $precise?->percentChange1h ?? $data->percentChange1h,
                 'percent_change_24h' => $data->percentChange24h,
                 'percent_change_7d' => $precise?->percentChange7d ?? $data->percentChange7d,
+                // percent_change_90d is deliberately absent: no ranking provider reports a
+                // 90-day window, so NinetyDayChangeSyncService derives it from chart history.
+                // Listing it here would overwrite that with null on every ranking sync.
+                'percent_change_30d' => $data->percentChange30d,
+                'percent_change_200d' => $data->percentChange200d,
+                'percent_change_1y' => $data->percentChange1y,
                 'market_cap' => $data->marketCap,
                 'volume_24h' => $data->volume24h,
                 'circulating_supply' => $data->circulatingSupply,

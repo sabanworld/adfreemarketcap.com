@@ -20,7 +20,7 @@
     <section id="mining" aria-label="{{ __('For bitcoin miners') }}" {{ $attributes->merge(['class' => 'afmc-mining']) }}>
         <div class="afmc-mining__head">
             <span class="afmc-mining__eyebrow">{{ __('Mining') }}</span>
-            <span class="afmc-mining__badge">{{ __('Creator is a partner') }}</span>
+            <span class="afmc-mining__badge">{{ __(':person is a partner', ['person' => config('company.person')]) }}</span>
         </div>
 
         <div class="afmc-mining__body">
@@ -62,7 +62,8 @@
                 <x-afmc.icon name="arrow_outward" size="16px" />
             </a>
             <p class="afmc-mining__note">
-                {{ __('A pool pays out only when it finds a block, so treat the sats you spend as spent. Our creator has a strategic partnership with :partner. This is not a paid placement and we take no commission.', [
+                {{ __('A pool pays out only when it finds a block, so treat the sats you spend as spent. :person has a strategic partnership with :partner. This is not a paid placement and we take no commission.', [
+                    'person' => config('company.person'),
                     'partner' => $partner['name'],
                 ]) }}
             </p>

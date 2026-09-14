@@ -11,5 +11,6 @@ final readonly class GlobalMarketData
         public ?float $totalVolume24h,
         public ?float $btcDominance,
         public ?int $activeCryptocurrencies,
+        public ?float $marketCapChangePercentage24h = null,
     ) {}
 }

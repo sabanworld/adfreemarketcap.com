@@ -17,7 +17,9 @@
 ]) }}</p>
 
 <h2>{{ __('What the service is') }}</h2>
-<p>{{ __('We publish cryptocurrency market information: rankings by market capitalisation, coin pages, and on-chain pair data. Rankings follow one published formula and cannot be bought. Picks name any interest our creator has in the company on the card itself.') }}</p>
+<p>{{ __('We publish cryptocurrency market information: rankings by market capitalisation, coin pages, and on-chain pair data. Rankings follow one published formula. We do not sell placement. Picks name any interest :legal has in the company on the card itself.', [
+    'legal' => $company['legal_name'],
+]) }}</p>
 <p>{{ __('The site is free. There is no subscription, no payment, and no purchase, so the rules on distance contracts for paid services and the associated 14 day withdrawal right do not come into play. If we ever charge for something, you will be told the price and your rights before you agree to it.') }}</p>
 
 <h2>{{ __('We are not a regulated financial firm') }}</h2>

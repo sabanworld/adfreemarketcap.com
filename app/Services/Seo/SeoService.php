@@ -159,6 +159,12 @@ final class SeoService
                 'changefreq' => 'hourly',
                 'priority' => '0.9',
             ],
+            [
+                'loc' => route('why-ad-free'),
+                'lastmod' => now()->toAtomString(),
+                'changefreq' => 'monthly',
+                'priority' => '0.5',
+            ],
         ]);
 
         foreach (array_keys(LegalPage::PAGES) as $legalPage) {

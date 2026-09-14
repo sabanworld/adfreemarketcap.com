@@ -14,6 +14,7 @@ class MarketStatusSyncService
     public function __construct(
         private readonly FearGreedProvider $fearGreed,
         private readonly MarketStatusCalculator $calculator,
+        private readonly AltcoinSeasonSampler $sampler,
     ) {}
 
     public function sync(): SyncRun
@@ -116,25 +117,10 @@ class MarketStatusSyncService
      */
     private function computeAltcoinSeason(): array
     {
-        $topN = max(1, (int) config('marketdata.altcoin_season.top_n', 50));
-        /** @var list<string> $excludeSymbols */
-        $excludeSymbols = array_map(
-            strtoupper(...),
-            config('marketdata.altcoin_season.exclude_symbols', []),
-        );
+        $bitcoin = $this->sampler->bitcoin();
+        $btcChange = $bitcoin?->percent_change_90d !== null ? (float) $bitcoin->percent_change_90d : null;
 
-        $btc = Coin::query()->where('slug', 'bitcoin')->first(['percent_change_90d']);
-        $btcChange = $btc?->percent_change_90d !== null ? (float) $btc->percent_change_90d : null;
-
-        $alts = Coin::query()
-            ->whereNotNull('rank')
-            ->where('slug', '!=', 'bitcoin')
-            ->whereNotIn('symbol', $excludeSymbols)
-            ->orderBy('rank')
-            ->limit($topN)
-            ->get(['percent_change_90d']);
-
-        $changes = $alts
+        $changes = $this->sampler->alts()
             ->map(fn (Coin $coin): ?float => $coin->percent_change_90d !== null ? (float) $coin->percent_change_90d : null)
             ->all();
 

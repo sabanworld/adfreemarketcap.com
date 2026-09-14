@@ -76,9 +76,11 @@
                     @endforeach
                 </dl>
             </div>
-            {{-- A number a reader cannot look up anywhere else has to explain itself here. --}}
+            {{-- A number a reader cannot look up anywhere else has to explain itself here, and
+                 the sentence has to match MarketStatusCalculator: a fixed basket, market-cap
+                 weighted, based on the first sum we recorded. --}}
             <p class="afmc-status-panel__caption">
-                {{ __('Our top ten by market cap, weighted by market cap and rebased to 100 at launch.') }}
+                {{ __('A fixed basket of ten major coins, weighted by market cap and set to 100 the first time we measured it.') }}
             </p>
         </div>
     </div>
@@ -87,10 +89,10 @@
         <div class="afmc-market-status__season-head">
             <p class="afmc-status-panel__label">{{ __('Altcoin season') }}</p>
             <p class="afmc-status-panel__caption">
-                @if ($sampleSize !== null)
-                    {{ __('Share of the top :count beating Bitcoin over 90 days', ['count' => number_format((int) $sampleSize)]) }}
+                @if ($sampleSize !== null && (int) $sampleSize > 0)
+                    {{ __('Share of the :count largest alts that beat Bitcoin over 90 days', ['count' => number_format((int) $sampleSize)]) }}
                 @else
-                    {{ __('Share of the largest coins beating Bitcoin over 90 days') }}
+                    {{ __('Share of the largest alts that beat Bitcoin over 90 days') }}
                 @endif
             </p>
         </div>

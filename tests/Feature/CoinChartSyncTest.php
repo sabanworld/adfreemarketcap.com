@@ -158,8 +158,12 @@ class CoinChartSyncTest extends TestCase
             ->assertSee('1H', false)
             ->assertSee('All', false)
             ->assertSeeHtml('id="coin-chart"')
+            // A canvas is opaque to a screen reader, so the chart says what it plots.
+            ->assertSeeHtml('role="img"')
+            ->assertSeeHtml('Bitcoin price over 7 days in USD')
             ->call('setChartRange', '1y')
             ->assertSet('chartRange', '1y')
+            ->assertSeeHtml('Bitcoin price over a year in USD')
             ->assertOk();
     }
 

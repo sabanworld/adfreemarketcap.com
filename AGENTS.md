@@ -21,6 +21,7 @@
   - `php artisan marketdata:sync --only-tickers` (exchange markets for hot coins)
   - `php artisan marketdata:sync --only-charts` (multi-range charts for hot majors)
   - `php artisan marketdata:sync --only-status` (Fear & Greed, AFMC10, altcoin season)
+ - `php artisan marketdata:sync --only-season` (90-day changes the altcoin season index scores; run before `--only-status`)
   - `php artisan marketdata:sync --only-platforms` (coin network platforms for Markets filter)
   - `php artisan marketdata:sync --only-nostr` (Nostr community notes)
   - `php artisan horizon` (if not started via Sail Supervisor)
@@ -88,7 +89,7 @@ Everything a human reads should sound like a person wrote it: product copy, lega
 
 **Sentence shapes to avoid**
 
-- **Echo clauses that restate the sentence.** Not "Where our creator has a partnership, the link says so"; write "Any strategic partnership our creator has is named on the link itself."
+- **Echo clauses that restate the sentence.** Not "Where he has a partnership, the link says so"; write "Any strategic partnership he has is named on the link itself."
 - **Terse confirmation fragments as a closer.** Not "Suggested hardware wallet. We use one."; write one sentence that carries the fact.
 - **"Not just X, it's Y"**, "more than just", and other setup-payoff constructions.
 - **Rhetorical questions as openers**, "Let's …", "dive in", "unlock", "seamless", "effortless", "leverage" as a verb, and similar marketing filler.
@@ -99,6 +100,8 @@ Everything a human reads should sound like a person wrote it: product copy, lega
 **Preferences**
 
 - Short declarative sentences, active voice, second person for user-facing copy ("you can delete your account").
+- **Name the right party.** Product copy (footer, pledge, picks, miners block, Why ad-free) names the person behind the site through `config('company.person')`, rendered as `:person`, and refers to him as "he" afterwards. Legal pages name the operating company through `config('company.legal_name')`, because that is the party a visitor contracts with and complains to. **Never write "the creator" or "our creator" anywhere**, including docs and config comments. `tests/Feature/CopyStyleTest.php` fails the build on both.
+- **Register.** Product copy is relaxed: contractions are welcome, and a personal aside ("he can't stand ad-riddled sites") beats a corporate line. Legal pages stay plain and formal, with no contractions and no jokes. Relaxed never means vaguer: the facts still have to match the code.
 - Sentence case for headings. No emoji in product copy, legal pages, or docs.
 - Say the concrete thing: name the page, the period, the amount, the provider. Vague reassurance is worse than nothing on legal pages.
 - Only claim behaviour the code actually has. If a policy sentence and the codebase disagree, one of the two is a bug.

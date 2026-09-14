@@ -6,7 +6,9 @@ namespace App\Livewire;
 
 use App\Models\Coin;
 use App\Models\MarketGlobal;
+use App\Models\MarketStatusSnapshot;
 use App\Models\User;
+use App\Services\MarketData\NetworkCatalogService;
 use App\Services\Seo\SeoService;
 use App\Services\Watchlist\WatchlistService;
 use App\Support\FormRateLimiter;
@@ -21,6 +23,13 @@ class Home extends Component
 {
     use WithPagination;
 
+    /**
+     * Rows per page is a reader setting, like dense rows, not a redesign.
+     *
+     * @var list<int>
+     */
+    public const PER_PAGE_OPTIONS = [20, 50, 100];
+
     #[Url]
     public string $search = '';
 
@@ -33,6 +42,12 @@ class Home extends Component
     #[Url]
     public string $tab = 'all';
 
+    #[Url]
+    public string $network = 'all';
+
+    #[Url]
+    public int $perPage = 50;
+
     public bool $dense = false;
 
     /**
@@ -40,8 +55,16 @@ class Home extends Component
      */
     public array $watchedIds = [];
 
-    public function mount(WatchlistService $watchlist): void
+    public function mount(WatchlistService $watchlist, NetworkCatalogService $networks): void
     {
+        if (! $networks->isValidNetwork($this->network)) {
+            $this->network = 'all';
+        }
+
+        if (! in_array($this->perPage, self::PER_PAGE_OPTIONS, true)) {
+            $this->perPage = 50;
+        }
+
         $user = Auth::user();
 
         if ($user instanceof User) {
@@ -62,6 +85,20 @@ class Home extends Component
         $this->resetPage();
     }
 
+    public function updatingNetwork(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
+    {
+        if (! in_array($this->perPage, self::PER_PAGE_OPTIONS, true)) {
+            $this->perPage = 50;
+        }
+
+        $this->resetPage();
+    }
+
     public function setTab(string $tab): void
     {
         if (! in_array($tab, ['all', 'gainers', 'losers'], true)) {
@@ -69,6 +106,24 @@ class Home extends Component
         }
 
         $this->tab = $tab;
+        $this->resetPage();
+    }
+
+    public function setNetwork(string $network, NetworkCatalogService $networks): void
+    {
+        if (! $networks->isValidNetwork($network)) {
+            return;
+        }
+
+        $this->network = $network;
+        $this->resetPage();
+    }
+
+    public function clearFilters(): void
+    {
+        $this->network = 'all';
+        $this->tab = 'all';
+        $this->search = '';
         $this->resetPage();
     }
 
@@ -117,7 +172,7 @@ class Home extends Component
         }
     }
 
-    public function render(SeoService $seo)
+    public function render(SeoService $seo, NetworkCatalogService $networks)
     {
         // Markets is a ranked list. Unranked rows (null rank) must not appear:
         // MySQL ASC puts NULLs first, which looked like a broken A-Z page.
@@ -139,6 +194,12 @@ class Home extends Component
             $query->where('percent_change_24h', '<', 0);
         }
 
+        if ($this->network !== 'all') {
+            $query->whereHas('platforms', function ($builder): void {
+                $builder->where('platform_id', $this->network);
+            });
+        }
+
         $allowed = ['rank', 'name', 'price', 'percent_change_1h', 'percent_change_24h', 'percent_change_7d', 'market_cap', 'volume_24h'];
         $sort = in_array($this->sort, $allowed, true) ? $this->sort : 'rank';
         $direction = $this->direction === 'desc' ? 'desc' : 'asc';
@@ -149,30 +210,17 @@ class Home extends Component
             $query->orderBy($sort);
         }
 
-        $featured = Coin::query()
-            ->select(Coin::LIST_COLUMNS)
-            ->whereNotNull('rank')
-            ->whereIn('symbol', ['BTC', 'ETH'])
-            ->orderBy('rank')
-            ->limit(2)
-            ->get();
-
-        if ($featured->count() < 2) {
-            $featured = Coin::query()
-                ->select(Coin::LIST_COLUMNS)
-                ->whereNotNull('rank')
-                ->orderBy('rank')
-                ->limit(2)
-                ->get();
-        }
-
         $pageSeo = $seo->forHome();
+        $chipRow = $networks->chipRow($this->network);
 
         return view('livewire.home', [
-            'coins' => $query->paginate(50),
+            'coins' => $query->paginate($this->perPage),
             'global' => MarketGlobal::latestSnapshot(),
-            'featured' => $featured,
+            'status' => MarketStatusSnapshot::latestSnapshot(),
             'coinCount' => Coin::rankedCount(),
+            'shownNetworks' => $chipRow['shown'],
+            'moreNetworks' => $chipRow['rest'],
+            'networkLabel' => $networks->networkLabel($this->network),
         ])
             ->title($pageSeo->title)
             ->layoutData(['seo' => $pageSeo]);

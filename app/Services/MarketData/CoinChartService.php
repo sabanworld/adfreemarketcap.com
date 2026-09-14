@@ -56,6 +56,27 @@ final class CoinChartService
         return array_key_exists($range, self::RANGES) ? $range : '7d';
     }
 
+    /**
+     * The range buttons are labelled "7D" and "1Y" because a row of chips has no room for more.
+     * A chart that names itself for a screen reader needs the period spelled out instead.
+     */
+    public function spokenRange(string $range): string
+    {
+        return match ($this->normalizeRange($range)) {
+            '1h' => __('the last hour'),
+            '12h' => __('12 hours'),
+            '1d' => __('24 hours'),
+            '7d' => __('7 days'),
+            '1m' => __('a month'),
+            '3m' => __('3 months'),
+            '6m' => __('6 months'),
+            '1y' => __('a year'),
+            '5y' => __('5 years'),
+            '10y' => __('10 years'),
+            default => __('its full history'),
+        };
+    }
+
     public function seriesForRange(string $range): string
     {
         $range = $this->normalizeRange($range);

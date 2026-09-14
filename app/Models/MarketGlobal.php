@@ -17,6 +17,7 @@ class MarketGlobal extends Model
         'total_market_cap',
         'total_volume_24h',
         'btc_dominance',
+        'market_cap_change_percentage_24h',
         'active_cryptocurrencies',
         'provider',
         'synced_at',
@@ -40,6 +41,7 @@ class MarketGlobal extends Model
             'total_market_cap' => 'decimal:2',
             'total_volume_24h' => 'decimal:2',
             'btc_dominance' => 'decimal:4',
+            'market_cap_change_percentage_24h' => 'decimal:4',
             'active_cryptocurrencies' => 'integer',
             'synced_at' => 'datetime',
         ];

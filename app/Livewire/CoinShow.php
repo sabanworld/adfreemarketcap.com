@@ -8,10 +8,13 @@ use App\Jobs\SyncCoinCharts;
 use App\Jobs\SyncCoinDetail;
 use App\Jobs\SyncCoinInsights;
 use App\Jobs\SyncCoinTickers;
+use App\Jobs\SyncNostrFeed;
 use App\Models\Coin;
+use App\Models\NostrNote;
 use App\Services\Currency\MarketDisplayService;
 use App\Services\MarketData\CoinChartService;
 use App\Services\Seo\SeoService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Js;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
@@ -49,6 +52,10 @@ class CoinShow extends Component
                 SyncCoinInsights::dispatch();
             }
         }
+
+        if ($this->hasNostrFeed($coin->slug) && $this->nostrFeedIsStale($coin->slug)) {
+            SyncNostrFeed::dispatch($coin->slug);
+        }
     }
 
     public function setChartRange(string $range, CoinChartService $charts): void
@@ -78,6 +85,11 @@ class CoinShow extends Component
         $chartPoints = $charts->pointsFor($coin, $range);
         $availableRanges = $charts->availableRanges($coin);
 
+        $displayLimit = max(1, (int) config('nostr.display_limit', 8));
+        $nostrNotes = $this->hasNostrFeed($coin->slug)
+            ? NostrNote::forCoin($coin->slug, $displayLimit)
+            : [];
+
         return view('livewire.coin-show', [
             'coin' => $coin,
             'treasury' => $coin->treasurySnapshot,
@@ -89,6 +101,9 @@ class CoinShow extends Component
             'chartLabels' => $charts->chartLabels($chartPoints, $range),
             'availableRanges' => $availableRanges,
             'rangeMeta' => CoinChartService::RANGES,
+            'spokenRange' => $charts->spokenRange($range),
+            'nostrNotes' => $nostrNotes,
+            'nostrEventLinkBase' => rtrim((string) config('nostr.event_link_base', 'https://primal.net/e'), '/'),
         ])
             ->title($pageSeo->title)
             ->layoutData(['seo' => $pageSeo]);
@@ -169,5 +184,29 @@ class CoinShow extends Component
         $cutoff = now()->subHours($hours);
 
         return $treasuryAt->lte($cutoff) || $cycleAt->lte($cutoff);
+    }
+
+    private function hasNostrFeed(string $slug): bool
+    {
+        $feeds = config('nostr.feeds', []);
+
+        return is_array($feeds) && array_key_exists($slug, $feeds);
+    }
+
+    private function nostrFeedIsStale(string $slug): bool
+    {
+        $minutes = max(1, (int) config('nostr.stale_minutes', 45));
+        $latest = NostrNote::query()
+            ->where('coin_slug', $slug)
+            ->orderByDesc('synced_at')
+            ->value('synced_at');
+
+        if ($latest === null) {
+            return true;
+        }
+
+        $syncedAt = $latest instanceof Carbon ? $latest : Carbon::parse($latest);
+
+        return $syncedAt->lte(now()->subMinutes($minutes));
     }
 }

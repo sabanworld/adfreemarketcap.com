@@ -3,14 +3,12 @@
     use App\Services\MarketData\MarketNumberFormatter;
 
     $display = app(MarketDisplayService::class);
-    $btcDominance = $global?->btc_dominance !== null ? (float) $global->btc_dominance : null;
 @endphp
 
 <main data-afmc-page class="afmc-page">
     <div style="display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;margin-bottom:var(--space-4)">
         <div style="display:flex;align-items:baseline;gap:var(--space-3);flex-wrap:wrap">
             <h1 style="font:var(--type-h2);margin:0">{{ __('Cryptocurrency prices by market cap') }}</h1>
-            <span style="font:var(--type-body-sm);color:var(--text-faint)">{{ __('Ranking cannot be bought') }}</span>
         </div>
         <span class="afmc-live">
             <x-afmc.icon name="fiber_manual_record" filled />
@@ -18,55 +16,7 @@
         </span>
     </div>
 
-    @if ($featured->isNotEmpty())
-        <div class="afmc-grid afmc-grid--features">
-            @foreach ($featured as $index => $coin)
-                @php
-                    $change24 = $display->change($coin->percent_change_24h);
-                    $spark = $display->sparkline($coin->sparkline_7d);
-                @endphp
-                <a
-                    href="{{ route('coins.show', $coin) }}"
-                    wire:navigate
-                    class="afmc-feature {{ $index === 0 ? 'afmc-feature--accent' : '' }}"
-                    wire:key="featured-{{ $coin->id }}"
-                >
-                    <div class="afmc-feature__top">
-                        <div>
-                            <p class="afmc-feature__name">
-                                {{ $coin->name }}
-                                <span class="afmc-feature__symbol">{{ strtoupper((string) $coin->symbol) }}</span>
-                            </p>
-                        </div>
-                        <span class="afmc-feature__rank">#{{ $coin->rank ?? '—' }}</span>
-                    </div>
-                    <div class="afmc-feature__price-row">
-                        <div style="display:grid;gap:var(--space-2)">
-                            <span class="afmc-feature__price">{{ MarketNumberFormatter::money($coin->price !== null ? (float) $coin->price : null, 8) }}</span>
-                            <x-afmc.price-change :value="$change24" chip />
-                        </div>
-                        <x-afmc.sparkline :data="$spark" :up="($change24 ?? 0) >= 0" :width="190" :height="52" />
-                    </div>
-                    <dl class="afmc-feature__stats">
-                        <div>
-                            <dt>{{ __('Market cap') }}</dt>
-                            <dd>{{ MarketNumberFormatter::money($coin->market_cap !== null ? (float) $coin->market_cap : null) }}</dd>
-                        </div>
-                        <div>
-                            <dt>{{ __('Volume 24h') }}</dt>
-                            <dd>{{ MarketNumberFormatter::money($coin->volume_24h !== null ? (float) $coin->volume_24h : null) }}</dd>
-                        </div>
-                        @if ($index === 0 && $btcDominance !== null)
-                            <div>
-                                <dt>{{ __('Dominance') }}</dt>
-                                <dd>{{ MarketNumberFormatter::percent($btcDominance) }}</dd>
-                            </div>
-                        @endif
-                    </dl>
-                </a>
-            @endforeach
-        </div>
-    @endif
+    <x-afmc.market-status :global="$global" :status="$status" style="margin-bottom:var(--space-5)" />
 
     <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-3);flex-wrap:wrap">
         <div class="afmc-tabs" role="tablist">
@@ -83,7 +33,16 @@
         </label>
     </div>
 
-    <div class="afmc-card" wire:loading.class="afmc-is-loading" wire:target="sortBy,setTab,gotoPage,previousPage,nextPage,dense,search">
+    @if ($shownNetworks->isNotEmpty())
+        <x-afmc.network-filter
+            :network="$network"
+            :networks="$shownNetworks"
+            :more-networks="$moreNetworks"
+            style="margin-bottom:var(--space-3)"
+        />
+    @endif
+
+    <div class="afmc-card" wire:loading.class="afmc-is-loading" wire:target="sortBy,setTab,setNetwork,gotoPage,previousPage,nextPage,dense,search">
         <div class="afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('Cryptocurrency prices by market cap') }}" tabindex="0">
             <table class="afmc-table {{ $dense ? 'afmc-table--dense' : '' }}">
                 <thead>
@@ -154,19 +113,49 @@
                                 </span>
                             </td>
                             <td class="is-right">{{ MarketNumberFormatter::money($coin->price !== null ? (float) $coin->price : null, 8) }}</td>
-                            <td class="is-right hide-narrow"><x-afmc.price-change :value="$display->change($coin->percent_change_1h, '1h')" size="sm" /></td>
+                            {{-- 1h carries no caret: three carets in a row turn the percentage
+                                 columns into an arrow field and the sign already reads. --}}
+                            <td class="is-right hide-narrow"><x-afmc.price-change :value="$display->change($coin->percent_change_1h, '1h')" size="sm" :show-icon="false" /></td>
                             <td class="is-right"><x-afmc.price-change :value="$change24" size="sm" /></td>
                             <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_7d, '7d')" size="sm" /></td>
                             <td class="is-right">{{ MarketNumberFormatter::money($coin->market_cap !== null ? (float) $coin->market_cap : null) }}</td>
                             <td class="is-right">{{ MarketNumberFormatter::money($coin->volume_24h !== null ? (float) $coin->volume_24h : null) }}</td>
+                            {{-- Colour and slope both come from the seven-day series this cell
+                                 draws. Tinting it from the 24h column made a chart contradict
+                                 its own line. --}}
                             <td class="is-right hide-narrow">
-                                <x-afmc.sparkline :data="$spark" :up="($change24 ?? 0) >= 0" />
+                                <x-afmc.sparkline :data="$spark" />
                             </td>
                         </tr>
                     @empty
+                        @php
+                            $filtered = $network !== 'all' || $tab !== 'all' || filled($search);
+                        @endphp
                         <tr>
-                            <td colspan="9" style="height:auto;padding:var(--space-8);text-align:center;color:var(--text-faint);font:var(--type-body-sm)">
-                                {{ __('No coins yet. Run php artisan marketdata:sync') }}
+                            <td colspan="9" class="afmc-table__empty">
+                                <div class="afmc-empty">
+                                    @if ($network !== 'all')
+                                        <p class="afmc-empty__title">{{ __('Nothing on :network yet', ['network' => $networkLabel ?? __('this network')]) }}</p>
+                                        <p class="afmc-empty__detail">
+                                            {{ __('We list an asset against a chain only once we can confirm its contract, so a chain we have just added can look empty for a while.') }}
+                                        </p>
+                                    @elseif ($filtered)
+                                        <p class="afmc-empty__title">{{ __('Nothing matches this view') }}</p>
+                                        <p class="afmc-empty__detail">
+                                            {{ __('Gainers and losers are read off the 24 hour change. Clear the filters to see everything we track.') }}
+                                        </p>
+                                    @else
+                                        <p class="afmc-empty__title">{{ __('No coins yet') }}</p>
+                                        <p class="afmc-empty__detail">
+                                            {{ __('Market data has not been synced yet, so there is nothing to rank.') }}
+                                        </p>
+                                    @endif
+                                    @if ($filtered)
+                                        <button type="button" class="afmc-btn afmc-btn--secondary afmc-btn--sm" wire:click="clearFilters">
+                                            {{ __('Clear filters') }}
+                                        </button>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @endforelse
@@ -174,7 +163,7 @@
             </table>
         </div>
 
-        @if ($coins->hasPages())
+        @if ($coins->total() > 0)
             <div class="afmc-pagination">
                 <span class="afmc-pagination__meta">
                     {{ __('Showing') }}
@@ -184,6 +173,15 @@
                 </span>
                 <div class="afmc-pagination__links">
                     {{ $coins->onEachSide(1)->links('pagination.afmc') }}
+                    <label class="afmc-perpage">
+                        <span class="afmc-visually-hidden">{{ __('Rows per page') }}</span>
+                        <select wire:model.live="perPage">
+                            @foreach (\App\Livewire\Home::PER_PAGE_OPTIONS as $option)
+                                <option value="{{ $option }}" @selected($option === $perPage)>{{ __(':count / page', ['count' => $option]) }}</option>
+                            @endforeach
+                        </select>
+                        <x-afmc.icon name="expand_more" size="16px" />
+                    </label>
                 </div>
             </div>
         @endif
@@ -199,34 +197,14 @@
         </div>
     </div>
 
-    <section id="pledge" class="afmc-pledge" style="margin-top:var(--space-10)">
-        <div class="afmc-pledge__top">
-            <div>
-                <h2 class="afmc-pledge__statement">{{ __('No ads. No paid rankings. No sponsored listings.') }}</h2>
-                <p class="afmc-pledge__detail">
-                    {{ __('This site is paid for out of the creator\'s own pocket. Nobody can pay to appear, to move up, or to lose a risk flag. The picks below are companies our creator uses or has a strategic partnership with. Each card names the relationship, and none of them are paid placements.') }}
-                </p>
-            </div>
-        </div>
-        <div class="afmc-pledge__items">
-            <div>
-                <div class="afmc-pledge__item-label"><x-afmc.icon name="block" />{{ __('Zero ad slots') }}</div>
-                <p class="afmc-pledge__item-detail">{{ __('None sold, none planned, no house ads.') }}</p>
-            </div>
-            <div>
-                <div class="afmc-pledge__item-label"><x-afmc.icon name="balance" />{{ __('Rank is market cap') }}</div>
-                <p class="afmc-pledge__item-detail">{{ __('One formula, published, applied to every asset.') }}</p>
-            </div>
-            <div>
-                <div class="afmc-pledge__item-label"><x-afmc.icon name="visibility" />{{ __('Risk flags are ours') }}</div>
-                <p class="afmc-pledge__item-detail">{{ __('Set by liquidity and history, never negotiable.') }}</p>
-            </div>
-            <div>
-                <div class="afmc-pledge__item-label"><x-afmc.icon name="savings" />{{ __('Funded by the creator') }}</div>
-                <p class="afmc-pledge__item-detail">{{ __('Out of pocket. No ads, no sponsors, no investors to please.') }}</p>
-            </div>
-        </div>
-    </section>
+    <x-afmc.pledge-band
+        style="margin-top:var(--space-10)"
+        :detail="__(':person pays for this site out of his own pocket. Nobody can pay to show up here, to move up the table, or to lose a risk flag. The picks below are companies he uses or has a partnership with. Every card says which, and none of them are paid placements.', ['person' => config('company.person')])"
+    />
+
+    <p style="margin:var(--space-3) 0 0;font:var(--type-body-sm);color:var(--text-muted)">
+        <a href="{{ route('why-ad-free') }}" wire:navigate>{{ __('Why we build it this way') }}</a>
+    </p>
 
     <x-afmc.mining-block style="margin-top:var(--space-10)" />
 
@@ -248,10 +226,10 @@
                 >
                     <div class="afmc-pick__head">
                         <span class="afmc-pick__kind">{{ __($pick['kind']) }}</span>
-                        <span class="afmc-pick__badge{{ $isPartner ? ' afmc-pick__badge--interest' : '' }}">{{ $isPartner ? __('Creator is a partner') : __('We use this') }}</span>
+                        <span class="afmc-pick__badge{{ $isPartner ? ' afmc-pick__badge--interest' : '' }}">{{ __($isPartner ? ':person is a partner' : ':person uses this', ['person' => config('company.person')]) }}</span>
                     </div>
                     <h3 class="afmc-pick__title">{{ $pick['name'] }}</h3>
-                    <p class="afmc-pick__note">{{ __($pick['note']) }}</p>
+                    <p class="afmc-pick__note">{{ __($pick['note'], ['person' => config('company.person')]) }}</p>
                     <div class="afmc-pick__foot">
                         <span>{{ parse_url($pick['url'], PHP_URL_HOST) }}<span class="afmc-visually-hidden">{{ __(', opens in a new tab') }}</span></span>
                         <x-afmc.icon name="arrow_outward" size="14px" />

@@ -28,6 +28,7 @@ class Coin extends Model
         'percent_change_1h',
         'percent_change_24h',
         'percent_change_7d',
+        'percent_change_90d',
         'market_cap',
         'volume_24h',
         'sparkline_7d',
@@ -47,6 +48,11 @@ class Coin extends Model
         'percent_change_1h',
         'percent_change_24h',
         'percent_change_7d',
+        'percent_change_90d',
+        'percent_change_90d_synced_at',
+        'percent_change_30d',
+        'percent_change_200d',
+        'percent_change_1y',
         'market_cap',
         'volume_24h',
         'circulating_supply',
@@ -79,6 +85,11 @@ class Coin extends Model
     public function providerIds(): HasMany
     {
         return $this->hasMany(CoinProviderId::class);
+    }
+
+    public function platforms(): HasMany
+    {
+        return $this->hasMany(CoinPlatform::class);
     }
 
     public function treasurySnapshot(): HasOne
@@ -136,11 +147,16 @@ class Coin extends Model
             'percent_change_1h' => 'decimal:4',
             'percent_change_24h' => 'decimal:4',
             'percent_change_7d' => 'decimal:4',
+            'percent_change_90d' => 'decimal:4',
+            'percent_change_30d' => 'decimal:4',
+            'percent_change_200d' => 'decimal:4',
+            'percent_change_1y' => 'decimal:4',
             'market_cap' => 'decimal:2',
             'volume_24h' => 'decimal:2',
             'circulating_supply' => 'decimal:4',
             'sparkline_7d' => 'array',
             'chart_7d' => 'array',
+            'percent_change_90d_synced_at' => 'datetime',
             'market_synced_at' => 'datetime',
             'detail_synced_at' => 'datetime',
             'tickers_synced_at' => 'datetime',

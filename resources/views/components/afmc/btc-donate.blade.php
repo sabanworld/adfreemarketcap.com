@@ -27,15 +27,29 @@
                     clearTimeout(this._t)
                     this._t = setTimeout(() => { this.copied = false }, 2000)
                 }
+                // The async clipboard is refused in plenty of real contexts (insecure origin,
+                // denied permission, an embedded view). Falling through to the selection copy
+                // keeps the button working instead of failing silently.
                 if (navigator.clipboard?.writeText) {
-                    navigator.clipboard.writeText(this.address).then(done).catch(() => {})
+                    navigator.clipboard.writeText(this.address)
+                        .then(done)
+                        .catch(() => { this.selectAndCopy(done) })
                     return
                 }
+                this.selectAndCopy(done)
+            },
+            selectAndCopy(done) {
                 const input = document.createElement('input')
                 input.value = this.address
+                input.setAttribute('readonly', 'readonly')
+                input.style.position = 'fixed'
+                input.style.opacity = '0'
                 document.body.appendChild(input)
                 input.select()
-                try { document.execCommand('copy'); done() } catch (e) {}
+                input.setSelectionRange(0, this.address.length)
+                try {
+                    if (document.execCommand('copy')) { done() }
+                } catch (e) {}
                 input.remove()
             }
         }"
@@ -61,6 +75,9 @@
                     <span x-show="copied" x-cloak>{{ __('Copied') }}</span>
                 </span>
             </button>
+            {{-- The tick beside the button is visual only, so a screen reader gets the
+                 confirmation announced instead. --}}
+            <span role="status" aria-live="polite" class="afmc-visually-hidden" x-text="copied ? @js(__('Bitcoin address copied to your clipboard')) : ''"></span>
         </div>
     </div>
 @endif

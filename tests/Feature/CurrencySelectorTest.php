@@ -12,6 +12,7 @@ use App\Services\Currency\CurrencyRateSyncService;
 use App\Services\Currency\CurrencyService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use RuntimeException;
 use Tests\TestCase;
@@ -120,6 +121,10 @@ class CurrencySelectorTest extends TestCase
 
     public function test_coin_meta_description_stays_in_usd(): void
     {
+        // Ethereum has a Nostr feed, and the test queue runs inline, so the render-time sync
+        // would reach for a relay gateway.
+        Queue::fake();
+
         $this->seedRates();
         // Not Bitcoin: visiting that page can trigger the treasury insight refresh.
         $coin = $this->seedCoin(slug: 'ethereum', symbol: 'ETH', name: 'Ethereum');

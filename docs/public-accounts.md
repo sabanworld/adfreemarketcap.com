@@ -77,7 +77,7 @@ The footnote under the table names those three inputs. If you add or drop an inp
 
 - Operator details: `config/company.php` (defaults match The Saban Company B.V.; override via `COMPANY_*` in `.env`).
 - Registered office: Jaap Bijzerweg 19, 3446 CR Woerden, the Netherlands (KvK 91125030).
-- Host / creator site: https://the.saban.company/en
+- Operating company site (linked from the footer and the More drawer under `config('company.person')`): https://the.saban.company/en
 - Pages under `/legal/{page}` (`App\Livewire\LegalPage`): cookie, privacy, terms, imprint, risk, interests, accessibility, complaints.
 - All legal pages are in the sitemap; imprint surfaces legal form, KvK, VAT (when set), and address from config.
 - Policy content, the data-flow inventory, and the EU rules behind each page: [`docs/privacy-and-legal.md`](privacy-and-legal.md).

@@ -23,5 +23,8 @@ final readonly class MarketCoinData
         public ?float $volume24h,
         public ?float $circulatingSupply,
         public ?array $sparkline7d = null,
+        public ?float $percentChange30d = null,
+        public ?float $percentChange200d = null,
+        public ?float $percentChange1y = null,
     ) {}
 }

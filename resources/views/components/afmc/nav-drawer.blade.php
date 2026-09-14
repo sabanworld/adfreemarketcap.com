@@ -7,7 +7,6 @@
         x-show="moreOpen"
         x-cloak
         @keydown.escape.window="moreOpen = false"
-        x-effect="document.body.style.overflow = moreOpen ? 'hidden' : ''"
     >
         <div
             class="afmc-drawer__scrim"
@@ -16,12 +15,16 @@
             x-transition.opacity
         ></div>
 
+        {{-- x-trap holds focus inside the drawer while it is open and hands it back to the
+             button that opened it on close, which the design treats as non-optional for a
+             modal surface. It also owns the body scroll lock and Escape. --}}
         <div
             id="afmc-nav-drawer"
             class="afmc-drawer"
             role="dialog"
             aria-modal="true"
             aria-label="{{ __('More') }}"
+            x-trap.noscroll="moreOpen"
             x-show="moreOpen"
             x-transition:enter="afmc-drawer--enter"
             x-transition:enter-start="afmc-drawer--enter-start"
@@ -84,14 +87,14 @@
                     <span class="afmc-drawer__row-label">{{ __('Disclosure of interests') }}</span>
                     <x-afmc.icon name="chevron_right" size="18px" color="var(--text-faint)" />
                 </a>
-                <a href="{{ route('home') }}#pledge" class="afmc-drawer__row" @click="moreOpen = false">
+                <a href="{{ route('why-ad-free') }}" wire:navigate class="afmc-drawer__row" @click="moreOpen = false">
                     <x-afmc.icon name="block" size="20px" color="var(--text-muted)" />
                     <span class="afmc-drawer__row-label">{{ __('Why ad-free') }}</span>
                     <x-afmc.icon name="chevron_right" size="18px" color="var(--text-faint)" />
                 </a>
                 <a href="{{ $company['website'] }}" rel="noopener noreferrer" target="_blank" class="afmc-drawer__row" @click="moreOpen = false">
                     <x-afmc.icon name="arrow_outward" size="20px" color="var(--text-muted)" />
-                    <span class="afmc-drawer__row-label">{{ __('Creator / host') }}</span>
+                    <span class="afmc-drawer__row-label">{{ $company['person'] }}</span>
                     <x-afmc.icon name="chevron_right" size="18px" color="var(--text-faint)" />
                 </a>
             </div>

@@ -10,6 +10,14 @@ return [
     // @see https://docs.sentry.io/concepts/key-terms/dsn-explainer/
     'dsn' => env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')),
 
+    // Cron check-ins (`->sentryMonitor()` in routes/console.php). Off outside
+    // production so local `schedule:work` does not overwrite monitor schedules
+    // or raise missed-check-in alerts. Override with SENTRY_CRON_MONITORING.
+    'cron_monitoring' => filter_var(
+        env('SENTRY_CRON_MONITORING', env('APP_ENV') === 'production'),
+        FILTER_VALIDATE_BOOLEAN
+    ),
+
     // @see https://spotlightjs.com/
     // 'spotlight' => env('SENTRY_SPOTLIGHT', false),
 

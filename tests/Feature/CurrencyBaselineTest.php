@@ -10,6 +10,7 @@ use App\Services\Currency\CurrencyService;
 use App\Services\Currency\MarketDisplayService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
 /**
@@ -99,6 +100,10 @@ class CurrencyBaselineTest extends TestCase
 
     public function test_coin_page_shows_a_flat_series_without_the_conversion_caveat(): void
     {
+        // Ethereum has a Nostr feed, and the test queue runs inline, so the render-time sync
+        // would reach for a relay gateway.
+        Queue::fake();
+
         $this->seedRates();
         $coin = $this->seedCoin('ethereum', 'ETH', 'Ethereum');
 

@@ -71,6 +71,9 @@ class CoinPaprikaProvider implements MarketDataProvider
             totalVolume24h: isset($data['volume_24h_usd']) ? (float) $data['volume_24h_usd'] : null,
             btcDominance: isset($data['bitcoin_dominance_percentage']) ? (float) $data['bitcoin_dominance_percentage'] : null,
             activeCryptocurrencies: isset($data['cryptocurrencies_number']) ? (int) $data['cryptocurrencies_number'] : null,
+            marketCapChangePercentage24h: isset($data['market_cap_change_24h'])
+                ? (float) $data['market_cap_change_24h']
+                : null,
         );
     }
 

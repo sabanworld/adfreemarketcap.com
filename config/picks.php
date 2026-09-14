@@ -14,8 +14,11 @@ return [
     | the badge on the card and the disclosure sentence on the Disclosure of
     | interests page, so both stay in step:
     |
-    |   uses    = our creator uses the product, and has no partnership
-    |   partner = our creator has a strategic partnership with the company
+    |   uses    = he uses the product, and has no partnership
+    |   partner = he has a strategic partnership with the company
+    |
+    | "He" is config('company.person'). A note may use the `:person` placeholder
+    | and the card fills it in, so the name lives in one place.
     |
     | Adding, removing, or repricing a relationship is a disclosure change: read
     | docs/privacy-and-legal.md and update tests/Feature/LegalPagesTest.php.
@@ -26,21 +29,21 @@ return [
         'name' => 'Trezor',
         'kind' => 'Hardware',
         'url' => 'https://trezor.io',
-        'note' => 'Hardware wallet for long-term custody, and what our creator keeps his own coins on.',
+        'note' => 'Hardware wallet for long-term custody, and where :person keeps his own coins.',
         'relationship' => 'uses',
     ],
     [
         'name' => 'ChangeNOW',
         'kind' => 'Swap',
         'url' => 'https://changenow.io',
-        'note' => 'Non-custodial swaps with low KYC that still meets AML rules properly, a fast system, and the best conversion prices our creator has seen so far.',
+        'note' => 'Non-custodial swaps with low KYC that still meets AML rules properly, a fast system, and the best conversion prices :person has found so far.',
         'relationship' => 'uses',
     ],
     [
         'name' => 'Rigly',
         'kind' => 'Mining',
         'url' => 'https://rigly.io',
-        'note' => 'Bitcoin mining marketplace. Our creator has a strategic partnership with them, which is why this card carries a partner badge.',
+        'note' => 'Bitcoin mining marketplace. :person has a strategic partnership with them, which is why this card carries a partner badge.',
         'relationship' => 'partner',
     ],
 

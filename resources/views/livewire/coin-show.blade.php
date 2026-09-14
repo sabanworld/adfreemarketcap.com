@@ -68,11 +68,20 @@
                         </div>
                     </div>
                     @if (count($values))
-                        <div wire:ignore class="afmc-chart-frame">
-                            <canvas
-                                id="coin-chart"
-                                height="280"
-                            ></canvas>
+                        {{-- A chart carries its own name, because the canvas is opaque to a
+                             screen reader. The name sits on the frame rather than the canvas so
+                             switching range renames it: wire:ignore stops at the canvas, which
+                             is the part Chart.js owns. --}}
+                        <div
+                            class="afmc-chart-frame"
+                            role="img"
+                            aria-label="{{ __(':name price over :range in :currency', [
+                                'name' => $coin->name,
+                                'range' => $spokenRange,
+                                'currency' => $unit->displayCode(),
+                            ]) }}"
+                        >
+                            <canvas wire:ignore id="coin-chart" height="280"></canvas>
                         </div>
                         @if ($unit->code !== 'usd' && ! $display->usesBaselineHistory())
                             <p style="margin:var(--space-2) 0 0;font:var(--type-body-sm);font-size:var(--text-xs);color:var(--text-faint)">
@@ -379,6 +388,41 @@
                     </div>
                     <div class="afmc-card__body">
                         <p style="margin:0;font:var(--type-body-sm);color:var(--text-body);white-space:pre-line">{{ Str::limit((string) \App\Support\PlainText::fromHtml($coin->description), 2000) }}</p>
+                    </div>
+                </section>
+            @endif
+
+            @if (count($nostrNotes) > 0)
+                <section class="afmc-card">
+                    <div class="afmc-card__header">
+                        <div>
+                            <span class="afmc-card__eyebrow">{{ __('Nostr') }}</span>
+                            <h2 class="afmc-card__title">{{ __('Community') }}</h2>
+                        </div>
+                    </div>
+                    <div class="afmc-card__body afmc-community">
+                        @foreach ($nostrNotes as $note)
+                            <article class="afmc-community__note" wire:key="nostr-{{ $note->event_id }}">
+                                <header class="afmc-community__meta">
+                                    <div>
+                                        <p class="afmc-community__author">{{ $note->author_name ?: ($note->author_npub ?: __('Nostr note')) }}</p>
+                                        @if ($note->relativePublishedAt())
+                                            <p class="afmc-community__time">{{ $note->relativePublishedAt() }}</p>
+                                        @endif
+                                    </div>
+                                    <a
+                                        class="afmc-community__link"
+                                        href="{{ $nostrEventLinkBase }}/{{ $note->event_id }}"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        {{ __('View') }}
+                                    </a>
+                                </header>
+                                <p class="afmc-community__content">{{ Str::limit($note->content, 280) }}</p>
+                            </article>
+                        @endforeach
+                        <p class="afmc-community__credit">{{ __('Public notes from Nostr, cached on our servers. View opens the note on Primal.') }}</p>
                     </div>
                 </section>
             @endif

@@ -11,6 +11,7 @@ use App\Jobs\SyncHotCoinCharts;
 use App\Jobs\SyncHotCoinTickers;
 use App\Jobs\SyncMarketData;
 use App\Jobs\SyncMarketStatus;
+use App\Jobs\SyncNinetyDayChanges;
 use App\Jobs\SyncNostrFeed;
 use App\Jobs\SyncStaleCoinDetails;
 use App\Jobs\SyncTopCoinTickers;
@@ -32,6 +33,7 @@ $detailInterval = max(1, min(59, (int) config('marketdata.sync.detail_backfill_i
 $insightsHours = max(1, (int) config('marketdata.sync.insights_interval_hours', 6));
 $currencyInterval = max(1, min(59, (int) config('currency.rates_interval_minutes', 30)));
 $statusInterval = max(1, min(59, (int) config('marketdata.sync.market_status_interval_minutes', 60)));
+$ninetyDayHours = max(1, (int) config('marketdata.sync.ninety_day_interval_hours', 24));
 $platformsHours = max(1, (int) config('marketdata.sync.platforms_interval_hours', 24));
 $nostrInterval = max(1, min(59, (int) config('marketdata.sync.nostr_interval_minutes', 30)));
 
@@ -54,6 +56,15 @@ Schedule::job(new SyncMarketStatus)
     ->withoutOverlapping()
     ->onOneServer()
     ->name('marketdata:sync-status')
+    ->sentryMonitor();
+
+// Runs ahead of the hourly status snapshot rather than with it: this is one chart request per
+// sampled coin, and a 90-day change does not move enough to be worth paying that every hour.
+Schedule::job(new SyncNinetyDayChanges)
+    ->cron("10 */{$ninetyDayHours} * * *")
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('marketdata:sync-ninety-day')
     ->sentryMonitor();
 
 Schedule::job(new SyncDexPairs)

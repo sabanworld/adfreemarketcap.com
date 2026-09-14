@@ -34,15 +34,18 @@ class CopyStyleTest extends TestCase
         'ranking cannot be bought',
         'rankings cannot be bought',
         'cannot be bought',
+        // Product copy names the person (config('company.person')); legal pages
+        // name the operating company. "The creator" belongs to neither voice.
+        'our creator',
+        'the creator',
     ];
 
     public function test_no_prose_uses_an_em_dash(): void
     {
         foreach ($this->copyFiles() as $path) {
-            $body = str_replace(self::PLACEHOLDERS, '', (string) file_get_contents($path));
-
-            // An em dash inside `backticks` is the rule quoting the character it bans.
-            $body = (string) preg_replace('/`[^`]*`/', '', $body);
+            $body = $this->withoutCodeSpans(
+                str_replace(self::PLACEHOLDERS, '', (string) file_get_contents($path))
+            );
 
             $this->assertStringNotContainsString(
                 '—',
@@ -60,7 +63,7 @@ class CopyStyleTest extends TestCase
                 continue;
             }
 
-            $body = (string) file_get_contents($path);
+            $body = $this->withoutCodeSpans((string) file_get_contents($path));
 
             foreach (self::BANNED_PHRASES as $phrase) {
                 $this->assertStringNotContainsStringIgnoringCase(
@@ -70,6 +73,15 @@ class CopyStyleTest extends TestCase
                 );
             }
         }
+    }
+
+    /**
+     * Text inside `backticks` is a doc quoting the character or phrase it bans,
+     * so it is dropped before a file is checked.
+     */
+    private function withoutCodeSpans(string $body): string
+    {
+        return (string) preg_replace('/`[^`]*`/', '', $body);
     }
 
     /**

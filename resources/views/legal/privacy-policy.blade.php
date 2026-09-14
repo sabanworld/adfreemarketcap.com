@@ -4,6 +4,7 @@
     $dpa = $company['authorities']['data_protection'];
     $accountDays = $company['retention']['account_deletion_days'];
     $logDays = $company['retention']['server_log_days'];
+    $nostrDays = $company['retention']['nostr_note_days'] ?? 30;
 
     $processing = [
         [
@@ -41,6 +42,12 @@
             'purpose' => __('Counting page views and seeing which pages get read'),
             'basis' => __('Legitimate interests in measuring use of the site, article 6(1)(f) GDPR'),
             'retention' => __('Kept as aggregate counts that hold no identifier pointing back to you'),
+        ],
+        [
+            'data' => __('Public Nostr note text, author pubkey, and display name cached for community remarks'),
+            'purpose' => __('Showing curated community notes on coin pages without your browser contacting a relay'),
+            'basis' => __('Legitimate interests in publishing public posts that authors already shared, article 6(1)(f) GDPR'),
+            'retention' => __(':days days from the note date, then deleted', ['days' => $nostrDays]),
         ],
     ];
 @endphp
@@ -104,7 +111,8 @@
     <li>{{ __('We use no fingerprinting and no cross-site tracking, and nothing follows you to another website.') }}</li>
     <li>{{ __('Fonts, styles, and icons come from our own domain, so the visitor counter above is the only request that leaves this site.') }}</li>
     <li>{{ __('We build no behavioural profiles and take no automated decisions that have legal effects for you, in the sense of article 22 GDPR.') }}</li>
-    <li>{{ __('Market data providers such as CoinGecko and CoinPaprika are called by our own servers on a schedule. Your requests are never forwarded to them and they receive no personal data about you.') }}</li>
+    <li>{{ __('Market data providers such as CoinGecko, CoinPaprika, and Alternative.me are called by our own servers on a schedule. Your requests are never forwarded to them and they receive no personal data about you.') }}</li>
+    <li>{{ __('Public Nostr notes shown on some coin pages are fetched by our servers from a Nostr indexer and stored briefly so your browser never contacts a relay. Choosing View opens the note on Primal (primal.net).') }}</li>
 </ul>
 
 <h2>{{ __('Who else can see the data') }}</h2>

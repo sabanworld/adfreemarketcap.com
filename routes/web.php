@@ -13,11 +13,13 @@ use App\Livewire\DexScan;
 use App\Livewire\Home;
 use App\Livewire\LegalPage;
 use App\Livewire\Watchlist;
+use App\Livewire\WhyAdFree;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', Home::class)->name('home');
 Route::get('coins/{coin:slug}', CoinShow::class)->name('coins.show');
 Route::get('dexscan', DexScan::class)->name('dexscan');
+Route::get('why-ad-free', WhyAdFree::class)->name('why-ad-free');
 
 Route::get('legal/{page}', LegalPage::class)
     ->whereIn('page', array_keys(LegalPage::PAGES))

@@ -6,7 +6,7 @@ Search visibility matters for adfreemarketcap: rankings and coin pages should be
 
 | Surface | Route / location | Role |
 |---------|------------------|------|
-| Sitemap | `/sitemap.xml` (`sitemap` route) | Home + every coin slug; `lastmod` from sync timestamps when present |
+| Sitemap | `/sitemap.xml` (`sitemap` route) | Home, DexScan, Why ad-free, every legal page, and every coin slug; `lastmod` from sync timestamps when present |
 | Robots | `/robots.txt` (`robots` route) | Allow public UI; disallow `/admin` and `/livewire`; advertise sitemap |
 | Page meta | `layouts.app` + `<x-seo-meta>` | Title, description, canonical, Open Graph, Twitter, JSON-LD |
 | Builder | `app/Services/Seo/SeoService.php` | Single place for titles, descriptions, sitemap entries, robots body |

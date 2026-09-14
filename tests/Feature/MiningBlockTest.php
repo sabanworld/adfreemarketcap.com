@@ -37,9 +37,9 @@ class MiningBlockTest extends TestCase
         $response = $this->get(route('home'));
 
         $response->assertOk();
-        // Rigly is a partner in config/picks.php, so the block has to say so where
+        // Rigly is a partner in config/picks.php, so the block has to name that where
         // the link is, not only on the disclosure page.
-        $response->assertSee('Creator is a partner', false);
+        $response->assertSee(config('company.person') . ' is a partner', false);
         $response->assertSee('strategic partnership with Rigly', false);
         $response->assertSee('pays out only when it finds a block', false);
     }
@@ -78,6 +78,10 @@ class MiningBlockTest extends TestCase
 
     public function test_other_coin_pages_do_not_show_the_miners_block(): void
     {
+        // Visiting a coin with a Nostr feed dispatches that sync, which would hit a relay
+        // gateway. The test queue runs inline, so it has to be faked here too.
+        Queue::fake();
+
         $ethereum = Coin::query()->create([
             'slug' => 'ethereum',
             'symbol' => 'ETH',

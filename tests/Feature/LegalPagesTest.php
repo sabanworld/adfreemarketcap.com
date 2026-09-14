@@ -147,9 +147,13 @@ class LegalPagesTest extends TestCase
 
         $disclosure = $this->get(route('legal.show', 'disclosure-of-interests'));
 
+        $legal = (string) config('company.legal_name');
+
         $disclosure->assertOk();
-        $disclosure->assertSee('Trezor (trezor.io): our creator uses this product and has no commercial partnership', false);
-        $disclosure->assertSee('Rigly (rigly.io): our creator has a strategic partnership with this company', false);
+        // Policy pages name the operating company, not the person behind it.
+        $disclosure->assertSee("Trezor (trezor.io): {$legal} uses this product and has no commercial partnership", false);
+        $disclosure->assertSee("Rigly (rigly.io): {$legal} has a strategic partnership with this company", false);
+        $disclosure->assertDontSee('our creator', false);
     }
 
     public function test_a_pick_with_a_partner_relationship_carries_the_partner_badge(): void
@@ -167,9 +171,11 @@ class LegalPagesTest extends TestCase
         $response = $this->get(route('home'));
 
         $response->assertOk();
+        $person = (string) config('company.person');
+
         $response->assertSee('afmc-pick__badge afmc-pick__badge--interest', false);
-        $response->assertSee('Creator is a partner', false);
-        $response->assertDontSee('We use this', false);
+        $response->assertSee("{$person} is a partner", false);
+        $response->assertDontSee("{$person} uses this", false);
     }
 
     public function test_cookie_policy_lists_every_stored_item_by_name(): void

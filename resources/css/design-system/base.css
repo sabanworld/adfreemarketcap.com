@@ -81,6 +81,20 @@ table{border-collapse:collapse;width:100%}
   [data-afmc-tabbar] button,[data-afmc-tabbar] a{min-height:56px}
 }
 
+/* Market status: three EQUAL panels, never an auto-fit that can strand one on its own row.
+   Dividers live here rather than inline so the media query can turn them from vertical to
+   horizontal without an !important fight. */
+[data-afmc-status]{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+[data-afmc-status]>*+*{border-left:1px solid var(--border-divider)}
+@media (max-width:880px){
+  [data-afmc-status]{grid-template-columns:1fr}
+  [data-afmc-status]>*+*{border-left:none;border-top:1px solid var(--border-divider)}
+}
+
+/* Chip rows scroll horizontally on a phone; the bar itself is chrome, so hide it. */
+[data-afmc-chiprow]{scrollbar-width:none;-ms-overflow-style:none}
+[data-afmc-chiprow]::-webkit-scrollbar{display:none}
+
 /* Coin page: the two-column rail collapses before the columns get too narrow to read */
 @media (max-width:1000px){
   [data-afmc-coingrid]{grid-template-columns:1fr!important}

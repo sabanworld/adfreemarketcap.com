@@ -93,7 +93,9 @@
                                 <td class="is-right"><x-afmc.price-change :value="$change24" size="sm" /></td>
                                 <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_7d, '7d')" size="sm" /></td>
                                 <td class="is-right">{{ MarketNumberFormatter::money($coin->market_cap !== null ? (float) $coin->market_cap : null) }}</td>
-                                <td class="is-right hide-narrow"><x-afmc.sparkline :data="$spark" :up="($change24 ?? 0) >= 0" /></td>
+                                {{-- Colour and slope come from the seven-day series drawn here,
+                                     not from the 24h column beside it. --}}
+                                <td class="is-right hide-narrow"><x-afmc.sparkline :data="$spark" /></td>
                             </tr>
                         @endforeach
                     </tbody>

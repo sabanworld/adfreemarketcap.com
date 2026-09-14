@@ -2,6 +2,16 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Str;
+
+// "The" belongs to the name on the trade register entry, and an imprint has to
+// give the registered name exactly, so an environment that drops it gets it back.
+$legalName = trim((string) env('COMPANY_LEGAL_NAME', 'The Saban Company B.V.'));
+
+if (! Str::startsWith(Str::lower($legalName), 'the ')) {
+    $legalName = 'The ' . $legalName;
+}
+
 return [
 
     /*
@@ -16,7 +26,7 @@ return [
     |
     */
 
-    'legal_name' => env('COMPANY_LEGAL_NAME', 'The Saban Company B.V.'),
+    'legal_name' => $legalName,
 
     'legal_form' => env('COMPANY_LEGAL_FORM', 'Besloten vennootschap (B.V.)'),
 
@@ -43,6 +53,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | The person behind the product
+    |--------------------------------------------------------------------------
+    |
+    | Product copy names him instead of saying "the creator", so the footer,
+    | the pledge, the picks badges, and the Why ad-free page all read as one
+    | person talking. Legal pages keep naming the company above, because that
+    | is the entity a visitor deals with and complains to.
+    |
+    */
+
+    'person' => env('COMPANY_PERSON', 'Anees®'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Donations
     |--------------------------------------------------------------------------
     |
@@ -65,7 +89,7 @@ return [
     |
     */
 
-    'policies_updated_at' => env('COMPANY_POLICIES_UPDATED_AT', '13 September 2026'),
+    'policies_updated_at' => env('COMPANY_POLICIES_UPDATED_AT', '14 September 2026'),
 
     /*
     |--------------------------------------------------------------------------
@@ -80,6 +104,7 @@ return [
     'retention' => [
         'account_deletion_days' => (int) env('COMPANY_RETENTION_ACCOUNT_DAYS', 30),
         'server_log_days' => (int) env('COMPANY_RETENTION_LOG_DAYS', 90),
+        'nostr_note_days' => (int) env('NOSTR_RETENTION_DAYS', 30),
     ],
 
     /*
@@ -152,6 +177,12 @@ return [
             'name' => env('COMPANY_ERROR_MONITORING_PROVIDER', 'Functional Software, Inc. (Sentry)'),
             'location' => env('COMPANY_ERROR_MONITORING_LOCATION', 'United States, with optional EU data residency depending on project settings'),
             'transfer' => env('COMPANY_ERROR_MONITORING_TRANSFER', 'EU standard contractual clauses and the EU-US Data Privacy Framework'),
+        ],
+        'nostr_indexer' => [
+            'category' => 'Public Nostr note indexing for community remarks',
+            'name' => env('COMPANY_NOSTR_INDEXER', 'Divine Nostr gateway (gateway.divine.video), with Nostr.Band as fallback'),
+            'location' => env('COMPANY_NOSTR_INDEXER_LOCATION', 'Outside the EEA (public notes only; no visitor personal data is sent)'),
+            'transfer' => env('COMPANY_NOSTR_INDEXER_TRANSFER', 'Public posts only; no visitor personal data is transferred'),
         ],
     ],
 

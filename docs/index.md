@@ -5,7 +5,7 @@ Ad-free cryptocurrency market rankings and coin detail pages.
 ## Product
 
 - **adfreemarketcap** is an original-brand standalone app (not a CoinMarketCap clone or proxy).
-- Public UI: homepage rankings, coin detail, DexScan, Watchlist (auth), and legal pages.
+- Public UI: homepage rankings, coin detail, DexScan, Watchlist (auth), Why ad-free, and legal pages.
 - Admin: Filament panel for coins, sync runs, and settings.
 
 ## Architecture
