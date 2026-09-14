@@ -172,6 +172,14 @@ return [
             'location' => 'The Netherlands, with content delivery from European edge locations',
             'transfer' => null,
         ],
+        // Rendered only while config('google-ads.enabled') is true, because a
+        // build without the tag must not name a company that receives nothing.
+        'advertising' => [
+            'category' => 'Advert conversion measurement, only after you accept',
+            'name' => env('COMPANY_ADVERTISING_PROVIDER', 'Google Ireland Limited, with Google LLC'),
+            'location' => env('COMPANY_ADVERTISING_LOCATION', 'Ireland, with processing by Google LLC in the United States'),
+            'transfer' => env('COMPANY_ADVERTISING_TRANSFER', 'EU standard contractual clauses and the EU-US Data Privacy Framework'),
+        ],
         'error_monitoring' => [
             'category' => 'Application error reporting',
             'name' => env('COMPANY_ERROR_MONITORING_PROVIDER', 'Functional Software, Inc. (Sentry)'),

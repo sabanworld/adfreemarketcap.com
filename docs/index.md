@@ -2,6 +2,8 @@
 
 Ad-free cryptocurrency market rankings and coin detail pages.
 
+**Start here:** [`docs/principles.md`](principles.md). Privacy and honesty break every tie in this codebase, and that page is the rule the rest of these docs are downstream of.
+
 ## Product
 
 - **adfreemarketcap** is an original-brand standalone app (not a CoinMarketCap clone or proxy).
@@ -21,6 +23,8 @@ Ad-free cryptocurrency market rankings and coin detail pages.
 
 Use **Laravel Sail** (`./vendor/bin/sail`). Default published ports in `.env.example` avoid common host conflicts (`APP_PORT=8888`, Redis `6380`, MySQL `13306`).
 
+Browse the running site from the host at `http://localhost:<APP_PORT>/`, which is `http://localhost:8080/` in the maintainer's setup. Inside the app container the same site is `http://localhost/` on port 80, because published ports do not exist in there. Agents: [`AGENTS.md`](../AGENTS.md) has the longer note on which one to use when.
+
 ## Key paths
 
 - Market data services: `app/Services/MarketData/`
@@ -35,6 +39,7 @@ Use **Laravel Sail** (`./vendor/bin/sail`). Default published ports in `.env.exa
 
 ## Domain notes
 
+- **First principle**, why privacy and honesty outrank the rest and what that has cost: [`docs/principles.md`](principles.md)
 - **SEO**, sitemap, robots, canonicals, and meta: [`docs/seo.md`](seo.md)
 - **Design**, brand tokens and public UI mapping: [`docs/design.md`](design.md)
 - **Public accounts, DexScan, legal**, watchlist auth, admin profile and MFA, and company imprint: [`docs/public-accounts.md`](public-accounts.md)

@@ -1,6 +1,9 @@
+@inject('consent', 'App\Services\Consent\ConsentService')
+
 @php
     $company = config('company');
     $person = $company['person'];
+    $advertising = $consent->advertisingEnabled();
 @endphp
 
 <main data-afmc-page class="afmc-page" style="max-width:56rem">
@@ -35,7 +38,11 @@
             <li>{{ __('No account. Rankings, coin pages and DexScan are open to anyone. You only sign in if you want a watchlist.') }}</li>
             <li>{{ __('No paywall and no metered reading. There is no premium tier sitting on a chart or a longer history.') }}</li>
             <li>{{ __('No pop-ups, no interstitials, no autoplay, and nothing sliding in while you read.') }}</li>
-            <li>{{ __('No cookie wall. The bar you see once is a notice rather than a request, because nothing we store is for marketing or measurement. It keeps your session, your theme, your currency, and the fact that you already read the notice.') }}</li>
+            @if ($advertising)
+                <li>{{ __('No cookie wall. The bar asks you one question, Reject and Accept are the same button in the same colour, and picking Reject leaves every page working. What the site itself stores is your session, your theme, your currency, and your answer.') }}</li>
+            @else
+                <li>{{ __('No cookie wall. The bar you see once is a notice rather than a request, because nothing we store is for marketing or measurement. It keeps your session, your theme, your currency, and the fact that you already read the notice.') }}</li>
+            @endif
             <li>{{ __('The number you came for is at the top of the page on the first load, and it stays put once the rest arrives.') }}</li>
         </ul>
 
@@ -45,11 +52,24 @@
             <li>{{ __('Zero ad slots. None sold, none planned, and no house ads in the gap either.') }}</li>
             <li>{{ __('Rank follows market capitalisation as our data providers report it, one formula for every asset. We do not reorder the table by hand, and placement in it is not for sale.') }}</li>
             <li>{{ __('Risk flags follow liquidity and trading history. Nobody can pay to have one softened or taken off.') }}</li>
-            <li>{{ __('One third-party request on the whole site: a cookieless visitor counter from Simple Analytics in Amsterdam. No cookie, no stored IP address.') }}</li>
-            <li>{{ __('Fonts, icons, styles and scripts all come from this domain, so your browser never announces your visit to anyone else.') }}</li>
+            @if ($advertising)
+                <li>{{ __('One third-party request by default: a cookieless visitor counter from Simple Analytics in Amsterdam. No cookie, no stored IP address.') }}</li>
+                <li>{{ __('One more, only if you say yes to it. See "The one thing we ask you about" below.') }}</li>
+            @else
+                <li>{{ __('One third-party request on the whole site: a cookieless visitor counter from Simple Analytics in Amsterdam. No cookie, no stored IP address.') }}</li>
+            @endif
+            <li>{{ __('Fonts, icons and styles all come from this domain.') }}</li>
             <li>{{ __('Pages read from our own database. Your visit does not reach a market data provider.') }}</li>
         </ul>
         <p>{{ __('You do not have to take our word for any of it. The cookie policy lists every cookie and storage key we set by name, and the privacy policy covers what the counter measures, what happens to your IP address, and how to stay out of the count. Both are linked at the bottom of this page.') }}</p>
+
+        @if ($advertising)
+            <h2>{{ __('The one thing we ask you about') }}</h2>
+            <p>{{ __('Nobody finds a new site on their own, so :person pays Google to show it to people searching for a price. That is advertising pointed at this site, not advertising on it, and the two are worth keeping apart. You will never see a banner here.', ['person' => $person]) }}</p>
+            <p>{{ __('The awkward part is measuring it. Knowing which adverts are worth paying for means letting Google write a cookie to your device, and that is the one thing on this site we have no honest way to do quietly. So we ask.') }}</p>
+            <p>{{ __('How it works: nothing is requested from Google until you choose Accept. Reject and Accept are the same size and the same colour, because burying the reject button is the trick we complained about at the top of this page. Reject also deletes the Google cookies if you accepted earlier, rather than just stopping the next one. Change your mind whenever you like under "Cookie preferences" in the footer.') }}</p>
+            <p>{{ __('What we get back is a count, not a list. Google tells us how many people an advert brought and how many of them signed up. Refusing costs you nothing, hides nothing, and slows nothing down.') }}</p>
+        @endif
 
         <h2>{{ __('Who pays for it') }}</h2>
         <p>{{ __(':person does. Servers, domain and the paid data plans come out of his own pocket. No investor, no sponsor and no ad network setting targets, which is the only reason the pledge above holds.', ['person' => $person]) }}</p>
@@ -59,7 +79,12 @@
         <ul>
             <li>{{ __('Sell placement in the rankings, on a coin page, or on DexScan.') }}</li>
             <li>{{ __('Take money to add, soften or remove a risk flag.') }}</li>
-            <li>{{ __('Add a tag manager, a session recorder, a heat map, or a second analytics tool.') }}</li>
+            @if ($advertising)
+                <li>{{ __('Add a tag manager, a session recorder, or a heat map.') }}</li>
+                <li>{{ __('Load anything that needs your consent before you have given it, or make refusing harder than accepting.') }}</li>
+            @else
+                <li>{{ __('Add a tag manager, a session recorder, a heat map, or a second analytics tool.') }}</li>
+            @endif
             <li>{{ __('Sell, rent or share what you looked at.') }}</li>
             <li>{{ __('Put market data behind an account or a subscription.') }}</li>
             <li>{{ __('Run an ad-free tier, which is the same business with a nicer name.') }}</li>

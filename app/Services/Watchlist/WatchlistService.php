@@ -18,6 +18,13 @@ final class WatchlistService
             ->pluck('coin_id');
     }
 
+    public function hasAny(User $user): bool
+    {
+        return WatchlistItem::query()
+            ->where('user_id', $user->id)
+            ->exists();
+    }
+
     public function isWatched(User $user, Coin $coin): bool
     {
         return WatchlistItem::query()

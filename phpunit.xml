@@ -39,6 +39,11 @@
         <!-- Percent-change precision is opt-in per test, so a developer key never
              changes what the suite asserts. -->
         <env name="CRYPTO_APIS_IO_KEY" value="" force="true"/>
+        <!-- Consent surfaces are asserted in both states from inside the tests, so
+             a developer who has the advert tag switched on locally never changes
+             which branch of the policy pages the suite checks. -->
+        <env name="GOOGLE_ADS_ENABLED" value="false" force="true"/>
+        <env name="GOOGLE_ADS_CONVERSION_ID" value="" force="true"/>
         <env name="ALTCHA_ENABLED" value="true" force="true"/>
         <env name="ALTCHA_HMAC_SECRET" value="testing-altcha-hmac-secret-key-32b" force="true"/>
         <env name="ALTCHA_HMAC_KEY_SECRET" value="testing-altcha-hmac-key-secret-32b" force="true"/>

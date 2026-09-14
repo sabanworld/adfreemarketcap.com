@@ -47,6 +47,10 @@ class Register extends Component
         Auth::login($user);
         session()->regenerate();
 
+        // The layout replays this after the redirect. It reaches Google only if
+        // the visitor accepted advert measurement and the label is configured.
+        session()->flash('afmc-conversion', 'registration');
+
         $this->redirect(route('watchlist'), navigate: true);
     }
 

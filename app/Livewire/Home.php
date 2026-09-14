@@ -159,7 +159,14 @@ class Home extends Component
         /** @var User $user */
         $user = Auth::user();
         $coin = Coin::query()->findOrFail($coinId);
+        // Read before the toggle, because starting a watchlist is the conversion
+        // and every later row is just a row.
+        $startedEmpty = ! $watchlist->hasAny($user);
         $watched = $watchlist->toggle($user, $coin);
+
+        if ($watched && $startedEmpty) {
+            $this->dispatch('afmc-conversion', name: 'watchlist');
+        }
 
         if ($watched) {
             $this->watchedIds[] = $coinId;

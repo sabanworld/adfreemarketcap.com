@@ -4,6 +4,20 @@
 
 **Product and domain documentation:** [`docs/index.md`](docs/index.md).
 
+## First principle: privacy and honesty win
+
+**This rule outranks everything else in this file.** When privacy or honesty pulls against growth, revenue, conversion rate, page weight, or the quicker way to ship, the other thing gives way. If a task you have been given requires breaking it, say so before you write the code, and propose the version that does not.
+
+In practice, for any change you make here:
+
+- **A data-flow change is a policy change.** New third-party requests, cookies, storage keys, or personal-data fields mean the privacy page, the cookie page, and their tests move in the same commit. Never in a follow-up.
+- **Anything non-essential that writes to a device waits for opt-in**, and refusing stays exactly as easy as accepting. No dark patterns, no pre-ticked anything, no Accept styled louder than Reject.
+- **Public claims must be falsifiable.** If a sentence on a public page and the code disagree, one of them is a bug and you fix it now. Prefer a rule, a formula, or a file path over reassurance, and never invent a claim a reader cannot check.
+- **Collect nothing that nothing reads**, call providers server side rather than from the visitor's browser, and keep assets self-hosted.
+- **Back a promise with a test.** A guarantee no build enforces is a comment.
+
+Full reasoning, the trade-offs already taken, the pre-PR checklist, and the tests that enforce each part: [`docs/principles.md`](docs/principles.md).
+
 ## Laravel Sail (required local runtime)
 
 **You are already inside the Sail container.** Your shell runs in the `laravel.test` app container as `root`, with the repository mounted at `/var/www/html`. Check it yourself if you are unsure: `/.dockerenv` exists, the hostname is a container id, and `which php composer yarn` resolves to `/usr/bin/…`.
@@ -27,6 +41,12 @@
   - `php artisan horizon` (if not started via Sail Supervisor)
   - `php artisan schedule:work` (local alternative to container cron)
 - Reach sibling services by their **compose service name**, not `localhost` from the host's point of view: `mysql`, `redis`, `meilisearch`, `mailpit`. Host port forwards (`FORWARD_*`) do not apply inside the network.
+
+- **Viewing the running site.** Two different URLs, and which one you want depends on which side of the container you are on:
+ - **Browser tools and screenshots: `http://localhost:8080/`.** This is the host's published port for the app container, so it is the URL the browser tooling can actually reach. Use it to check layout, capture screenshots, and drive the UI for real (clicking a consent button, toggling a theme, walking a form). `APP_PORT` in the user's `.env` sets it, which is why it is 8080 here even though `.env.example` ships `8888`.
+ - **`curl` and anything you run in this shell: `http://localhost/`** (port 80). The host's published port does not exist inside the container.
+ - Do not go port hunting if one fails. The host's own port 80 is a different server and answers `502`, so a wrong guess looks like a broken app. Say what you tried and ask.
+ - **Prefer the browser over reasoning about Blade output** for anything visual or interactive. Rendered HTML and a passing test do not tell you whether two buttons look equally weighted, whether a bar is on top of the bottom tab bar, or whether a script only loads after a click.
 - Starting or stopping the stack (`sail up -d`, `sail down`) is the user's job on the host. If a service looks down, say so and ask, rather than trying to start Docker from inside.
 - The container's PHP is the project's PHP, so it matches CI. Do **not** reason about a host PHP/MySQL version.
 - Frontend package manager remains **Yarn**, not npm. Running it in here is what keeps optional native packages (Rollup, esbuild) matched to the Linux image.
@@ -125,7 +145,11 @@ Everything a human reads should sound like a person wrote it: product copy, lega
   - **Warm paper / amber accent / green-up red-down only for price**. Do not use amber for market direction or green/red for non-price chrome.
   - **Type:** Archivo (display), Public Sans (body), JetBrains Mono (every figure, tabular-nums).
   - **Fonts are self-hosted and stay that way.** `resources/css/design-system/fonts.css` imports the fontsource packages from `node_modules`; no font, style, or image may load from a third-party CDN. A remote request would send visitor IPs to another party and would contradict the privacy and cookie policies.
- - **The visitor counter is the only permitted third-party request.** `<x-afmc.analytics />` in `resources/views/layouts/app.blade.php` loads Simple Analytics from `config/analytics.php`, gated on `ANALYTICS_ENABLED` (on by default only when `APP_ENV=production`). Both policy pages say it is the only company a visitor's browser contacts, so adding a second tag, embed, or CDN asset means rewriting those pages in the same change. Do not add a tag manager or an analytics tool that writes to the device.
+ - **Exactly two third-party requests are permitted, and the second one is opt-in.**
+ - `<x-afmc.analytics />` in `resources/views/layouts/app.blade.php` loads Simple Analytics from `config/analytics.php`, gated on `ANALYTICS_ENABLED` (on by default only when `APP_ENV=production`). It writes nothing to the device, so it runs for everyone.
+ - `<x-afmc.consent />` in the same layout carries the Google Ads conversion tag from `config/google-ads.php`, gated on `GOOGLE_ADS_ENABLED` plus a filled `GOOGLE_ADS_CONVERSION_ID` (both off by default). It must never appear as a `<script src>` in the markup: the loader sets Google consent mode to denied, and only injects the script after the visitor accepts. `App\Services\Consent\ConsentService` is the single answer to "does this build need consent", and every surface reads it.
+ - **Do not add a third.** No tag manager, session recorder, heat map, font host, embed, or CDN asset. Anything new that writes to the device stays behind the same consent gate, and refusing stays exactly as easy as accepting (same button size, same treatment, no dark patterns).
+ - Turning `GOOGLE_ADS_ENABLED` on switches the privacy policy, the cookie policy, the Why ad-free page, and the cookie bar to a second set of sentences. Those branches are the policy, so keep them true to the code and cover both states in tests.
   - **Icons:** `<x-afmc.icon name="search" />` (`App\Support\Icons` + `resources/fonts/material-symbols.json`). Never type a Material Symbols ligature into a view, because the shipped font is subset to the icons in that manifest. Adding an icon means adding the name to the manifest and running `yarn icons:build`.
   - When changing Markets or Coin Detail layout, match `ui_kits/web/MarketsScreen.jsx` / `CoinDetailScreen.jsx` and keep pledge + picks disclosure copy honest (no ad-slot styling).
   - Prefer extending `afmc-*` classes over one-off Tailwind slate/indigo utility stacks on public pages.
@@ -141,6 +165,8 @@ Everything a human reads should sound like a person wrote it: product copy, lega
   - **A data-flow change is a policy change.** New cookies, storage keys, third-party requests, analytics, trackers, or personal-data fields require the privacy and cookie pages plus `tests/Feature/LegalPagesTest.php` to be updated in the same change.
   - Keep the GDPR structure intact: purpose, legal basis, retention, and recipients per category of data. Keep the ePrivacy line honest, so any non-essential storage needs consent first and refusing stays as easy as accepting.
   - **Visitor statistics:** Simple Analytics is disclosed in the privacy policy (what it measures, IP handling, legal basis, Do Not Track) and in the cookie policy (why a cookieless counter needs no consent). Keep those sentences true to `config/analytics.php`, and name the vendor in `config('company.processors')` rather than in a Blade file.
+ - **Advert measurement:** the Google Ads tag is the only non-essential storage on the site. Its legal basis is consent, article 6(1)(a) GDPR, so the tag may not load before the visitor accepts, withdrawal must delete the `_gcl_*` cookies rather than only stopping the next measurement, and the `advertising` row in `config('company.processors')` renders only while the tag ships. `tests/Feature/ConsentTest.php` guards the mechanics; `tests/Feature/LegalPagesTest.php` guards the copy in both states.
+ - **Reporting a conversion:** report it **by name** (`registration`, `watchlist`) through the `afmc-conversion` browser event or the session flash of the same name. Never put a `send_to` value or a conversion label in a Livewire component, a Blade view, or JavaScript you write by hand: labels live in `config('google-ads.conversions')` and are resolved by `ConsentService::conversions()`. Adding a conversion means a new label key there, a name dispatched from the action that earns it, and a test for both the configured and the unconfigured label.
   - **Never reference the EU ODR platform.** It closed on 20 July 2025, so point consumers at national ADR bodies and `ACM ConsuWijzer` instead. Bump `COMPANY_POLICIES_UPDATED_AT` when policy text changes.
 
 - **Auth:** Filament admin uses an **`App\Models\Admin`** on the `admin` guard. Public accounts use **`App\Models\User`** on the `web` guard (login/register/watchlist). Keep those guards separate, and never put public users into the Filament panel.

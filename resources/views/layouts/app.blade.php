@@ -12,6 +12,7 @@
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
+    <x-afmc.consent />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     <style>[x-cloak]{display:none!important}</style>
@@ -43,6 +44,16 @@
     <x-afmc.cookie-bar />
 
     @livewireScripts
+    @if ($conversion = session('afmc-conversion'))
+        {{-- A redirect ends the Livewire component that earned the conversion,
+             so it is replayed here on the page the visitor lands on. --}}
+        <div
+            data-afmc-conversion="{{ $conversion }}"
+            x-data
+            x-init="window.afmcConsent.conversion($el.dataset.afmcConversion)"
+            hidden
+        ></div>
+    @endif
     <x-afmc.analytics />
 </body>
 </html>

@@ -217,6 +217,84 @@ class LegalPagesTest extends TestCase
         $response->assertSee('discards visits from browsers that send Do Not Track', false);
     }
 
+    public function test_cookie_policy_stays_silent_about_advertising_while_no_tag_ships(): void
+    {
+        $response = $this->get(route('legal.show', 'cookie-policy'));
+
+        $response->assertOk();
+        $response->assertDontSee('Advertising measurement', false);
+        $response->assertDontSee('_gcl_au', false);
+        $response->assertDontSee('Google', false);
+    }
+
+    public function test_cookie_policy_names_every_advertising_cookie_and_the_way_out(): void
+    {
+        config(['google-ads.enabled' => true, 'google-ads.conversion_id' => 'AW-18451487610']);
+
+        $response = $this->get(route('legal.show', 'cookie-policy'));
+
+        $response->assertOk();
+        $response->assertSee('Advertising measurement', false);
+        $response->assertSee('_gcl_au', false);
+        $response->assertSee('_gcl_aw, _gcl_gb, _gac_*', false);
+        $response->assertSee((string) config('consent.storage_key'), false);
+        // Name, lifetime, and whether it waits for consent, per cookie.
+        $response->assertSee('90 days', false);
+        $response->assertSee('Only after you accept', false);
+        $response->assertSee('Strictly necessary', false);
+        $response->assertSee('article 6(1)(a) GDPR', false);
+        $response->assertSee('article 11.7a of the Dutch Telecommunications Act', false);
+        $response->assertSee('we delete the Google cookies from your browser', false);
+        // The old promise that nothing optional is stored must be gone.
+        $response->assertDontSee('no analytics cookies', false);
+        $response->assertDontSee('the footer has no preference panel', false);
+    }
+
+    public function test_privacy_policy_gives_advert_measurement_a_purpose_basis_and_recipient(): void
+    {
+        config(['google-ads.enabled' => true, 'google-ads.conversion_id' => 'AW-18451487610']);
+
+        $response = $this->get(route('legal.show', 'privacy-policy'));
+
+        $response->assertOk();
+        $response->assertSee('Advertising measurement', false);
+        $response->assertSee('Your consent, article 6(1)(a) GDPR', false);
+        $response->assertSee('Google Ireland Limited, with Google LLC', false);
+        $response->assertSee('Advert conversion measurement, only after you accept', false);
+        $response->assertSee('EU standard contractual clauses and the EU-US Data Privacy Framework', false);
+        // Withdrawal has to be named as plainly as the consent was taken.
+        $response->assertSee('You can withdraw it in the footer', false);
+        // Two claims that stop being true the moment a second tag ships.
+        $response->assertDontSee('the only third-party file your browser loads here', false);
+        $response->assertDontSee('We run no advertising and no ad networks.', false);
+    }
+
+    public function test_privacy_policy_never_names_google_while_no_tag_ships(): void
+    {
+        $response = $this->get(route('legal.show', 'privacy-policy'));
+
+        $response->assertOk();
+        $response->assertDontSee('Google', false);
+        $response->assertSee('the only third-party file your browser loads here', false);
+    }
+
+    public function test_why_ad_free_separates_adverts_on_the_site_from_adverts_pointing_at_it(): void
+    {
+        config(['google-ads.enabled' => true, 'google-ads.conversion_id' => 'AW-18451487610']);
+
+        $response = $this->get(route('why-ad-free'));
+
+        $response->assertOk();
+        $response->assertSee('The one thing we ask you about', false);
+        $response->assertSee('advertising pointed at this site, not advertising on it', false);
+        $response->assertSee('Cookie preferences', false);
+        // The page may not keep promising a single request once a second exists.
+        $response->assertDontSee('One third-party request on the whole site', false);
+        $response->assertDontSee('a second analytics tool', false);
+        // The pledge that does still hold has to stay on the page.
+        $response->assertSee('Zero ad slots', false);
+    }
+
     public function test_footer_control_reopens_the_cookie_notice(): void
     {
         $response = $this->get(route('legal.show', 'cookie-policy'));
