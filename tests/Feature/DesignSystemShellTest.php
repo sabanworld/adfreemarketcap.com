@@ -20,6 +20,6 @@ class DesignSystemShellTest extends TestCase
         $response->assertSee('id="afmc-nav-drawer"', false);
         $response->assertSee('data-afmc-searchbtn', false);
         $response->assertSee(__('More'), false);
-        $response->assertSee(__('Ranking cannot be bought'), false);
+        $response->assertSee(__('Cryptocurrency prices by market cap'), false);
     }
 }

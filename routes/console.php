@@ -3,12 +3,15 @@
 declare(strict_types=1);
 
 use App\Jobs\SyncCoinInsights;
+use App\Jobs\SyncCoinPlatforms;
 use App\Jobs\SyncCurrencyRates;
 use App\Jobs\SyncDexPairs;
 use App\Jobs\SyncGlobalData;
 use App\Jobs\SyncHotCoinCharts;
 use App\Jobs\SyncHotCoinTickers;
 use App\Jobs\SyncMarketData;
+use App\Jobs\SyncMarketStatus;
+use App\Jobs\SyncNostrFeed;
 use App\Jobs\SyncStaleCoinDetails;
 use App\Jobs\SyncTopCoinTickers;
 use Illuminate\Foundation\Inspiring;
@@ -28,6 +31,9 @@ $tickersTopCoins = max(0, (int) config('marketdata.sync.tickers_top_coins', 0));
 $detailInterval = max(1, min(59, (int) config('marketdata.sync.detail_backfill_interval_minutes', 60)));
 $insightsHours = max(1, (int) config('marketdata.sync.insights_interval_hours', 6));
 $currencyInterval = max(1, min(59, (int) config('currency.rates_interval_minutes', 30)));
+$statusInterval = max(1, min(59, (int) config('marketdata.sync.market_status_interval_minutes', 60)));
+$platformsHours = max(1, (int) config('marketdata.sync.platforms_interval_hours', 24));
+$nostrInterval = max(1, min(59, (int) config('marketdata.sync.nostr_interval_minutes', 30)));
 
 Schedule::job(new SyncMarketData)
     ->cron("*/{$marketsInterval} * * * *")
@@ -41,6 +47,13 @@ Schedule::job(new SyncGlobalData)
     ->withoutOverlapping()
     ->onOneServer()
     ->name('marketdata:sync-global')
+    ->sentryMonitor();
+
+Schedule::job(new SyncMarketStatus)
+    ->cron("*/{$statusInterval} * * * *")
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('marketdata:sync-status')
     ->sentryMonitor();
 
 Schedule::job(new SyncDexPairs)
@@ -92,6 +105,20 @@ Schedule::job(new SyncCoinInsights)
     ->withoutOverlapping()
     ->onOneServer()
     ->name('marketdata:sync-insights')
+    ->sentryMonitor();
+
+Schedule::job(new SyncCoinPlatforms)
+    ->cron("30 */{$platformsHours} * * *")
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('marketdata:sync-platforms')
+    ->sentryMonitor();
+
+Schedule::job(new SyncNostrFeed)
+    ->cron("*/{$nostrInterval} * * * *")
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('marketdata:sync-nostr')
     ->sentryMonitor();
 
 Schedule::command('horizon:snapshot')

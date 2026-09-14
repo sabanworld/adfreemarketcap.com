@@ -7,7 +7,10 @@ Public pages read rankings and coin details from MySQL only. Freshness comes fro
 | Job | Default cadence | Config |
 |-----|-----------------|--------|
 | `App\Jobs\SyncMarketData` | every `MARKETDATA_MARKETS_INTERVAL` minutes (default 10) | `config/marketdata.php` → `sync.markets_interval_minutes` |
-| `App\Jobs\SyncGlobalData` | same interval | same |
+| `App\Jobs\SyncGlobalData` | same interval | same; also stores 24h market-cap change |
+| `App\Jobs\SyncMarketStatus` | every `MARKETDATA_STATUS_INTERVAL` minutes (default 60) | Fear & Greed (Alternative.me), AFMC10, altcoin season |
+| `App\Jobs\SyncCoinPlatforms` | every `MARKETDATA_PLATFORMS_INTERVAL_HOURS` hours (default 24) | CoinGecko `/coins/list?include_platform=true` → `coin_platforms` |
+| `App\Jobs\SyncNostrFeed` | every `MARKETDATA_NOSTR_INTERVAL` minutes (default 30) | Server-side Nostr indexer; config in `config/nostr.php` |
 | `App\Jobs\SyncDexPairs` | every `MARKETDATA_DEX_INTERVAL` minutes (default 5) | `sync.dex_interval_minutes`, `dex_trending_pages`, `dex_new_pages`, `dex_networks` |
 | `App\Jobs\SyncHotCoinTickers` | every `MARKETDATA_HOT_TICKERS_INTERVAL` minutes (default 5) | `MARKETDATA_HOT_COINS` slugs via CoinGecko `/coins/{id}/tickers` |
 | `App\Jobs\SyncHotCoinCharts` | every `MARKETDATA_HOT_CHARTS_INTERVAL` minutes (default 60) | hot majors: CoinGecko `market_chart` for `intraday` / `short` / `daily` |
@@ -53,7 +56,27 @@ Manual one-shot:
 ./vendor/bin/sail artisan marketdata:sync --only-currencies
 ./vendor/bin/sail artisan marketdata:sync --only-charts
 ./vendor/bin/sail artisan marketdata:sync --only-charts --coin=bitcoin
+./vendor/bin/sail artisan marketdata:sync --only-status
+./vendor/bin/sail artisan marketdata:sync --only-platforms
+./vendor/bin/sail artisan marketdata:sync --only-nostr
+./vendor/bin/sail artisan marketdata:sync --only-nostr --coin=bitcoin
 ```
+
+### Market status (Fear & Greed, AFMC10, altcoin season)
+
+`SyncMarketStatus` writes `market_status_snapshots` for the homepage Market Status card:
+
+- **Fear & Greed** from Alternative.me (`ALTERNATIVE_ME_BASE_URL`). Credit Alternative.me in the widget. Server-side only.
+- **AFMC10** is a market-cap-weighted index of the configured basket (`MARKETDATA_AFMC10`, default BTC/ETH/DOGE/LTC/BCH/XRP/BNB/HBAR/NEAR/SUI). The first successful basket sum is the base so the level starts near 100. Period returns (24h, 7d, 1m/30d, 6m via CoinGecko’s 200d, 1y) are market-cap-weighted averages of each constituent’s matching `percent_change_*` column from the markets sync.
+- **Altcoin season** uses the top `MARKETDATA_ALTCOIN_SEASON_TOP_N` ranked coins (default 50), excluding BTC and `MARKETDATA_ALTCOIN_SEASON_EXCLUDE` symbols (stables and wrapped). Index = share of those alts whose `percent_change_90d` beats Bitcoin's. Markets sync requests CoinGecko `90d` for that column. Thresholds in the UI: below 25 leans Bitcoin season, above 75 leans altcoin season.
+
+### Network filter
+
+`SyncCoinPlatforms` maps CoinGecko platform contracts onto coins that already have a `coin_provider_ids` row. Markets (`Home`) filters with `?network=` via `whereHas('platforms')`. Pinned pills and labels live in `config/networks.php`. This is not DexScan's `dex_pairs.chain`.
+
+### Nostr community remarks
+
+`config/nostr.php` lists per-coin author npubs and hashtags. `SyncNostrFeed` pulls kind-1 notes through configured HTTP backends in order (default: Divine gateway, then Nostr.Band), stores them in `nostr_notes`, and prunes by `NOSTR_RETENTION_DAYS`. A single author timeout is reported and skipped; the run fails only when every author fails. Coin detail reads MySQL only; visiting a coin with a configured feed may dispatch a sync when the cache is stale. The visitor browser never opens a relay.
 
 Every monetary column holds USD. Visitors can display those figures in another currency or in BTC, converted at render time from `currency_rates`: [`docs/currency.md`](currency.md).
 
@@ -107,3 +130,5 @@ Run the scheduler every minute (Horizon separately under Supervisor):
 ```cron
 * * * * * cd /path/to/app && php artisan schedule:run --no-interaction
 ```
+
+Scheduled jobs call `->sentryMonitor()` only when `config('sentry.cron_monitoring')` is true (default: production). Local Sail leaves it off so `schedule:work` does not overwrite Sentry monitor schedules or raise missed check-ins. Set `SENTRY_CRON_MONITORING=true` to opt in.

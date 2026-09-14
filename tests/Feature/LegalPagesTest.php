@@ -113,6 +113,8 @@ class LegalPagesTest extends TestCase
             ->assertSee('Ploi (WebBuilds B.V.)', false)
             ->assertSee('Functional Software, Inc. (Sentry)', false)
             ->assertSee('Application error reporting', false)
+            ->assertSee('Divine Nostr gateway', false)
+            ->assertSee('Public Nostr note indexing for community remarks', false)
             // A US provider needs its transfer safeguard named, even with EU storage.
             ->assertSee('EU standard contractual clauses and the EU-US Data Privacy Framework', false);
 

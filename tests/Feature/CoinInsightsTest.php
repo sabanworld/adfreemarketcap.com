@@ -10,6 +10,7 @@ use App\Models\SyncRun;
 use App\Services\MarketData\CoinInsightSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -64,6 +65,8 @@ class CoinInsightsTest extends TestCase
 
     public function test_bitcoin_detail_page_shows_treasury_and_cycles(): void
     {
+        Queue::fake();
+
         $coin = Coin::query()->create([
             'slug' => 'bitcoin',
             'symbol' => 'BTC',

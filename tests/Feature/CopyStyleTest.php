@@ -31,6 +31,9 @@ class CopyStyleTest extends TestCase
         'dive in',
         "Let's ",
         'needless to say',
+        'ranking cannot be bought',
+        'rankings cannot be bought',
+        'cannot be bought',
     ];
 
     public function test_no_prose_uses_an_em_dash(): void

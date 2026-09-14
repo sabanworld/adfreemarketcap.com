@@ -20,6 +20,9 @@
   - `php artisan marketdata:sync --only-insights` (Bitcoin treasury + market cycles)
   - `php artisan marketdata:sync --only-tickers` (exchange markets for hot coins)
   - `php artisan marketdata:sync --only-charts` (multi-range charts for hot majors)
+  - `php artisan marketdata:sync --only-status` (Fear & Greed, AFMC10, altcoin season)
+  - `php artisan marketdata:sync --only-platforms` (coin network platforms for Markets filter)
+  - `php artisan marketdata:sync --only-nostr` (Nostr community notes)
   - `php artisan horizon` (if not started via Sail Supervisor)
   - `php artisan schedule:work` (local alternative to container cron)
 - Reach sibling services by their **compose service name**, not `localhost` from the host's point of view: `mysql`, `redis`, `meilisearch`, `mailpit`. Host port forwards (`FORWARD_*`) do not apply inside the network.
@@ -90,6 +93,8 @@ Everything a human reads should sound like a person wrote it: product copy, lega
 - **"Not just X, it's Y"**, "more than just", and other setup-payoff constructions.
 - **Rhetorical questions as openers**, "Let's …", "dive in", "unlock", "seamless", "effortless", "leverage" as a verb, and similar marketing filler.
 - Trailing summaries that repeat the paragraph in different words.
+- **Hollow anti-payola slogans.** Do not write "Ranking cannot be bought" (or close variants). Bitcoin and Ethereum are not shopping for a better rank, so the line reads as empty ad-free marketing. If you need the legal fact, say it plainly: rankings follow a published formula and we do not sell placement. Never invent virtue-signalling taglines that imply a bribe model that does not exist for the assets on this site.
+- **Other AI-typical nonsense for this product.** Skip claims that sound important but do not map to how crypto market data works (for example that a coin "cannot pay" for rank, that rankings are "earned not bought" as a homepage badge, or other trust theatre that a reader cannot falsify). Prefer a concrete rule, a formula, or silence.
 
 **Preferences**
 
@@ -98,7 +103,7 @@ Everything a human reads should sound like a person wrote it: product copy, lega
 - Say the concrete thing: name the page, the period, the amount, the provider. Vague reassurance is worse than nothing on legal pages.
 - Only claim behaviour the code actually has. If a policy sentence and the codebase disagree, one of the two is a bug.
 
-`tests/Feature/CopyStyleTest.php` enforces the punctuation rule and the banned phrases across `resources/views`, `resources/css`, `lang/`, `docs/`, `README.md`, and this file. Extend the list there when you spot a new tell.
+`tests/Feature/CopyStyleTest.php` enforces the punctuation rule and the banned phrases across `resources/views`, `resources/css`, `lang/`, `docs/`, `README.md`, and this file. Extend the list there when you spot a new tell (including hollow slogans like "ranking cannot be bought").
 
 ## JavaScript package manager (Yarn only)
 
