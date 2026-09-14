@@ -120,7 +120,7 @@ Everything a human reads should sound like a person wrote it: product copy, lega
 
 - **Public UI:** Livewire (Filament 5 ships Livewire 4) + Blade + Alpine. Prefer `wire:navigate`, targeted `wire:poll`, and Alpine/Chart.js for local chart/sparkline interaction. **Never call market-data providers from Livewire request handlers**. Read from the database; enqueue or schedule sync jobs for freshness.
 
-- **Design system (public UI):** Visual language lives under `claude/AdFreeMarketCap Design System (2)/` (tokens + UI kit). Production CSS tokens are copied to `resources/css/design-system/`; Blade primitives live in `resources/views/components/afmc/` and `resources/css/afmc.css`. Below 820px, primary nav moves to the bottom tab bar and More drawer (horizontal scrolling header nav is a defect).
+- **Design system (public UI):** Visual language lives under `claude/AdFreeMarketCap Design System (5)/` (tokens + UI kit). Production CSS tokens are copied to `resources/css/design-system/`; Blade primitives live in `resources/views/components/afmc/` and `resources/css/afmc.css`. Below 820px, primary nav moves to the bottom tab bar and More drawer (horizontal scrolling header nav is a defect).
   - **Logo:** four-bar mark + lowercase wordmark via `<x-afmc.brand-mark>` (header/footer). Static assets live in `public/brand/` (`logo.svg` favicon; mono/inverse variants). Bar heights stay 60/100/38/78; only the second bar is amber. Do not invent a different mark.
   - **Warm paper / amber accent / green-up red-down only for price**. Do not use amber for market direction or green/red for non-price chrome.
   - **Type:** Archivo (display), Public Sans (body), JetBrains Mono (every figure, tabular-nums).

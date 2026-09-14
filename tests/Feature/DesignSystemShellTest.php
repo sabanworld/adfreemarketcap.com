@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Coin;
 use App\Support\Icons;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 class DesignSystemShellTest extends TestCase
 {
+    use RefreshDatabase;
+
     public function test_public_layout_exposes_skip_link_main_landmark_and_mobile_shell(): void
     {
         $response = $this->get(route('home'));
@@ -80,5 +85,57 @@ class DesignSystemShellTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('x-trap.noscroll="moreOpen"', false);
+    }
+
+    /**
+     * A label on an --ink-900 chip reads in both themes. --ink-900 is cream in dark mode, so a
+     * --text-inverse pinned to it would paint the text in its own background and the current
+     * page number would vanish. The kit ships that pairing; our copy does not.
+     */
+    public function test_inverse_text_never_resolves_to_its_own_background(): void
+    {
+        $colors = File::get(resource_path('css/design-system/colors.css'));
+
+        $this->assertSame(
+            2,
+            substr_count($colors, '--text-inverse:var(--paper-0)'),
+            'Both the light and dark blocks must point --text-inverse at --paper-0.',
+        );
+        $this->assertStringNotContainsString('--text-inverse:var(--ink-900)', $colors);
+    }
+
+    /**
+     * Every pager cell carries its own class. A bare `span` selector also matched the chevron's
+     * icon span, and its font shorthand swapped the icon font for the mono face, so both arrows
+     * rendered as a missing glyph.
+     */
+    public function test_the_pager_arrows_keep_the_icon_font(): void
+    {
+        for ($rank = 1; $rank <= 60; $rank++) {
+            Coin::query()->create([
+                'slug' => 'coin-' . $rank,
+                'symbol' => 'C' . $rank,
+                'name' => 'Coin ' . $rank,
+                'rank' => $rank,
+                'price' => 1,
+                'market_cap' => 1_000_000 - $rank,
+            ]);
+        }
+
+        $response = $this->get(route('home'));
+
+        $response->assertOk();
+        $response->assertSee('afmc-pagination__link', false);
+        $response->assertSee(Icons::character('chevron_right'), false);
+        $response->assertSee('aria-label="' . __('Next page') . '"', false);
+        // An arrow with nowhere to go is a real disabled button, so it keeps its label, its
+        // place in the row, and the 44px target the coarse-pointer rule gives every control.
+        $response->assertSee('disabled aria-label="' . __('Previous page') . '"', false);
+
+        // Below 560px the numbered cells give way to a position readout, so both renderings
+        // ship and CSS decides which one a viewport gets.
+        $response->assertSee('afmc-pagination__link--page', false);
+        $response->assertSee('afmc-pagination__position', false);
+        $response->assertSee('1 / 2', false);
     }
 }

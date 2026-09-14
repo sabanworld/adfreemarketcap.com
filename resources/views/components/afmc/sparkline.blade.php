@@ -51,9 +51,8 @@
         height="{{ $height }}"
         viewBox="0 0 {{ $width }} {{ $height }}"
         preserveAspectRatio="none"
-        class="afmc-sparkline"
         aria-hidden="true"
-        {{ $attributes }}
+        {{ $attributes->class('afmc-sparkline') }}
     >
         @if ($fill)
             <defs>

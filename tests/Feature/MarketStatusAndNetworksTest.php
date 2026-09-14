@@ -12,6 +12,7 @@ use App\Models\CoinProviderId;
 use App\Models\MarketGlobal;
 use App\Models\MarketStatusSnapshot;
 use App\Services\MarketData\CoinPlatformSyncService;
+use App\Services\MarketData\MarketOverviewService;
 use App\Services\MarketData\MarketStatusSyncService;
 use App\Services\MarketData\MarketSyncService;
 use App\Services\MarketData\NetworkCatalogService;
@@ -262,13 +263,6 @@ class MarketStatusAndNetworksTest extends TestCase
             'synced_at' => now(),
         ]);
 
-        // Every number has one owner: the status strip owns market cap and 24h volume on the
-        // markets page, so the ticker above it carries only what the strip does not.
-        $this->get(route('home'))
-            ->assertOk()
-            ->assertSee('BTC dominance')
-            ->assertDontSee('24h volume');
-
         $coin = Coin::query()->create([
             'slug' => 'bitcoin',
             'symbol' => 'BTC',
@@ -279,10 +273,134 @@ class MarketStatusAndNetworksTest extends TestCase
             'detail_synced_at' => now(),
             'tickers_synced_at' => now(),
         ]);
+        Coin::query()->create([
+            'slug' => 'ethereum',
+            'symbol' => 'ETH',
+            'name' => 'Ethereum',
+            'rank' => 2,
+            'price' => 3000,
+            'market_cap' => 400_000_000,
+        ]);
+
+        // Every number has one owner. On markets the status strip publishes market cap, 24h
+        // volume and the dominance split, and the tab badge carries the tracked count, so the
+        // ticker has nothing of its own left to say and is hidden rather than padded out.
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertDontSee('data-afmc-ticker', false)
+            ->assertDontSee('24h volume');
 
         $this->get(route('coins.show', $coin))
             ->assertOk()
-            ->assertSee('24h volume');
+            ->assertSee('data-afmc-ticker', false)
+            ->assertSee('24h volume')
+            ->assertSee('BTC dominance');
+    }
+
+    public function test_market_cap_panel_carries_a_line_and_a_dominance_split(): void
+    {
+        Queue::fake();
+
+        // Two readings so the panel's middle track has a line to draw rather than a hole.
+        MarketGlobal::query()->create([
+            'total_market_cap' => 1_900_000_000_000,
+            'total_volume_24h' => 88_000_000_000,
+            'btc_dominance' => 58.0,
+            'provider' => 'coingecko',
+            'synced_at' => now()->subHours(6),
+        ]);
+        MarketGlobal::query()->create([
+            'total_market_cap' => 2_000_000_000_000,
+            'total_volume_24h' => 90_000_000_000,
+            'btc_dominance' => 58.5,
+            'market_cap_change_percentage_24h' => 1.4,
+            'provider' => 'coingecko',
+            'synced_at' => now(),
+        ]);
+        Coin::query()->create([
+            'slug' => 'ethereum',
+            'symbol' => 'ETH',
+            'name' => 'Ethereum',
+            'rank' => 1,
+            'price' => 3000,
+            'market_cap' => 200_000_000_000,
+        ]);
+
+        $overview = app(MarketOverviewService::class);
+
+        // The percentage is measured from the endpoints of the line it sits beside, not from
+        // the provider's like-for-like figure, which moved the other way here.
+        $trend = $overview->marketCapTrend();
+        $this->assertCount(2, $trend['series']);
+        $this->assertEqualsWithDelta(5.26, $trend['change'], 0.01);
+
+        $split = $overview->dominanceSplit();
+        $this->assertSame(['BTC', 'ETH', 'Other'], array_column($split, 'label'));
+        $this->assertEqualsWithDelta(58.5, $split[0]['percent'], 0.1);
+        $this->assertEqualsWithDelta(10.0, $split[1]['percent'], 0.1);
+        $this->assertEqualsWithDelta(31.5, $split[2]['percent'], 0.1);
+
+        // The line takes its colour from the percentage above it, so both describe the same day.
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('afmc-dominance__track', false)
+            ->assertSee('afmc-status-panel__spark', false)
+            ->assertSee('var(--chart-up)', false);
+    }
+
+    public function test_dominance_split_is_dropped_when_ethereum_is_unknown(): void
+    {
+        Queue::fake();
+
+        MarketGlobal::query()->create([
+            'total_market_cap' => 2_000_000_000_000,
+            'btc_dominance' => 58.5,
+            'provider' => 'coingecko',
+            'synced_at' => now(),
+        ]);
+
+        $overview = app(MarketOverviewService::class);
+
+        // A split we cannot source is not drawn, and the figure falls back to its other owner.
+        $this->assertSame([], $overview->dominanceSplit());
+        $this->assertContains('btc_dominance', array_column($overview->tickerItems(statusStripOnPage: true), 'key'));
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('BTC dominance')
+            ->assertDontSee('afmc-dominance__track', false);
+    }
+
+    public function test_market_cap_line_needs_two_readings(): void
+    {
+        MarketGlobal::query()->create([
+            'total_market_cap' => 2_000_000_000_000,
+            'btc_dominance' => 58.5,
+            'provider' => 'coingecko',
+            'synced_at' => now(),
+        ]);
+
+        $trend = app(MarketOverviewService::class)->marketCapTrend();
+        $this->assertSame([], $trend['series']);
+        $this->assertNull($trend['change']);
+    }
+
+    public function test_market_cap_line_keeps_its_endpoints_when_downsampled(): void
+    {
+        foreach (range(0, 40) as $index) {
+            MarketGlobal::query()->create([
+                'total_market_cap' => 1_000_000_000_000 + $index * 1_000_000_000,
+                'provider' => 'coingecko',
+                'synced_at' => now()->subMinutes((40 - $index) * 10),
+            ]);
+        }
+
+        $series = app(MarketOverviewService::class)->marketCapTrend(points: 24)['series'];
+
+        // The endpoints carry the direction the percentage beside the line states.
+        $this->assertCount(24, $series);
+        $this->assertEqualsWithDelta(1_000_000_000_000, $series[0], 1);
+        $this->assertEqualsWithDelta(1_040_000_000_000, $series[23], 1);
     }
 
     public function test_platform_sync_maps_coingecko_list_to_known_coins(): void

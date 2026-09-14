@@ -1,6 +1,6 @@
 # Public UI design
 
-The production front-end follows the **AdFreeMarketCap Design System** under `claude/AdFreeMarketCap Design System (4)/` (reference kit).
+The production front-end follows the **AdFreeMarketCap Design System** under `claude/AdFreeMarketCap Design System (5)/` (reference kit).
 
 ## Mapping
 

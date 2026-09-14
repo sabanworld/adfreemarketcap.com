@@ -50,6 +50,10 @@
      Never for a label or a control's text: a disabled control keeps --text-faint and carries
      the unavailable state some other way (strikethrough, a "Soon" marker). */
   --text-disabled:var(--ink-300);
+  /* Text that sits on an --ink-900 ground (current page in a pager, active quick pick). It has
+     to be the paper of the current theme, because --ink-900 is itself cream in dark mode: the
+     kit pins this to --ink-900 there, which paints the label in its own background colour and
+     the digit disappears. Keep it pointing at --paper-0 in both blocks. */
   --text-inverse:var(--paper-0);
   --text-brand:var(--amber-700);
   --text-up:var(--up-700);
@@ -80,6 +84,6 @@
   --violet-100:#241A3D;--info-100:#12233D;--warn-100:#2E2408;
   /* Inverts with the theme the way up-700/down-700 do. 6.9:1 on the dark warn ground. */
   --warn-700:#DCA62B;
-  --surface-card:var(--paper-1);--surface-inverse:var(--paper-4);--text-inverse:var(--ink-900);
+  --surface-card:var(--paper-1);--surface-inverse:var(--paper-4);--text-inverse:var(--paper-0);
   --chart-volume:var(--paper-3);
 }

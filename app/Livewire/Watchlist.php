@@ -36,6 +36,12 @@ class Watchlist extends Component
         $best = $coins->sortByDesc(fn (Coin $coin) => (float) ($coin->percent_change_24h ?? PHP_FLOAT_MIN))->first();
         $worst = $coins->sortBy(fn (Coin $coin) => (float) ($coin->percent_change_24h ?? PHP_FLOAT_MAX))->first();
 
+        // Equal-weighted, not cap-weighted: a watchlist is a list of interests, not a portfolio,
+        // so every row counts the same and the tile says so.
+        $changes = $coins
+            ->map(fn (Coin $coin): ?float => $coin->percent_change_24h === null ? null : (float) $coin->percent_change_24h)
+            ->filter(fn (?float $change): bool => $change !== null);
+
         $pageSeo = $seo->forStaticPage(
             title: __('seo.watchlist_title', ['site' => config('app.name')]),
             description: __('seo.watchlist_description'),
@@ -47,6 +53,7 @@ class Watchlist extends Component
             'coins' => $coins,
             'best' => $best,
             'worst' => $worst,
+            'averageChange' => $changes->isEmpty() ? null : (float) $changes->avg(),
         ])
             ->title($pageSeo->title)
             ->layoutData(['seo' => $pageSeo]);

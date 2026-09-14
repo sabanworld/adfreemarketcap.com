@@ -52,6 +52,15 @@ class DexScan extends Component
         $this->resetPage();
     }
 
+    public function clearFilters(): void
+    {
+        $this->chain = 'all';
+        $this->tab = 'trending';
+        $this->search = '';
+        $this->verifiedOnly = false;
+        $this->resetPage();
+    }
+
     public function render(SeoService $seo)
     {
         $query = DexPair::query();

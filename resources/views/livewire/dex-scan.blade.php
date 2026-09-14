@@ -48,9 +48,16 @@
     </div>
 
     <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-3);flex-wrap:wrap">
-        <div class="afmc-tabs" role="tablist">
+        <div class="afmc-tabs" data-afmc-tabs role="tablist">
             @foreach (['trending' => __('Trending'), 'gainers' => __('Gainers'), 'new' => __('New pairs'), 'liquidity' => __('Top liquidity')] as $value => $label)
-                <button type="button" class="afmc-tabs__item {{ $tab === $value ? 'is-active' : '' }}" wire:click="setTab('{{ $value }}')">{{ $label }}</button>
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected="{{ $tab === $value ? 'true' : 'false' }}"
+                    tabindex="{{ $tab === $value ? '0' : '-1' }}"
+                    class="afmc-tabs__item {{ $tab === $value ? 'is-active' : '' }}"
+                    wire:click="setTab('{{ $value }}')"
+                >{{ $label }}</button>
             @endforeach
         </div>
         <label class="afmc-switch" title="{{ __('Hides pairs whose contract is unverified.') }}">
@@ -106,7 +113,12 @@
                                 </span>
                             </td>
                             <td class="hide-narrow">
-                                @php($tier = $quality->describe($pair))
+                                {{-- Block form, never @php(…): Blade's raw-block pass matches the
+                                     first @php it sees against the next @endphp, so one inline
+                                     call swallows every directive up to the next block. --}}
+                                @php
+                                    $tier = $quality->describe($pair);
+                                @endphp
                                 <x-afmc.risk-level
                                     :tier="$tier['tier']"
                                     :label="__($tier['label'])"
@@ -124,9 +136,28 @@
                             </td>
                         </tr>
                     @empty
+                        @php
+                            $filtered = $chain !== 'all' || $tab !== 'trending' || $verifiedOnly || filled($search);
+                        @endphp
                         <tr>
-                            <td colspan="9" style="height:auto;padding:var(--space-8);text-align:center;color:var(--text-faint);font:var(--type-body-sm)">
-                                {{ __('No DEX pairs yet. Sync with php artisan marketdata:sync --only-dex') }}
+                            <td colspan="9" class="afmc-table__empty">
+                                <div class="afmc-empty">
+                                    <x-afmc.icon name="search_off" class="afmc-empty__icon" />
+                                    @if ($filtered)
+                                        <p class="afmc-empty__title">{{ __('No pairs match this view') }}</p>
+                                        <p class="afmc-empty__detail">
+                                            {{ __('A chain, a tab or the unverified filter is narrowing this list. Clear them to see every pair we track.') }}
+                                        </p>
+                                        <button type="button" class="afmc-btn afmc-btn--secondary afmc-btn--sm" wire:click="clearFilters">
+                                            {{ __('Clear filters') }}
+                                        </button>
+                                    @else
+                                        <p class="afmc-empty__title">{{ __('No pairs yet') }}</p>
+                                        <p class="afmc-empty__detail">
+                                            {{ __('On-chain pairs have not been synced yet, so there is nothing to rank by liquidity.') }}
+                                        </p>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @endforelse

@@ -8,13 +8,13 @@
 <main data-afmc-page class="afmc-page" wire:poll.visible.60s>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-5);flex-wrap:wrap">
         <div style="display:grid;gap:var(--space-1)">
-            <h1 style="font:var(--type-h1);margin:0">{{ __('Main') }}</h1>
+            <h1 style="font:var(--type-h2);margin:0">{{ __('Watchlist') }}</h1>
             <span style="font:var(--type-body-sm);color:var(--text-muted)">
                 {{ trans_choice(':count asset|:count assets', $coins->count(), ['count' => $coins->count()]) }}
                 · {{ __('saved to your account') }}
             </span>
         </div>
-        <a href="{{ route('home') }" wire:navigate class="afmc-btn afmc-btn--secondary afmc-btn--sm">
+        <a href="{{ route('home') }}" wire:navigate class="afmc-btn afmc-btn--secondary afmc-btn--sm">
             <x-afmc.icon name="add" size="16px" />
             {{ __('Add coins') }}
         </a>
@@ -30,19 +30,29 @@
         </div>
     @else
         <div class="afmc-grid afmc-grid--stats" style="margin-bottom:var(--space-5)">
+            {{-- The asset count sits in the subtitle above, so this row opens on the figure the
+                 page does not state anywhere else. --}}
             <div class="afmc-stat">
-                <span class="afmc-stat__label">{{ __('Assets watched') }}</span>
-                <span class="afmc-stat__value">{{ $coins->count() }}</span>
+                <span class="afmc-stat__label">{{ __('List 24h') }}</span>
+                <span class="afmc-stat__value">{{ MarketNumberFormatter::percent($display->change($averageChange)) }}</span>
+                <span class="afmc-stat__meta">
+                    <x-afmc.price-change :value="$display->change($averageChange)" chip size="sm" />
+                    <span class="afmc-stat__note">{{ __('Equal-weighted') }}</span>
+                </span>
             </div>
             <div class="afmc-stat">
                 <span class="afmc-stat__label">{{ __('Best 24h') }}</span>
                 <span class="afmc-stat__value">{{ $best?->symbol ? strtoupper((string) $best->symbol) : '—' }}</span>
-                <x-afmc.price-change :value="$display->change($best?->percent_change_24h)" chip size="sm" />
+                <span class="afmc-stat__meta">
+                    <x-afmc.price-change :value="$display->change($best?->percent_change_24h)" chip size="sm" />
+                </span>
             </div>
             <div class="afmc-stat">
                 <span class="afmc-stat__label">{{ __('Worst 24h') }}</span>
                 <span class="afmc-stat__value">{{ $worst?->symbol ? strtoupper((string) $worst->symbol) : '—' }}</span>
-                <x-afmc.price-change :value="$display->change($worst?->percent_change_24h)" chip size="sm" />
+                <span class="afmc-stat__meta">
+                    <x-afmc.price-change :value="$display->change($worst?->percent_change_24h)" chip size="sm" />
+                </span>
             </div>
         </div>
 

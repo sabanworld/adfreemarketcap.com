@@ -87,6 +87,8 @@ Manual one-shot:
 
 `SyncCoinPlatforms` maps CoinGecko platform contracts onto coins that already have a `coin_provider_ids` row. Markets (`Home`) filters with `?network=` via `whereHas('platforms')`. This is not DexScan's `dex_pairs.chain`.
 
+**It runs once a day (`30 */24 * * *`, so 00:30 UTC), and an empty `coin_platforms` table hides the filter completely** rather than showing an empty chip row. A new environment therefore has no network filter until that slot arrives: run `php artisan marketdata:sync --only-platforms` once after deploying, per [First deploy into a new environment](#first-deploy-into-a-new-environment). To check rather than guess, count `coin_platforms` rows and look for the newest `sync_runs` row of type `coin_platforms`.
+
 The chip row is **derived, never hand-listed**: `App\Services\MarketData\NetworkCatalogService` counts ranked coins per `platform_id` (cached 5 minutes, cleared by the platform sync), so a chain reaches the filter only once a coin in the table maps to it, and each option carries that count. `MARKETDATA_NETWORK_PINNED` leads the row in the order given; everything else falls in behind, largest first, and lands in the More menu. `MARKETDATA_NETWORK_HIDDEN` drops a chain entirely.
 
 A `platform_id` is a storage key, not a label, so ids are title-cased for display and `networks.names` in `config/networks.php` only carries the ones that do not convert cleanly (`the-open-network` → TON, `zksync` → zkSync, `xdai` → Gnosis). Add a name there when a new chain shows up reading like a slug. `chipRow()` promotes the chain a reader picked in the More menu into the visible chips, so the active filter is never hidden behind an untouched button.
@@ -139,6 +141,31 @@ Price charts live in `coin_chart_series` as three CoinGecko buckets:
 Stale windows: `MARKETDATA_CHART_INTRADAY_STALE_MINUTES` (30), `MARKETDATA_CHART_SHORT_STALE_MINUTES` (120), `MARKETDATA_CHART_DAILY_STALE_MINUTES` (720). Syncing `short` also refreshes `coins.chart_7d` for sparklines and currency baselines.
 
 `SyncCoinCharts` is unique per coin + series set for 5 minutes.
+
+## First deploy into a new environment
+
+**Long cadences mean a fresh database has gaps until each job's first slot comes round, and some UI hides itself rather than showing an empty state.** Nothing is wrong when that happens, but nothing fixes it either until the job runs, so seed the slow ones by hand after migrating:
+
+```bash
+php artisan migrate --force
+php artisan optimize                                  # new config keys
+php artisan marketdata:sync --queue                   # rankings + global
+php artisan marketdata:sync --only-platforms --queue   # network filter
+php artisan marketdata:sync --only-insights --queue    # treasury + Pi Cycle
+php artisan marketdata:sync --only-season --only-status --queue  # 90d changes, then the snapshot that scores them
+```
+
+Which ones actually need it:
+
+| Surface | Job | First slot | Symptom until then |
+|---------|-----|-----------|--------------------|
+| Markets network filter | `SyncCoinPlatforms` | `30 */24 * * *`, so **once a day at 00:30 UTC** | The chip row is absent entirely. `NetworkCatalogService` derives chains from `coin_platforms`, and `home.blade.php` renders the filter only when that yields something, so an empty table means no control at all rather than an empty one. |
+| Altcoin season | `SyncNinetyDayChanges` then `SyncMarketStatus` | hourly each | The card reads `—` with a zero sample size, because the index needs a 90-day change per coin. Two ticks, so allow up to two hours. |
+| Bitcoin treasury / market cycles | `SyncCoinInsights` | `15 */6 * * *`, every 6 hours | Those coin-detail cards are missing. |
+
+Everything else (rankings, global, tickers, charts, currency rates, Nostr) runs at least hourly and fills itself in without help.
+
+The `--queue` flag hands the work to Horizon rather than holding the deploy shell, so Horizon has to be up for those to do anything. Drop it to run inline.
 
 ## Production cron
 

@@ -11,6 +11,8 @@
   --ring-brand:0 0 0 var(--focus-ring-width) var(--amber-500);
   /* scrim + blur */
   --scrim:rgba(20,18,14,.44);
+  /* Use only on elements that never host a position:fixed overlay. A backdrop-filter makes
+     an element a containing block for fixed descendants, so the header deliberately omits it. */
   --blur-sticky:saturate(140%) blur(8px); /* @kind other */
 }
 [data-theme="dark"]{

@@ -1,5 +1,15 @@
 /* Affinity with design-system tokens: layout and primitives for Blade UI */
 
+:root {
+  /* Soft edge on the last frozen table column. Warm ink on paper, black on the dark surface,
+     because a warm shadow over a dark card is invisible. */
+  --afmc-sticky-edge: 8px 0 10px -8px rgb(20 18 14 / 16%);
+}
+
+[data-theme='dark'] {
+  --afmc-sticky-edge: 8px 0 12px -8px rgb(0 0 0 / 55%);
+}
+
 .afmc-is-loading {
   opacity: 0.55;
   pointer-events: none;
@@ -370,8 +380,7 @@
 .afmc-currency__quick-item.is-active {
   border-color: var(--ink-900);
   background: var(--ink-900);
-  /* paper-0, not text-inverse: ink-900 and text-inverse both invert to cream in dark mode. */
-  color: var(--paper-0);
+  color: var(--text-inverse);
 }
 
 .afmc-currency__empty {
@@ -1045,6 +1054,21 @@
   word-break: break-word;
 }
 
+/* Reserved height, so a tile with a change chip and one without still line up in a row. */
+.afmc-stat__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 18px;
+  flex-wrap: wrap;
+}
+
+.afmc-stat__note {
+  font: var(--type-body-sm);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
 /* Five or more values laid out as tiles break into orphans of three different widths, so
    past four the boxes are dropped for hairline-separated rows on one right-aligned edge. */
 .afmc-statlist {
@@ -1184,7 +1208,7 @@
   flex-wrap: wrap;
   gap: var(--space-6);
   padding: var(--space-3) 0 var(--space-5);
-  margin-bottom: var(--space-1);
+  margin-bottom: var(--space-4);
   border-bottom: 1px solid var(--border-divider);
 }
 
@@ -1402,9 +1426,20 @@
   box-shadow: 1px 0 0 var(--border-divider);
 }
 
+/* The last frozen column carries a soft edge instead of a hairline, so the numeric columns
+   read as panning behind the identity rather than butting against it. The offset is a token
+   because a warm light-mode shadow disappears on the dark surface. */
+.afmc-table tbody .is-sticky--name {
+  box-shadow: var(--afmc-sticky-edge);
+}
+
 .afmc-table thead .is-sticky {
   z-index: 4;
   box-shadow: inset 0 -1px 0 var(--border-card), 1px 0 0 var(--border-divider);
+}
+
+.afmc-table thead .is-sticky--name {
+  box-shadow: inset 0 -1px 0 var(--border-card), var(--afmc-sticky-edge);
 }
 
 .afmc-table__namecell {
@@ -1459,12 +1494,23 @@
 .afmc-pagination__links {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.afmc-pagination__nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   flex-wrap: wrap;
 }
 
-.afmc-pagination__links a,
-.afmc-pagination__links span {
+/* One class per pager cell, never a bare element selector: `.afmc-pagination__links span`
+   also matched the chevron's <span class="afmc-icon">, and its font shorthand replaced the
+   icon font with the mono face, so both arrows rendered as a missing glyph. */
+.afmc-pagination__link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1473,21 +1519,78 @@
   padding: 0 6px;
   border-radius: var(--radius-xs);
   border: 1px solid transparent;
-  font: var(--type-num);
-  font-size: var(--text-xs);
-  color: var(--text-muted);
+  background: transparent;
+  font: var(--weight-medium) var(--text-xs) / 1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-body);
   text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition-color);
 }
 
-.afmc-pagination__links a:hover {
+.afmc-pagination__link:hover:not(.is-current):not(:disabled) {
   background: var(--surface-hover);
   border-bottom-color: transparent;
 }
 
-.afmc-pagination__links [aria-current="page"] {
+.afmc-pagination__link:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.afmc-pagination__link.is-current {
   background: var(--ink-900);
-  color: var(--paper-0);
+  color: var(--text-inverse);
   border-color: var(--ink-900);
+}
+
+.afmc-pagination__link:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+/* The pager sits below the table, not inside it, so its cells take the full 44px target on a
+   coarse pointer. The current page is a span, which the global rule in base.css does not
+   reach, and a 26px number beside a 44px arrow reads as a broken row. */
+@media (pointer: coarse) {
+  .afmc-pagination__link {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+.afmc-pagination__gap {
+  padding: 0 2px;
+  font: var(--type-num);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+/* Wide enough for the numbered cells, so the position readout stays out of the way. */
+.afmc-pagination__position {
+  display: none;
+}
+
+/* Five thumb-sized cells, two arrows and the rows-per-page select do not fit a phone: they
+   wrapped onto three lines, which loses the row a pager is. The arrows and the current page
+   survive, because tapping forward is what a reader does on a phone; the jump targets go. */
+@media (max-width: 560px) {
+  .afmc-pagination__link--page,
+  .afmc-pagination__gap {
+    display: none;
+  }
+
+  .afmc-pagination__position {
+    display: inline-block;
+    padding: 0 var(--space-1);
+    font: var(--type-num);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .afmc-pagination__link.is-current {
+    display: none;
+  }
 }
 
 /* Rows per page. Density and page size are reader settings, so they sit with the pager
@@ -2650,8 +2753,7 @@ button.afmc-tag:hover:not(.is-active) {
 .afmc-tag.is-active {
   background: var(--ink-900);
   border-color: var(--ink-900);
-  /* paper-0, not text-inverse: ink-900 and text-inverse both invert to cream in dark mode. */
-  color: var(--paper-0);
+  color: var(--text-inverse);
 }
 
 .afmc-altcha {
@@ -2768,10 +2870,13 @@ button.afmc-tag:hover:not(.is-active) {
   color: var(--text-faint);
 }
 
+/* The 1fr middle row absorbs all the slack from the tallest panel, so the track centres what
+   it has: any residue then splits above and below and reads as centring rather than a hole.
+   Padding is never the fix here, because the hole returns the moment a sibling grows. */
 .afmc-status-panel__body {
   display: grid;
   gap: var(--space-2);
-  align-content: start;
+  align-content: center;
   min-width: 0;
 }
 
@@ -2856,6 +2961,83 @@ button.afmc-tag:hover:not(.is-active) {
 
 .afmc-status-panel__periods dd {
   margin: 0;
+}
+
+/* Stretched to the panel, but pinned to the height it was drawn at: `height: auto` would let
+   the ratio grow the line into the dominance split below it. */
+.afmc-status-panel__spark {
+  width: 100%;
+  height: 48px;
+  flex: none;
+}
+
+/* Bitcoin, Ethereum, everything else. Amber leads because it marks attention, not direction:
+   green or red here would read as price movement. */
+.afmc-dominance {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.afmc-dominance__track {
+  display: flex;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: var(--surface-sunken);
+}
+
+.afmc-dominance__band:nth-child(1) {
+  background: var(--amber-500);
+}
+
+.afmc-dominance__band:nth-child(2) {
+  background: var(--ink-400);
+}
+
+.afmc-dominance__band:nth-child(3) {
+  background: var(--ink-200);
+}
+
+.afmc-dominance__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.afmc-dominance__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: var(--type-body-sm);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.afmc-dominance__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.afmc-dominance__item:nth-child(1) .afmc-dominance__dot {
+  background: var(--amber-500);
+}
+
+.afmc-dominance__item:nth-child(2) .afmc-dominance__dot {
+  background: var(--ink-400);
+}
+
+.afmc-dominance__item:nth-child(3) .afmc-dominance__dot {
+  background: var(--ink-200);
+}
+
+.afmc-dominance__value {
+  font: var(--type-num);
+  font-size: var(--text-xs);
+  color: var(--text-strong);
 }
 
 /* A horizontal scale gets its own full-width row: squeezed into a third of the card its zone
@@ -3031,8 +3213,7 @@ button.afmc-tag:hover:not(.is-active) {
 .afmc-chip.is-active {
   background: var(--ink-900);
   border-color: var(--ink-900);
-  /* paper-0, not text-inverse: ink-900 and text-inverse both invert to cream in dark mode. */
-  color: var(--paper-0);
+  color: var(--text-inverse);
 }
 
 .afmc-chip--more {
@@ -3152,10 +3333,17 @@ button.afmc-tag:hover:not(.is-active) {
   margin: 0 auto;
 }
 
+.afmc-empty__icon {
+  font-size: 22px;
+  color: var(--text-faint);
+}
+
+/* An empty table explains the mechanic, so the title stays body copy: a heading inside a row
+   competes with the card's own header. */
 .afmc-empty__title {
   margin: 0;
-  font: var(--type-h3);
-  color: var(--text-strong);
+  font: var(--type-body);
+  color: var(--text-body);
 }
 
 .afmc-empty__detail {

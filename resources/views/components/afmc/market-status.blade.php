@@ -5,10 +5,16 @@
 
 @php
     use App\Services\MarketData\MarketNumberFormatter;
+    use App\Services\MarketData\MarketOverviewService;
 
-    $capChange = $global?->market_cap_change_percentage_24h !== null
-        ? (float) $global->market_cap_change_percentage_24h
-        : null;
+    $overview = app(MarketOverviewService::class);
+
+    // The middle track of the tallest panel sets the height of all three, so a panel holding
+    // only a figure would open a continuous empty band below it. The market-cap panel carries
+    // the 24 hour line and the dominance split, both of which the strip already implies.
+    // Line and percentage come from one call, so the chart cannot contradict its own number.
+    ['series' => $capSeries, 'change' => $capChange] = $overview->marketCapTrend();
+    $dominance = $overview->dominanceSplit();
 
     $season = $status?->altcoin_season_index !== null ? (float) $status->altcoin_season_index : null;
     $sampleSize = $status?->altcoin_season_sample_size;
@@ -48,6 +54,35 @@
                     {{ MarketNumberFormatter::money($global?->total_market_cap !== null ? (float) $global->total_market_cap : null) }}
                     <x-afmc.price-change :value="$capChange" />
                 </p>
+                @if ($capSeries !== [])
+                    {{-- Colour follows the percentage above the line, which is measured from
+                         the endpoints of this same series, so the two always agree. --}}
+                    <x-afmc.sparkline
+                        :data="$capSeries"
+                        :up="$capChange === null ? null : $capChange >= 0"
+                        :width="260"
+                        :height="48"
+                        class="afmc-status-panel__spark"
+                    />
+                @endif
+                @if ($dominance !== [])
+                    <div class="afmc-dominance">
+                        <div class="afmc-dominance__track" aria-hidden="true">
+                            @foreach ($dominance as $share)
+                                <span class="afmc-dominance__band" style="width:{{ $share['percent'] }}%"></span>
+                            @endforeach
+                        </div>
+                        <p class="afmc-dominance__legend">
+                            @foreach ($dominance as $share)
+                                <span class="afmc-dominance__item">
+                                    <span class="afmc-dominance__dot" aria-hidden="true"></span>
+                                    {{ $share['label'] }}
+                                    <span class="afmc-dominance__value">{{ number_format($share['percent'], 1) }}%</span>
+                                </span>
+                            @endforeach
+                        </p>
+                    </div>
+                @endif
             </div>
             <div class="afmc-status-panel__row">
                 <span class="afmc-status-panel__row-label">{{ __('Volume 24h') }}</span>

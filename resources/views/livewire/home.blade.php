@@ -19,13 +19,24 @@
     <x-afmc.market-status :global="$global" :status="$status" style="margin-bottom:var(--space-5)" />
 
     <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-3);flex-wrap:wrap">
-        <div class="afmc-tabs" role="tablist">
-            <button type="button" class="afmc-tabs__item {{ $tab === 'all' ? 'is-active' : '' }}" wire:click="setTab('all')">
-                {{ __('All coins') }}
-                <span class="afmc-tabs__count">{{ number_format($coinCount) }}</span>
-            </button>
-            <button type="button" class="afmc-tabs__item {{ $tab === 'gainers' ? 'is-active' : '' }}" wire:click="setTab('gainers')">{{ __('Gainers') }}</button>
-            <button type="button" class="afmc-tabs__item {{ $tab === 'losers' ? 'is-active' : '' }}" wire:click="setTab('losers')">{{ __('Losers') }}</button>
+        {{-- The tab badge is the one owner of the tracked-asset count on this page, which is
+             why the ticker leaves it out. --}}
+        <div class="afmc-tabs" data-afmc-tabs role="tablist">
+            @foreach (['all' => __('All coins'), 'gainers' => __('Gainers'), 'losers' => __('Losers')] as $value => $label)
+                <button
+                    type="button"
+                    role="tab"
+                    aria-selected="{{ $tab === $value ? 'true' : 'false' }}"
+                    tabindex="{{ $tab === $value ? '0' : '-1' }}"
+                    class="afmc-tabs__item {{ $tab === $value ? 'is-active' : '' }}"
+                    wire:click="setTab('{{ $value }}')"
+                >
+                    {{ $label }}
+                    @if ($value === 'all')
+                        <span class="afmc-tabs__count">{{ number_format($coinCount) }}</span>
+                    @endif
+                </button>
+            @endforeach
         </div>
         <label class="afmc-check">
             <input type="checkbox" wire:model.live="dense" />
@@ -134,6 +145,7 @@
                         <tr>
                             <td colspan="9" class="afmc-table__empty">
                                 <div class="afmc-empty">
+                                    <x-afmc.icon name="search_off" class="afmc-empty__icon" />
                                     @if ($network !== 'all')
                                         <p class="afmc-empty__title">{{ __('Nothing on :network yet', ['network' => $networkLabel ?? __('this network')]) }}</p>
                                         <p class="afmc-empty__detail">

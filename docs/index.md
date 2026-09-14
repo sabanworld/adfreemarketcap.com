@@ -28,7 +28,7 @@ Use **Laravel Sail** (`./vendor/bin/sail`). Default published ports in `.env.exa
 - Livewire: `app/Livewire/`
 - Filament: `app/Filament/`
 - SEO: `app/Services/Seo/`, [`docs/seo.md`](seo.md)
-- Design system source: `claude/AdFreeMarketCap Design System (2)/` (see [`docs/design.md`](design.md))
+- Design system source: `claude/AdFreeMarketCap Design System (5)/` (see [`docs/design.md`](design.md))
 - Public UI CSS: `resources/css/design-system/`, `resources/css/afmc.css`
 - Public UI Blade: `resources/views/components/afmc/`, `resources/views/layouts/app.blade.php`
 - Agent workflow: [`AGENTS.md`](../AGENTS.md)
@@ -40,5 +40,5 @@ Use **Laravel Sail** (`./vendor/bin/sail`). Default published ports in `.env.exa
 - **Public accounts, DexScan, legal**, watchlist auth, admin profile and MFA, and company imprint: [`docs/public-accounts.md`](public-accounts.md)
 - **Privacy, cookies, legal pages**, what we process and the EU rules behind each page: [`docs/privacy-and-legal.md`](privacy-and-legal.md)
 - Document non-obvious sync, failover, and divergence rules here as they land.
-- **Market data sync**, schedule cadence, Horizon, cron: [`docs/marketdata-sync.md`](marketdata-sync.md)
+- **Market data sync**, schedule cadence, Horizon, cron, and the jobs a new environment has to seed by hand: [`docs/marketdata-sync.md`](marketdata-sync.md)
 - **Display currency**, USD storage, exchange rates, the header selector: [`docs/currency.md`](currency.md)
