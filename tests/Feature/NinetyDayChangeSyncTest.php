@@ -199,6 +199,37 @@ class NinetyDayChangeSyncTest extends TestCase
         $this->assertSame(10.0, round((float) Coin::query()->where('slug', 'bitcoin')->value('percent_change_90d'), 2));
     }
 
+    /**
+     * A job allowed to outrun the queue's retry_after is re-reserved and processed a second time,
+     * so two workers would make the same fifty chart requests.
+     */
+    public function test_the_job_cannot_outrun_the_queue_retry_window(): void
+    {
+        $retryAfter = (int) config('queue.connections.redis.retry_after');
+        $job = new SyncNinetyDayChanges;
+
+        $this->assertGreaterThan(0, $retryAfter);
+        $this->assertLessThan($retryAfter, $job->timeout);
+        // The fetch budget has to leave room for the run to finish and record itself.
+        $this->assertLessThan($job->timeout, (int) config('marketdata.sync.ninety_day_budget_seconds'));
+    }
+
+    public function test_a_run_that_hits_its_budget_leaves_the_rest_for_the_next_run(): void
+    {
+        $this->coin('bitcoin', 'BTC', 1);
+        $this->coin('ethereum', 'ETH', 2);
+
+        // No budget left, so the run should fetch nothing rather than start a pass it cannot end.
+        config(['marketdata.sync.ninety_day_budget_seconds' => 0]);
+
+        $run = app(NinetyDayChangeSyncService::class)->sync();
+
+        $this->assertSame('succeeded', $run->status);
+        $this->assertSame(0, (int) $run->records_processed);
+        $this->assertStringContainsString('2 left for the next run', (string) $run->message);
+        Http::assertNothingSent();
+    }
+
     public function test_a_short_or_broken_series_yields_no_change(): void
     {
         $service = app(NinetyDayChangeSyncService::class);

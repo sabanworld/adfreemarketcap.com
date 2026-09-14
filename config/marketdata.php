@@ -161,11 +161,15 @@ return [
         'market_status_interval_minutes' => (int) env('MARKETDATA_STATUS_INTERVAL', 60),
         /*
          * The 90-day change behind the altcoin season index costs one chart request per sampled
-         * coin, so it refreshes daily and skips coins derived within the stale window. Keep the
-         * stale window under the interval or a retried run re-fetches everything.
+         * coin. The job runs hourly but only touches coins whose figure is older than the stale
+         * window, so in practice one run a day does the work and the rest are no-ops. The budget
+         * caps how long a single run may spend fetching: it must stay clear of the queue's
+         * retry_after (130s for redis) or a slow run gets handed to a second worker as well.
+         * Whatever a run does not reach stays stale and is picked up an hour later.
          */
-        'ninety_day_interval_hours' => (int) env('MARKETDATA_NINETY_DAY_INTERVAL_HOURS', 24),
+        'ninety_day_interval_minutes' => (int) env('MARKETDATA_NINETY_DAY_INTERVAL', 60),
         'ninety_day_stale_hours' => (int) env('MARKETDATA_NINETY_DAY_STALE_HOURS', 20),
+        'ninety_day_budget_seconds' => (int) env('MARKETDATA_NINETY_DAY_BUDGET_SECONDS', 90),
         'platforms_interval_hours' => (int) env('MARKETDATA_PLATFORMS_INTERVAL_HOURS', 24),
         'nostr_interval_minutes' => (int) env('MARKETDATA_NOSTR_INTERVAL', 30),
     ],

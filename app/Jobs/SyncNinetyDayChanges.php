@@ -16,18 +16,21 @@ class SyncNinetyDayChanges implements ShouldBeUnique, ShouldQueue
     public int $tries = 2;
 
     /**
-     * One chart request per sampled coin, so the timeout covers roughly fifty sequential calls.
+     * Deliberately under the Redis connection's `retry_after` (130s in `config/queue.php`). A job
+     * allowed to outrun that window gets re-reserved and processed twice, which here would mean
+     * two workers making the same fifty chart requests. The service works to a shorter budget and
+     * leaves whatever it did not reach to the next run.
      */
-    public int $timeout = 600;
+    public int $timeout = 110;
 
-    public int $uniqueFor = 3600;
+    public int $uniqueFor = 600;
 
     /**
      * @return list<int>
      */
     public function backoff(): array
     {
-        return [120, 600];
+        return [60, 300];
     }
 
     public function handle(NinetyDayChangeSyncService $sync): void

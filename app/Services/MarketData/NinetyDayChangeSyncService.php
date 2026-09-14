@@ -17,9 +17,11 @@ use Throwable;
  * 30d, 200d and 1y, and silently drops anything else, so the figure has to come from price
  * history: one 90-day chart per coin, first point against last.
  *
- * That is one HTTP call per coin, so this runs on its own daily schedule rather than with the
- * hourly status snapshot, and skips coins whose figure is still fresh. A 90-day change moves too
- * slowly to be worth an hourly refresh.
+ * That is one HTTP call per coin, so a full pass is far too long to hold a queue worker: the Redis
+ * connection re-reserves a job after `retry_after` (130s), and a job that outruns that window gets
+ * processed twice. So a run works to a time budget under that window, skips coins whose figure is
+ * still fresh, and leaves the rest to the next run. The schedule is hourly and almost every run is
+ * a no-op, because a 90-day change only needs refreshing once a day.
  */
 class NinetyDayChangeSyncService
 {
@@ -42,10 +44,20 @@ class NinetyDayChangeSyncService
         try {
             $processed = 0;
             $skipped = 0;
+            $remaining = 0;
+            $deadline = now()->addSeconds($this->budgetSeconds());
 
             foreach ($this->sampler->sample() as $coin) {
                 if ($this->isFresh($coin)) {
                     $skipped++;
+
+                    continue;
+                }
+
+                // Stop before the budget rather than mid-request. The coins left over are still
+                // stale, so the next hourly run picks them up where this one stopped.
+                if (now()->greaterThanOrEqualTo($deadline)) {
+                    $remaining++;
 
                     continue;
                 }
@@ -55,7 +67,13 @@ class NinetyDayChangeSyncService
                 }
             }
 
-            $run->markSucceeded($processed, "Derived {$processed} ninety-day changes, {$skipped} still fresh.");
+            $message = "Derived {$processed} ninety-day changes, {$skipped} still fresh.";
+
+            if ($remaining > 0) {
+                $message .= " Ran out of time with {$remaining} left for the next run.";
+            }
+
+            $run->markSucceeded($processed, $message);
 
             return $run->fresh();
         } catch (Throwable $exception) {
@@ -140,5 +158,15 @@ class NinetyDayChangeSyncService
     private function minimumSpanDays(): float
     {
         return max(1.0, (float) config('marketdata.altcoin_season.minimum_history_days', 80));
+    }
+
+    /**
+     * Must stay clear of the queue's `retry_after`, or a long run is handed to a second worker
+     * while the first is still making requests. Zero is honoured rather than floored, so the
+     * budget doubles as a way to stop the API spend without touching the schedule.
+     */
+    private function budgetSeconds(): int
+    {
+        return max(0, (int) config('marketdata.sync.ninety_day_budget_seconds', 90));
     }
 }

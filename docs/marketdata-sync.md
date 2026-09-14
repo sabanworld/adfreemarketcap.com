@@ -9,7 +9,7 @@ Public pages read rankings and coin details from MySQL only. Freshness comes fro
 | `App\Jobs\SyncMarketData` | every `MARKETDATA_MARKETS_INTERVAL` minutes (default 10) | `config/marketdata.php` → `sync.markets_interval_minutes` |
 | `App\Jobs\SyncGlobalData` | same interval | same; also stores 24h market-cap change |
 | `App\Jobs\SyncMarketStatus` | every `MARKETDATA_STATUS_INTERVAL` minutes (default 60) | Fear & Greed (Alternative.me), AFMC10, altcoin season |
-| `App\Jobs\SyncNinetyDayChanges` | every `MARKETDATA_NINETY_DAY_INTERVAL_HOURS` hours (default 24) | 90-day change per sampled coin from CoinGecko `market_chart`; one request per coin |
+| `App\Jobs\SyncNinetyDayChanges` | every `MARKETDATA_NINETY_DAY_INTERVAL` minutes (default 60), but a no-op unless a figure has gone stale | 90-day change per sampled coin from CoinGecko `market_chart`; one request per coin |
 | `App\Jobs\SyncCoinPlatforms` | every `MARKETDATA_PLATFORMS_INTERVAL_HOURS` hours (default 24) | CoinGecko `/coins/list?include_platform=true` → `coin_platforms` |
 | `App\Jobs\SyncNostrFeed` | every `MARKETDATA_NOSTR_INTERVAL` minutes (default 30) | Server-side Nostr indexer; config in `config/nostr.php` |
 | `App\Jobs\SyncDexPairs` | every `MARKETDATA_DEX_INTERVAL` minutes (default 5) | `sync.dex_interval_minutes`, `dex_trending_pages`, `dex_new_pages`, `dex_networks` |
@@ -77,7 +77,8 @@ Manual one-shot:
 
 `App\Services\MarketData\NinetyDayChangeSyncService` derives the column instead: one `market_chart?days=90` request per sampled coin, oldest point against newest. Consequences worth knowing:
 
-- **It costs one HTTP request per coin** (about 51 for Bitcoin plus a top-50 sample), so it runs on its own daily schedule instead of with the hourly snapshot, and skips coins whose figure is newer than `MARKETDATA_NINETY_DAY_STALE_HOURS` (default 20). Keep that window under the interval or a retry refetches everything.
+- **It costs one HTTP request per coin** (about 51 for Bitcoin plus a top-50 sample), so it only fetches coins whose figure is older than `MARKETDATA_NINETY_DAY_STALE_HOURS` (default 20). The job is scheduled hourly and nearly every run does nothing: in practice one run a day refreshes the sample and the other 23 are a couple of DB queries.
+- **A run works to a time budget** (`MARKETDATA_NINETY_DAY_BUDGET_SECONDS`, default 90) and leaves whatever it did not reach for the next hour. That budget and the job's `$timeout` of 110s must both stay under the queue's `retry_after` (130s for redis in `config/queue.php`). A job that outruns `retry_after` is re-reserved and run by a second worker while the first is still going, which here would mean two workers making the same fifty requests. `tests/Feature/NinetyDayChangeSyncTest.php` asserts that ordering. Setting the budget to 0 pauses fetching without touching the schedule.
 - **A coin needs a near-full window to qualify.** Under `MARKETDATA_ALTCOIN_SEASON_MIN_HISTORY_DAYS` days of history (default 80) it is left out of the index rather than compared on a shorter period. Recent listings therefore shrink `altcoin_season_sample_size`, which the card states in its caption.
 - **The markets sync must never write this column.** It fills every other `percent_change_*` field, so listing this one would overwrite the derived figure with null every ten minutes. `tests/Feature/NinetyDayChangeSyncTest.php` guards both that and the request parameter.
 - Order matters when running by hand: `--only-season` before `--only-status`, or the snapshot scores yesterday's numbers. Passing both to one command already runs them in that order.
