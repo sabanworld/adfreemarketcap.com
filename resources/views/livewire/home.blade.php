@@ -190,7 +190,8 @@
                                     </td>
                                     <td class="is-right">{{ MarketNumberFormatter::money($coin->price !== null ? (float) $coin->price : null, 8) }}</td>
                                     {{-- 1h carries no caret: three carets in a row turn the percentage
-                                         columns into an arrow field and the sign already reads. --}}
+                                         columns into an arrow field. The sign carries the direction
+                                         instead, so it never rests on the colour alone. --}}
                                     <td class="is-right hide-narrow"><x-afmc.price-change :value="$display->change($coin->percent_change_1h, '1h')" size="sm" :show-icon="false" /></td>
                                     <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_24h)" size="sm" /></td>
                                     <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_7d, '7d')" size="sm" /></td>

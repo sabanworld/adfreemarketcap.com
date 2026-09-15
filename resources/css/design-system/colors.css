@@ -1,16 +1,26 @@
 :root{
-  /* --- base: paper (warm neutral grounds) --- */
-  --paper-0:#FBF9F4;--paper-1:#FFFFFF;--paper-2:#F5F2EB;--paper-3:#EDE8DD;--paper-4:#E3DCCD;
-  /* --- base: ink --- */
-  --ink-900:#14120E;--ink-800:#26231C;--ink-700:#3B372E;--ink-600:#575246;--ink-500:#6C6659;
-  --ink-400:#726B5E;--ink-300:#ADA697;--ink-200:#CFC8B8;
-  --line-strong:#D8D1C0;--line:#E4DECE;--line-soft:#EFEAE0;
-  /* --- base: amber (brand) ---
-     The ramp is a closed set: 50/100/300/500/600/700, with no 200 or 400. An undefined custom
-     property does not throw, it resolves to nothing, so a step off the scale renders as
-     stroke:none or a transparent fill and the element silently disappears. Every step has to
-     exist in BOTH themes; the gauge's active band went missing because the dark ramp had no
-     300. Add the step to both blocks or use one that is already here. */
+  color-scheme:light;
+  /* --- base: paper (grounds) ---
+     Light mode is white, not cream. The warmth this brand had in its off-whites now lives in
+     the ink and the amber instead: a page that is paper-coloured and a card that is a slightly
+     different paper reads as an aged document at a glance, and it costs the cards the only
+     contrast they have. Page and card are both pure white, so a card is defined by its rule
+     rather than by a tint. paper-2 upward are the only tinted steps, and they stay
+     near-neutral with a trace of warmth so a sunken panel never looks blue. */
+  --paper-0:#FFFFFF;--paper-1:#FFFFFF;--paper-2:#F5F6F2;--paper-3:#ECEEE7;--paper-4:#DFE1D9;
+  /* --- base: ink (warm-neutral greys; every text step verified against white) --- */
+  --ink-900:#0E0F0C;--ink-800:#1F211C;--ink-700:#35382F;--ink-600:#4C5044;--ink-500:#5C6053;
+  --ink-400:#666A5C;--ink-300:#9AA08F;--ink-200:#C7CCBE;
+  /* --- base: lines ---
+     Three weights, all of them neutral enough to read as a rule rather than as a stain.
+     Measured on the white ground, not estimated: `line` 1.73:1 is what defines a card now that
+     page and card are the same white; `line-strong` 3.29:1 clears WCAG 1.4.11, so an input's
+     edge is a boundary a sighted user can find; `line-soft` 1.27:1 is for dividers INSIDE a
+     container that already has a border. If you change one of these, recompute the ratio and
+     update the number here, because every component trusts it and a false floor in a token
+     comment is worse than no comment. */
+  --line-strong:#8A9080;--line:#C2C7BA;--line-soft:#E2E5DD;
+  /* --- base: amber (brand, unchanged by the revamp) --- */
   --amber-700:#AD4D00;--amber-600:#E06A00;--amber-500:#FF7A00;--amber-300:#FFB870;--amber-100:#FFE9D2;--amber-50:#FFF5EA;
   /* --- base: market semantics --- */
   --up-700:#0A6B49;--up-500:#0E9F6E;--up-100:#DCF5EA;
@@ -18,9 +28,9 @@
   /* --- base: informational --- */
   --violet-500:#6D4AD1;--violet-100:#EDE6FC;
   --info-500:#2563C9;--info-100:#E1EBFB;
-  /* warn-500 is the graphics step, like up-500/down-500: fine for an icon or a bar, but only
-     3:1 on warn-100, so it must not carry a label. warn-700 is the text step this palette was
-     missing (4.7:1 on warn-100, 4.9:1 on paper-0). */
+  /* warn-500 is the graphics step, like up-500/down-500: fine for an icon or a bar, but 3.42:1
+     on white, so it must not carry a label. warn-700 is the text step the kit's palette leaves
+     out; it reads 5.38:1 on white and 4.73:1 on warn-100. */
   --warn-700:#8A6407;--warn-500:#B4820A;--warn-100:#FBF0D2;
   /* --- semantic: surfaces --- */
   --surface-page:var(--paper-0);
@@ -34,12 +44,20 @@
   --surface-brand-soft:var(--amber-50);
   --surface-up-soft:var(--up-100);
   --surface-down-soft:var(--down-100);
+  /* The amber ramp is a closed set: 50/100/300/500/600/700, with no 200 and no 400. An
+     undefined custom property does not throw, it resolves to nothing, so a step off the scale
+     renders as stroke:none or a transparent fill and the element silently disappears. Every
+     step has to exist in BOTH themes; the gauge's active band went missing because the dark
+     ramp had no 300. Add the step to both blocks or use one that is already here. */
+
   /* --- semantic: text ---
-     Contrast contract (verified, not assumed):
-     · --text-body/strong/muted/faint all clear 4.5:1 on paper-0/1/2.
+     Contrast contract (verified in tests/Unit/DesignTokenContrastTest.php, not assumed;
+     recomputed for the white ground):
+     · body 16.3:1 · strong 19.2:1 · muted 6.5:1 · faint 5.6:1 · brand 5.5:1 · warn 5.4:1
+       · up 6.5:1 · down 7.4:1, all on paper-0/1, and all still clear 4.5:1 on paper-2.
      · --text-disabled and --chart-axis are NON-TEXT only (disabled glyphs, axes, rules).
-     · Text on the ink band (pledge band, toast) uses the --ink-200/300 steps, which invert
-       with the theme; --ink-400 is tuned for light grounds and fails on ink.
+     · Text on the inverted band (pledge band, toast, active chip) uses --text-inverse and
+       --text-inverse-muted, which flip with the theme the way the band's own ground does.
      · Interactive glyphs need 3:1, so the active watch star uses --amber-600, not --amber-500. */
   --text-body:var(--ink-800);
   --text-strong:var(--ink-900);
@@ -50,11 +68,16 @@
      Never for a label or a control's text: a disabled control keeps --text-faint and carries
      the unavailable state some other way (strikethrough, a "Soon" marker). */
   --text-disabled:var(--ink-300);
-  /* Text that sits on an --ink-900 ground (current page in a pager, active quick pick). It has
-     to be the paper of the current theme, because --ink-900 is itself cream in dark mode: the
-     kit pins this to --ink-900 there, which paints the label in its own background colour and
-     the digit disappears. Keep it pointing at --paper-0 in both blocks. */
+  /* Text that sits on an --ink-900 ground (current page in a pager, active chip, the pledge
+     band). It has to be the paper of the current theme, because --ink-900 is itself white in
+     dark mode: the kit pins this to --ink-900 there, which paints the label in its own
+     background colour and the digit disappears. Keep it pointing at --paper-0 in both blocks. */
   --text-inverse:var(--paper-0);
+  /* The quiet step on that same ground, for a supporting line under an inverted heading. It
+     flips too, for the same reason: 7.1:1 on the light theme's near-black band, 8.3:1 on the
+     dark theme's white one. The kit uses --ink-300/400 here, which measure 2.6:1 and 2.5:1
+     once the band turns white. */
+  --text-inverse-muted:var(--ink-300);
   --text-brand:var(--amber-700);
   --text-up:var(--up-700);
   --text-down:var(--down-700);
@@ -73,17 +96,35 @@
   --chart-series-3:var(--info-500);--chart-series-4:var(--ink-700);
   --chart-volume:var(--paper-4);
 }
+/* Dark mode is OLED first: the page is #000, so on an OLED panel the ground is unlit and the
+   data is the only thing emitting. Cards sit one step above black and are separated by a rule,
+   never by a glow, because a shadow on black is invisible and a lifted grey card on a black
+   page is the outdated tell. Every step above paper-1 exists for interaction state rather than
+   decoration: nothing here is grey for the sake of looking like a trading terminal. */
 [data-theme="dark"]{
-  --paper-0:#0C0D0B;--paper-1:#151613;--paper-2:#1D1E1A;--paper-3:#262722;--paper-4:#32332C;
-  --ink-900:#F7F4EC;--ink-800:#EAE6DA;--ink-700:#D2CDBF;--ink-500:#96907F;
-  --ink-400:#97907F;--ink-300:#615C50;--ink-200:#474339;
-  --line-strong:#3A3B33;--line:#2A2B25;--line-soft:#222319;
-  --amber-700:#FFB870;--amber-600:#FF9430;--amber-500:#FF7A00;--amber-300:#A85713;--amber-100:#40280E;--amber-50:#241809;
-  --up-700:#3FD69B;--up-500:#12B981;--up-100:#10301F;
-  --down-700:#FF7B72;--down-500:#E8564D;--down-100:#3A1815;
-  --violet-100:#241A3D;--info-100:#12233D;--warn-100:#2E2408;
-  /* Inverts with the theme the way up-700/down-700 do. 6.9:1 on the dark warn ground. */
+  color-scheme:dark;
+  --paper-0:#000000;--paper-1:#0B0C0A;--paper-2:#141512;--paper-3:#1D1F1A;--paper-4:#2A2C26;
+  --ink-900:#FFFFFF;--ink-800:#F0F0EA;--ink-700:#D6D8CF;--ink-500:#9EA296;
+  --ink-400:#A3A79B;
+  /* Light greys here, because in this theme these steps sit on the card and on the sunken
+     panel. ink-300 doubles as the chart axis, where a brighter rule is an improvement. Neither
+     is text on the inverted band any more: that band's ground is --ink-900, which is white in
+     this theme, so the band's text comes from --text-inverse/--text-inverse-muted instead. */
+  --ink-300:#9CA195;--ink-200:#8B9084;
+  /* Same three weights, same job, ratios measured against the card (#0B0C0A) rather than
+     against black, because the card is what a rule usually sits on: strong 3.18:1, line
+     1.62:1, soft 1.28:1. */
+  --line-strong:#5E6358;--line:#34372F;--line-soft:#24261F;
+  --amber-700:#FFC08A;--amber-600:#FF9F45;--amber-500:#FF7A00;--amber-300:#B35F14;--amber-100:#3A250D;--amber-50:#1F1407;
+  --up-700:#4ADE9E;--up-500:#22C47F;--up-100:#08251A;
+  --down-700:#FF8C82;--down-500:#F2564C;--down-100:#2B100E;
+  --violet-100:#1E1633;--info-100:#0E1C32;--warn-100:#261D06;
+  /* Inverts with the theme the way up-700/down-700 do. 7.6:1 on the dark warn ground. */
   --warn-700:#DCA62B;
-  --surface-card:var(--paper-1);--surface-inverse:var(--paper-4);--text-inverse:var(--paper-0);
-  --chart-volume:var(--paper-3);
+  --surface-card:var(--paper-1);--surface-inverse:var(--paper-3);
+  /* ink-600 is the one ink step this theme does not redeclare, which is exactly why the muted
+     inverse role can use it: on the white band it stays a mid grey at 8.3:1. Give ink-600 a
+     dark-theme value and you break that; DesignTokenContrastTest will say so. */
+  --text-inverse:var(--paper-0);--text-inverse-muted:var(--ink-600);
+  --chart-volume:var(--paper-4);
 }

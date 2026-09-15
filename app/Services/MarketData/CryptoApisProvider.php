@@ -179,16 +179,19 @@ class CryptoApisProvider
         $retries = max(1, (int) config('marketdata.cryptoapis.retry_times', 4));
         $baseSleep = max(0, (int) config('marketdata.cryptoapis.retry_sleep_ms', 250));
 
-        return Http::baseUrl((string) config('marketdata.cryptoapis.base_url'))
-            ->withHeaders(['X-API-Key' => (string) config('marketdata.cryptoapis.api_key')])
-            ->acceptJson()
-            ->timeout(30)
-            ->retry(
-                $retries,
-                fn (int $attempt): int => $baseSleep * $attempt,
-                fn (Throwable $exception): bool => $exception instanceof RequestException
-                    && $exception->response?->status() === 429,
-                throw: false,
-            );
+        return app(ProviderCallCounter::class)->count(
+            Http::baseUrl((string) config('marketdata.cryptoapis.base_url'))
+                ->withHeaders(['X-API-Key' => (string) config('marketdata.cryptoapis.api_key')])
+                ->acceptJson()
+                ->timeout(30)
+                ->retry(
+                    $retries,
+                    fn (int $attempt): int => $baseSleep * $attempt,
+                    fn (Throwable $exception): bool => $exception instanceof RequestException
+                        && $exception->response?->status() === 429,
+                    throw: false,
+                ),
+            ProviderCallCounter::CRYPTOAPIS,
+        );
     }
 }

@@ -78,9 +78,11 @@ class DexScanDetailTest extends TestCase
             'trades_synced_at' => now(),
         ]);
 
+        $start = now()->subDay();
+
         app(DexChartService::class)->upsertSeriesFor($pair, [
             DexChartSeries::SERIES_SHORT => [
-                [now()->subDay()->getTimestampMs(), 1.1],
+                [$start->getTimestampMs(), 1.1],
                 [now()->getTimestampMs(), 1.2],
             ],
         ]);
@@ -88,6 +90,8 @@ class DexScanDetailTest extends TestCase
         $this->get(route('dexscan.pair', $pair))
             ->assertOk()
             ->assertSee('id="dex-chart"', false)
+            ->assertSee($start->format('M j'), false)
+            ->assertDontSee((string) $start->getTimestampMs(), false)
             ->assertDontSee('Chart data will appear after the next sync.', false);
 
         Queue::assertNotPushed(SyncDexPairDetail::class);

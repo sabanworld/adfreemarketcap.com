@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Services\MarketData\GeckoTerminalProvider;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class GeckoTerminalProviderTest extends TestCase
 {
+    use RefreshDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();

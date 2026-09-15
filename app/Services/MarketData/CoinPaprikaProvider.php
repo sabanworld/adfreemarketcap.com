@@ -96,8 +96,11 @@ class CoinPaprikaProvider implements MarketDataProvider
 
     private function client(): PendingRequest
     {
-        return Http::baseUrl((string) config('marketdata.coinpaprika.base_url'))
-            ->acceptJson()
-            ->timeout(30);
+        return app(ProviderCallCounter::class)->count(
+            Http::baseUrl((string) config('marketdata.coinpaprika.base_url'))
+                ->acceptJson()
+                ->timeout(30),
+            ProviderCallCounter::COINPAPRIKA,
+        );
     }
 }

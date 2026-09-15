@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Livewire;
 
 use App\Models\DexPair;
+use App\Services\MarketData\DexChainCatalog;
 use App\Services\Seo\SeoService;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -46,8 +46,12 @@ class DexScan extends Component
         $this->resetPage();
     }
 
-    public function setChain(string $chain): void
+    public function setChain(string $chain, DexChainCatalog $chains): void
     {
+        if (! $chains->isValidChain($chain)) {
+            return;
+        }
+
         $this->chain = $chain;
         $this->resetPage();
     }
@@ -61,12 +65,19 @@ class DexScan extends Component
         $this->resetPage();
     }
 
-    public function render(SeoService $seo)
+    public function mount(DexChainCatalog $chains): void
+    {
+        if (! $chains->isValidChain($this->chain)) {
+            $this->chain = 'all';
+        }
+    }
+
+    public function render(SeoService $seo, DexChainCatalog $chains)
     {
         $query = DexPair::query();
 
         if ($this->chain !== 'all') {
-            $query->where('chain', $this->chain);
+            $query->onChain($this->chain);
         }
 
         if ($this->verifiedOnly) {
@@ -95,23 +106,16 @@ class DexScan extends Component
             canonical: route('dexscan'),
         );
 
+        $chipRow = $chains->chipRow($this->chain);
+
         return view('livewire.dex-scan', [
             'pairs' => $query->paginate(50),
-            'chains' => $this->cachedChains(),
+            'shownChains' => $chipRow['shown'],
+            'moreChains' => $chipRow['rest'],
             'stats' => $this->cachedStats(),
         ])
             ->title($pageSeo->title)
             ->layoutData(['seo' => $pageSeo]);
-    }
-
-    /**
-     * @return Collection<int, string>
-     */
-    private function cachedChains(): Collection
-    {
-        return Cache::remember('dexscan.chains', self::STATS_CACHE_SECONDS, function () {
-            return DexPair::query()->distinct()->orderBy('chain')->pluck('chain');
-        });
     }
 
     /**

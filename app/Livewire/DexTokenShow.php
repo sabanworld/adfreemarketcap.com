@@ -107,10 +107,7 @@ class DexTokenShow extends Component
             'holders' => $token->holders,
             'chartRange' => $range,
             'chartPoints' => $chartPoints,
-            'chartLabels' => array_map(
-                static fn (array $point): string => (string) $point[0],
-                $chartPoints,
-            ),
+            'chartLabels' => $charts->chartLabels($chartPoints, $range),
             'availableRanges' => $availableRanges,
             'rangeMeta' => DexChartService::RANGES,
             'spokenRange' => $charts->labelForRange($range),
@@ -146,7 +143,7 @@ class DexTokenShow extends Component
         $display = app(MarketDisplayService::class);
         $unit = $display->unit();
         $points = $charts->pointsFor($token, $this->chartRange);
-        $labels = array_map(static fn (array $point): string => (string) $point[0], $points);
+        $labels = $charts->chartLabels($points, $this->chartRange);
         $values = array_map(static fn (array $point): float => $point[1], $points);
 
         $payload = Js::from([

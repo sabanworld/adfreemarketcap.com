@@ -41,6 +41,8 @@ DexScan uses **GeckoTerminal / CoinGecko onchain** (`DexDataProvider` → `Gecko
 
 Pair and token detail pages dispatch `SyncDexPairDetail` / `SyncDexTokenDetail` when charts, trades, or holders are missing or older than `MARKETDATA_DEX_*_STALE_MINUTES`. After each list sync, `MARKETDATA_DEX_DETAIL_PREWARM` (default 5) trending pairs also get a detail job. One token detail is several requests (token, pools, trades, three OHLCV series, holders), and those share the CoinGecko Pro minute budget with markets/tickers/charts when the same key is used. A 429 is retried with `GECKOTERMINAL_RETRY_TIMES` / `GECKOTERMINAL_RETRY_SLEEP_MS`. Top holders soft-fail when the key lacks access.
 
+Each outbound HTTP attempt (including retries) increments `provider_call_hours`. Admin → System → API calls, or `php artisan marketdata:call-stats`, shows this hour, today, and this month per provider. CoinGecko REST and Dex onchain are also summed as one Pro quota. Counts are server-side only; nothing is logged from the visitor browser.
+
 ## Queue workers (Horizon)
 
 Horizon processes the Redis queue (`QUEUE_CONNECTION=redis`). Dashboard: `/horizon` (disallowed in `robots.txt`; local open, elsewhere a Filament admin session). The admin panel sidebar links to it under System → Horizon.

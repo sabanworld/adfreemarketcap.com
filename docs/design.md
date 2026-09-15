@@ -1,6 +1,6 @@
 # Public UI design
 
-The production front-end follows the **AdFreeMarketCap Design System** under `claude/AdFreeMarketCap Design System (7)/` (reference kit).
+The production front-end follows the **AdFreeMarketCap Design System** under `claude/AdFreeMarketCap Design System (8)/` (reference kit).
 
 ## Mapping
 
@@ -15,6 +15,17 @@ The production front-end follows the **AdFreeMarketCap Design System** under `cl
 | `CoinDetailScreen.jsx` | `resources/views/livewire/coin-show.blade.php` + `App\Livewire\CoinShow` (pair/token Dex detail pages reuse this layout pattern via `DexPairShow` / `DexTokenShow`) |
 | `WatchlistScreen.jsx` | `resources/views/livewire/watchlist.blade.php` + `App\Livewire\Watchlist` (account-backed; keep production copy) |
 
+## Palette, spacing and lines
+
+The kit's version 8 revamped the grounds, the radii and the rules. What changed, and the three places we deliberately did not follow it:
+
+- **The page and the card are the same white** (`--paper-0` and `--paper-1` are both `#FFFFFF`), so a card is defined by `--border-card` and not by a tint. Anything that paints `--surface-card` needs an edge, or it disappears into the page.
+- **Three line weights carry the hierarchy**, and each one has a measured job: `--line` (1.73:1 on white) is what a card is, `--line-strong` (3.29:1) clears WCAG 1.4.11 so an input's edge is findable, and `--line-soft` (1.27:1) is only for dividers inside a container that already has a border. Change a value and you recompute the ratio in the token comment, because every component trusts it.
+- **Dark mode is OLED first:** the page is `#000000`, the card one step up at `#0B0C0A`, and separation comes from a rule. Elevation there is a faint 1px lit ring rather than more blur, since a drop shadow on black is invisible. `--edge-sticky` (the shadow under a frozen table column) is a token for the same reason: the light theme's soft ink shadow vanishes on black, so the dark theme ships a much deeper one.
+- **Radii softened once, globally:** 6px controls, 10px cards, 14px bands and sheets, 4px for numeric table chrome. Pills are for chips, stars and switches, never a button or a card. Rows went 56 to 60px, dense 44 to 48px, so the dense row now sits on the touch floor rather than exactly at it.
+- **A surface grounded on `--ink-900` inverts with the theme**, because that token is near-black in light mode and white in dark. Its text therefore comes from `--text-inverse` and `--text-inverse-muted`, which flip with it. The kit paints `--ink-300/400` there, which reads 2.6:1 once the pledge band turns white; `DesignTokenContrastTest::test_an_inverted_ground_paints_only_with_roles_that_flip` fails the build on that. The same pair feeds the chart tooltip in `resources/js/coin-chart.js`.
+- **Three things stay ours, on purpose.** `fonts.css` keeps the self-hosted fontsource imports (the kit loads Google Fonts from a CDN, which would send visitor IPs to a third party and contradict the privacy pages), `typography.css` keeps the variable-font family names that go with them, and `colors.css` keeps `--warn-700` / `--text-warn`, the text step for a warning that the kit's palette leaves out (`--warn-500` is only 3.4:1 on white, so it may not carry a label).
+
 ## Responsive shell
 
 - Above 820px: sticky header with inline primary nav.
@@ -25,8 +36,15 @@ The production front-end follows the **AdFreeMarketCap Design System** under `cl
   - Panel actions are watch, alert and share, matching `MarketList`'s `onWatch` / `onAlert` / `onShare`. **Alert is not built**, so it keeps readable ink, carries the `.afmc-soon` marker plus an `aria-label` naming that state, and has nothing wired to it. Share hands the coin URL to the visitor's own share sheet, falling back to their clipboard, and hides itself when the browser offers neither; the behaviour is registered once as the `afmcShare` Alpine component in `resources/js/app.js`, because fifty rows may not each carry a copy of it. Neither action makes a request, so neither is in the cookie table.
   - Column-header sorting goes with the table, so the list gets `[data-afmc-mobilesort]` (a select plus a direction toggle) and `[data-afmc-densetoggle]` hides. Options come from `App\Livewire\Home::SORT_COLUMNS`, which the header, the select and the query all read.
   - **The row's first line belongs to the coin and its price.** The sparkline sits on the second line beside the changes it agrees with, and the price drops its cents from a thousand up (`MarketNumberFormatter::moneyRow()`). With the kit's own arrangement, an eleven-character price like `$0.00000518` plus a 52px line left "Shiba Inu" five pixels of the 390px row to render in, and twenty of fifty names were losing letters. The table keeps the cents, since a wide row has the characters to spare.
+  - **A panel action never abbreviates its own label.** Alert carries two things, the word and the Soon marker, so it asks for more of the row than watch and share (`flex: 1.6 1 124px`): at an even third of a 320px panel it rendered as "A… Soon". Below roughly 360px the row wraps and share takes a line of its own, which is the trade we want, because a wrapped button is readable and a clipped one is not.
+  - Under 360px the panel's figures go to two columns (`[data-afmc-panelgrid]`), since three across a 320px screen ellipsises a supply count, and a clipped number reads as a different number.
   - Under 380px, `[data-afmc-row-1h]` drops the 1h figure from the row's second line: 24h and 7d are what decide a tap. The rank chip goes visually hidden at the same width, because it is fixed width and takes its 30px straight out of the name; the row is still announced as "Dogecoin DOGE #12" and the order of the list still carries the ranking on screen.
-- Tables that stay tables on a phone (DexScan, treasury holders, DEX trades and holders) pan horizontally with a sticky identity column. Columns marked `hide-narrow` drop below 700px.
+- **DexScan uses the same board**, with `<x-afmc.pair-list>` as its phone form. Nine columns behind a sideways scroll gave a 390px screen the pair and the price and kept liquidity, age and the quality tier off the right edge, which are the facts that decide whether a pool is worth opening. The row carries pair, chain, price, tier, liquidity and 24h; the panel carries the pool, volume, transactions, age and the contract badge, plus the tier's reason as a sentence, because the table states that reason in a `title` and a phone has no hover.
+  - **The pool's name is in the panel, not the row.** Once the price has its characters the identity line is about 126px, and "Uniswap V3 (Robinhood) · Robinhood Chain" needs 220, so one of the two had to go. The chain stays, because it is the half that says which of several pools trading the same pair a row is; the pool takes a full-width cell in the panel where it can wrap.
+  - The chain filter is the network chip row (`<x-afmc.network-filter>` with `action="setChain"`), not a wrapping pill field: seventeen chains wrapped to four rows and 180px before any data. `App\Services\MarketData\DexChainCatalog` derives the chains from stored pairs with a count each, and `App\Support\ChipRow` does the visible/More split for both filters, including promoting a chain picked from the menu into the row.
+  - The page head (`.afmc-pagehead`) gives its search field the full width below 700px, and the stats row (`.afmc-kpi-row`) becomes full-width rows with a rule between them, since three figures wrapping two-per-line strand the third beside empty space.
+- Tables that stay tables on a phone (treasury holders, DEX trades and holders) pan horizontally with a sticky identity column. Columns marked `hide-narrow` drop below 700px.
+- **Direction is never colour alone.** `<x-afmc.price-change>` carries a caret, and where a caller drops the caret to keep a line readable (the 1h column, the phone rows), the component prints `+`/`-` instead. Green and red are the fast read for most people and no read at all for the rest of them (WCAG 1.4.1).
 - `<x-afmc.sparkline>` resamples to one point per two pixels, keeping both ends so the line still agrees with the percentage beside it. A 52px row sparkline carrying 168 hourly prices is most of the weight of a market row and none of the information.
 
 ## Non-negotiables

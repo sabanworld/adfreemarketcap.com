@@ -74,7 +74,9 @@ table{border-collapse:collapse;width:100%}
   [data-afmc-tablescroll]::-webkit-scrollbar{display:none}
 }
 
-/* Touch targets: every interactive control reaches 44px on coarse pointers */
+/* Touch targets: every interactive control reaches 44px on coarse pointers. The in-table floor
+   is deliberately not !important the way the kit writes it, so a control in a table can still
+   ask for the full 44; and the tab bar rule keeps `a`, because three of the four tabs are links. */
 @media (pointer:coarse){
   button,[role="tab"],a[href],select,summary{min-height:44px}
   [data-afmc-tablescroll] button,[data-afmc-tablescroll] a{min-height:32px}
@@ -103,6 +105,11 @@ table{border-collapse:collapse;width:100%}
    it beats letting the market cap ellipsise or the 7d value clip at the right edge. */
 @media (max-width:380px){
   [data-afmc-row-1h]{display:none!important}
+}
+/* Three figures across a 320px panel ellipsise a full supply count, and a clipped number reads
+   as a different number. Two columns, wrapping to a third row, keeps every digit. */
+@media (max-width:360px){
+  [data-afmc-panelgrid]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
 
 /* Chip rows scroll horizontally on a phone; the bar itself is chrome, so hide it. */

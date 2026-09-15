@@ -65,7 +65,7 @@
                 x-show="open === {{ $coin->id }}"
                 x-cloak
             >
-                <dl class="afmc-list__figures">
+                <dl data-afmc-panelgrid class="afmc-list__figures">
                     <div>
                         <dt>{{ __('Volume 24h') }}</dt>
                         <dd>{{ MarketNumberFormatter::money($coin->volume_24h !== null ? (float) $coin->volume_24h : null) }}</dd>

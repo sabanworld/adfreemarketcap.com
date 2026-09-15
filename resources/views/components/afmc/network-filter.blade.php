@@ -1,13 +1,24 @@
+{{-- Networks on Markets and chains on DexScan are the same control over a different catalog,
+     so the copy and the Livewire action are props rather than a second component. --}}
 @props([
     'network' => 'all',
     'networks' => null,
     'moreNetworks' => null,
+    'action' => 'setNetwork',
+    'label' => null,
+    'allLabel' => null,
+    'searchLabel' => null,
+    'emptyLabel' => null,
+    'keyPrefix' => 'network',
 ])
 
 @php
     $networks = collect($networks);
     $moreNetworks = collect($moreNetworks);
-    $label = __('Filter by network');
+    $label ??= __('Filter by network');
+    $allLabel ??= __('All networks');
+    $searchLabel ??= __('Search networks');
+    $emptyLabel ??= __('No network matches your search.');
 @endphp
 
 <div {{ $attributes->class('afmc-network-filter') }} role="group" aria-label="{{ $label }}">
@@ -18,17 +29,17 @@
             type="button"
             class="afmc-chip {{ $network === 'all' ? 'is-active' : '' }}"
             aria-pressed="{{ $network === 'all' ? 'true' : 'false' }}"
-            wire:click="setNetwork('all')"
+            wire:click="{{ $action }}('all')"
         >
-            {{ __('All networks') }}
+            {{ $allLabel }}
         </button>
         @foreach ($networks as $item)
             <button
                 type="button"
                 class="afmc-chip {{ $network === $item['id'] ? 'is-active' : '' }}"
                 aria-pressed="{{ $network === $item['id'] ? 'true' : 'false' }}"
-                wire:click="setNetwork({{ \Illuminate\Support\Js::from($item['id']) }})"
-                wire:key="network-{{ $item['id'] }}"
+                wire:click="{{ $action }}({{ \Illuminate\Support\Js::from($item['id']) }})"
+                wire:key="{{ $keyPrefix }}-{{ $item['id'] }}"
             >
                 {{ $item['label'] }}
                 <span class="afmc-chip__count">{{ number_format($item['count']) }}</span>
@@ -72,8 +83,8 @@
                         type="search"
                         x-ref="search"
                         x-model="q"
-                        placeholder="{{ __('Search networks') }}"
-                        aria-label="{{ __('Search networks') }}"
+                        placeholder="{{ $searchLabel }}"
+                        aria-label="{{ $searchLabel }}"
                         autocomplete="off"
                     >
                 </label>
@@ -84,9 +95,9 @@
                             role="option"
                             aria-selected="{{ $network === $item['id'] ? 'true' : 'false' }}"
                             class="afmc-network-filter__option {{ $network === $item['id'] ? 'is-active' : '' }}"
-                            wire:click="setNetwork({{ \Illuminate\Support\Js::from($item['id']) }})"
+                            wire:click="{{ $action }}({{ \Illuminate\Support\Js::from($item['id']) }})"
                             @click="open = false; q = ''"
-                            wire:key="network-more-{{ $item['id'] }}"
+                            wire:key="{{ $keyPrefix }}-more-{{ $item['id'] }}"
                             x-show="! q || {{ \Illuminate\Support\Js::from(strtolower($item['label'] . ' ' . $item['id'])) }}.includes(q.toLowerCase())"
                         >
                             <span class="afmc-network-filter__option-name">{{ $item['label'] }}</span>
@@ -102,7 +113,7 @@
                         class="afmc-network-filter__empty"
                         x-show="q.trim() && matches(q.trim().toLowerCase()) === 0"
                         x-cloak
-                    >{{ __('No network matches your search.') }}</p>
+                    >{{ $emptyLabel }}</p>
                 </div>
             </div>
         </div>

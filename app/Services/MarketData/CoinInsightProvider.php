@@ -28,16 +28,18 @@ class CoinInsightProvider
 
     public function fetchTreasuryHoldings(string $coinExternalId): TreasuryHoldingsData
     {
-        $response = Http::baseUrl((string) config('marketdata.coingecko.base_url'))
-            ->acceptJson()
-            ->timeout(30)
-            ->when(
-                filled(config('marketdata.coingecko.api_key')),
-                fn ($request) => $request->withHeaders([
-                    (string) config('marketdata.coingecko.api_key_header') => (string) config('marketdata.coingecko.api_key'),
-                ]),
-            )
-            ->get('/companies/public_treasury/' . $coinExternalId);
+        $response = app(ProviderCallCounter::class)->count(
+            Http::baseUrl((string) config('marketdata.coingecko.base_url'))
+                ->acceptJson()
+                ->timeout(30)
+                ->when(
+                    filled(config('marketdata.coingecko.api_key')),
+                    fn ($request) => $request->withHeaders([
+                        (string) config('marketdata.coingecko.api_key_header') => (string) config('marketdata.coingecko.api_key'),
+                    ]),
+                ),
+            ProviderCallCounter::COINGECKO,
+        )->get('/companies/public_treasury/' . $coinExternalId);
 
         throw_unless($response->successful(), new RuntimeException(
             'CoinGecko treasury failed: ' . $response->status() . ' ' . $response->body()
@@ -101,14 +103,16 @@ class CoinInsightProvider
         $timespan = (string) config('marketdata.bitcoin_charts.pi_cycle_timespan', '1y');
         $limit = max(30, (int) config('marketdata.bitcoin_charts.pi_cycle_limit', 365));
 
-        $response = Http::baseUrl($baseUrl)
-            ->acceptJson()
-            ->timeout(30)
-            ->get('/charts/pi-cycle-top', [
-                'interval' => 'daily',
-                'timespan' => $timespan,
-                'limit' => $limit,
-            ]);
+        $response = app(ProviderCallCounter::class)->count(
+            Http::baseUrl($baseUrl)
+                ->acceptJson()
+                ->timeout(30),
+            ProviderCallCounter::BITCOIN_CHARTS,
+        )->get('/charts/pi-cycle-top', [
+            'interval' => 'daily',
+            'timespan' => $timespan,
+            'limit' => $limit,
+        ]);
 
         throw_unless($response->successful(), new RuntimeException(
             'Bitcoin.com Pi Cycle failed: ' . $response->status() . ' ' . $response->body()

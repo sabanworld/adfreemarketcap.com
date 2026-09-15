@@ -23,8 +23,9 @@ class DesignTokenContrastTest extends TestCase
 
     /**
      * Text roles and the grounds they are allowed to sit on. Nothing paints a label on
-     * --surface-inverse, which is why that pair is absent: in dark mode the token maps to
-     * paper-4 and would fail, and the ink band uses the --ink-200/300 steps instead.
+     * --surface-inverse, which is why that pair is absent: the inverted surfaces this UI has
+     * are grounded on --ink-900 directly, and their text comes from the two inverse roles
+     * checked further down.
      *
      * @var list<string>
      */
@@ -70,10 +71,11 @@ class DesignTokenContrastTest extends TestCase
             ['--text-warn', '--warn-100'],
             ['--text-brand', '--surface-brand-soft'],
             ['--text-brand', '--amber-50'],
-            // The ink band (pledge band, current page in the pager, active filter chip).
+            // The inverted band (pledge band, current page in the pager, active filter chip).
+            // Its ground is --ink-900, which is near-black in light mode and white in dark, so
+            // both of its text roles have to flip with it rather than staying a fixed grey.
             ['--text-inverse', '--ink-900'],
-            ['--ink-200', '--ink-900'],
-            ['--ink-300', '--ink-900'],
+            ['--text-inverse-muted', '--ink-900'],
         ];
 
         foreach (['light', 'dark'] as $theme) {
@@ -90,7 +92,7 @@ class DesignTokenContrastTest extends TestCase
     public function test_the_primary_button_label_is_readable_on_amber(): void
     {
         foreach (['light', 'dark'] as $theme) {
-            $ratio = $this->ratio('#14120E', $this->resolve('--amber-500', $theme));
+            $ratio = $this->ratio('#0E0F0C', $this->resolve('--amber-500', $theme));
 
             $this->assertGreaterThanOrEqual(
                 self::TEXT,
@@ -144,6 +146,71 @@ class DesignTokenContrastTest extends TestCase
             'text-disabled',
             File::get(resource_path('css/afmc.css')),
             'afmc.css paints with --text-disabled, which is reserved for chart axes and rules.'
+        );
+    }
+
+    /**
+     * --ink-900 is near-black in light mode and white in dark, so a surface grounded on it
+     * inverts with the theme and its text has to invert too. A fixed grey does not: the kit's
+     * own pledge band and toast paint --ink-300 there, which is 2.6:1 once the band turns
+     * white. Every colour inside such a rule has to come from a role that flips.
+     */
+    public function test_an_inverted_ground_paints_only_with_roles_that_flip(): void
+    {
+        $allowed = [
+            '--text-inverse',
+            '--text-inverse-muted',
+            // Amber holds its value across themes, which is the point of it: 5.9:1 on the light
+            // band and 3.1:1 on the white one, so it stays a glyph colour rather than a label.
+            '--amber-500',
+        ];
+
+        $rules = $this->rules();
+        $grounds = [];
+
+        foreach ($rules as [$selector, $body]) {
+            if (str_contains($body, 'background: var(--ink-900)')) {
+                $grounds[] = $selector;
+            }
+        }
+
+        $this->assertNotEmpty($grounds, 'No rule grounds itself on --ink-900 any more, so this test is measuring nothing.');
+
+        foreach ($rules as [$selector, $body]) {
+            foreach ($grounds as $ground) {
+                if (! str_starts_with($selector, $ground)) {
+                    continue;
+                }
+
+                preg_match_all('/(?:^|[;{\s])color:\s*var\((--[a-z0-9-]+)\)/', $body, $matches);
+
+                foreach ($matches[1] as $token) {
+                    $this->assertContains(
+                        $token,
+                        $allowed,
+                        "{$selector} sits on an --ink-900 ground and paints with {$token}, which does "
+                        . 'not flip with the theme. Use --text-inverse or --text-inverse-muted.'
+                    );
+                }
+            }
+        }
+    }
+
+    /**
+     * Selector and declaration block for every rule in afmc.css, comments stripped. Rules
+     * nested in a media query come through on their own, which is what this needs.
+     *
+     * @return list<array{0: string, 1: string}>
+     */
+    private function rules(): array
+    {
+        $css = (string) preg_replace('#/\*.*?\*/#s', '', File::get(resource_path('css/afmc.css')));
+
+        preg_match_all('/([^{}]+)\{([^{}]*)\}/', $css, $matches, PREG_SET_ORDER);
+
+        return array_map(
+            fn (array $match): array => [trim((string) preg_replace('/\s+/', ' ', $match[1])), $match[2]],
+            $matches,
         );
     }
 

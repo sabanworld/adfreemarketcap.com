@@ -56,6 +56,30 @@ class DesignSystemShellTest extends TestCase
     }
 
     /**
+     * Some rows drop the caret to keep a line readable (the 1h column, the phone rows). The
+     * sign takes over there, because green and red on their own leave a reader who cannot tell
+     * them apart with no direction at all: WCAG 1.4.1.
+     */
+    public function test_a_change_without_a_caret_prints_its_sign(): void
+    {
+        $up = Blade::render('<x-afmc.price-change :value="1.4" :show-icon="false" />');
+        $this->assertStringContainsString('+1.40%', $up);
+        $this->assertStringNotContainsString(Icons::character('arrow_drop_up'), $up);
+
+        $down = Blade::render('<x-afmc.price-change :value="-2.41" :show-icon="false" />');
+        $this->assertStringContainsString('-2.41%', $down);
+
+        // Flat has no direction to sign, and "+0.00%" would read as a gain.
+        $flat = Blade::render('<x-afmc.price-change :value="0.001" :show-icon="false" />');
+        $this->assertStringContainsString('0.00%', $flat);
+        $this->assertStringNotContainsString('+0.00%', $flat);
+
+        // With the caret, the caret is the marker and a sign as well would be noise.
+        $carried = Blade::render('<x-afmc.price-change :value="1.4" />');
+        $this->assertStringNotContainsString('+1.40%', $carried);
+    }
+
+    /**
      * A chart never contradicts its number, so the sparkline colours itself from the series it
      * draws and a flat line stays neutral.
      */

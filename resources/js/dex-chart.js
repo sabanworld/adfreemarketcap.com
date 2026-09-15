@@ -13,12 +13,13 @@ function cssVar(name, fallback) {
 function palette(up) {
     return {
         stroke: up ? cssVar('--chart-up', '#0E9F6E') : cssVar('--chart-down', '#D8433B'),
-        tick: cssVar('--text-faint', '#726B5E'),
-        grid: cssVar('--chart-grid', '#EFEAE0'),
-        // The tooltip is an inverse surface, and both ends of the ink scale flip with the theme.
-        tooltipSurface: cssVar('--ink-900', '#14120E'),
-        tooltipTitle: cssVar('--ink-300', '#ADA697'),
-        tooltipBody: cssVar('--paper-0', '#FBF9F4'),
+        tick: cssVar('--text-faint', '#666A5C'),
+        grid: cssVar('--chart-grid', '#E2E5DD'),
+        // The tooltip is grounded on ink, which is near-black in light mode and white in dark,
+        // so its two text steps come from the inverse roles that flip with it.
+        tooltipSurface: cssVar('--ink-900', '#0E0F0C'),
+        tooltipTitle: cssVar('--text-inverse-muted', '#9AA08F'),
+        tooltipBody: cssVar('--text-inverse', '#FFFFFF'),
         pointRing: cssVar('--surface-card', '#FFFFFF'),
     };
 }

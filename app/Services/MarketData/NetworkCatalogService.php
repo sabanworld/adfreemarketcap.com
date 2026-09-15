@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\MarketData;
 
 use App\Models\CoinPlatform;
+use App\Support\ChipRow;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -95,23 +96,6 @@ class NetworkCatalogService
      */
     public function chipRow(string $selected = 'all', int $visible = 4): array
     {
-        $available = collect($this->availableNetworks());
-        $visible = max(1, $visible);
-
-        $shown = $available->take($visible);
-        $picked = $available->firstWhere('id', $selected);
-
-        if ($picked !== null && ! $shown->contains(fn (array $row): bool => $row['id'] === $selected)) {
-            $shown = $available->take($visible - 1)->push($picked);
-        }
-
-        $shownIds = $shown->pluck('id')->all();
-
-        return [
-            'shown' => $shown->values(),
-            'rest' => $available
-                ->reject(fn (array $row): bool => in_array($row['id'], $shownIds, true))
-                ->values(),
-        ];
+        return ChipRow::split(collect($this->availableNetworks()), $selected, $visible);
     }
 }

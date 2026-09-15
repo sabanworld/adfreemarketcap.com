@@ -1,26 +1,36 @@
 :root{
-  /* Shadows are warm-tinted and shallow; the system leans on 1px lines, not float. */
+  /* Shadows are neutral and shallow; the system leans on 1px lines, not float. On a white page
+     a tinted shadow is the difference between a card and a smudge, so every step pairs its blur
+     with a hairline ring rather than deepening the blur. */
   --shadow-none:none;
-  --shadow-xs:0 1px 0 rgba(20,18,14,.04);
-  --shadow-sm:0 1px 2px rgba(20,18,14,.06),0 0 0 1px rgba(20,18,14,.04);
-  --shadow-md:0 4px 12px rgba(20,18,14,.08);
-  --shadow-lg:0 12px 32px rgba(20,18,14,.12);
-  --shadow-popover:0 8px 24px rgba(20,18,14,.14);
+  --shadow-xs:0 1px 0 rgba(14,15,12,.04);
+  --shadow-sm:0 1px 2px rgba(14,15,12,.06),0 0 0 1px rgba(14,15,12,.04);
+  --shadow-md:0 4px 12px rgba(14,15,12,.08);
+  --shadow-lg:0 12px 32px rgba(14,15,12,.12);
+  --shadow-popover:0 8px 24px rgba(14,15,12,.14);
   --shadow-inset:inset 0 1px 0 rgba(255,255,255,.6);
+  /* Edge under the last frozen column of a table that pans. A soft dark shadow vanishes on
+     black, so the dark theme uses a much deeper one and the light theme keeps the shallow ink. */
+  --edge-sticky:8px 0 10px -8px rgba(14,15,12,.16);
   --ring-focus:0 0 0 var(--focus-ring-width) var(--border-focus);
   --ring-brand:0 0 0 var(--focus-ring-width) var(--amber-500);
   /* scrim + blur */
-  --scrim:rgba(20,18,14,.44);
+  --scrim:rgba(14,15,12,.44);
   /* Use only on elements that never host a position:fixed overlay. A backdrop-filter makes
      an element a containing block for fixed descendants, so the header deliberately omits it. */
   --blur-sticky:saturate(140%) blur(8px); /* @kind other */
 }
+/* On black a drop shadow is invisible, and a blurred halo is worse. What separates a floating
+   surface from the page here is a lit edge, so every step keeps a faint 1px ring and drops
+   almost all of the blur. Popovers and sheets get the brightest ring, because they are the only
+   surfaces that have to read as detached. */
 [data-theme="dark"]{
-  --shadow-xs:0 1px 0 rgba(0,0,0,.4);
-  --shadow-sm:0 1px 2px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.05);
-  --shadow-md:0 4px 12px rgba(0,0,0,.55);
-  --shadow-lg:0 12px 32px rgba(0,0,0,.6);
-  --shadow-popover:0 8px 24px rgba(0,0,0,.65);
-  --shadow-inset:inset 0 1px 0 rgba(255,255,255,.04);
-  --scrim:rgba(0,0,0,.6);
+  --shadow-xs:0 0 0 1px rgba(255,255,255,.04);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06);
+  --shadow-md:0 4px 14px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.07);
+  --shadow-lg:0 12px 32px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.08);
+  --shadow-popover:0 10px 28px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.1);
+  --shadow-inset:inset 0 1px 0 rgba(255,255,255,.05);
+  --edge-sticky:8px 0 14px -8px rgba(0,0,0,.9);
+  --scrim:rgba(0,0,0,.72);
 }

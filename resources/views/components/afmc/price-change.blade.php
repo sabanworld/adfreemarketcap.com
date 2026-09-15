@@ -29,10 +29,13 @@
 @if ($numeric === null)
     <span {{ $attributes->class($classes) }}>—</span>
 @else
+    {{-- Direction is never colour alone: the caret carries it, and where a caller drops the
+         caret to keep a line readable, the sign takes over. Green and red are the fast read for
+         most people and no read at all for the rest of them. --}}
     <span {{ $attributes->class($classes) }}>
         @if ($showIcon && ! $flat)
             <x-afmc.icon :name="$up ? 'arrow_drop_up' : 'arrow_drop_down'" filled size="1.1em" />
         @endif
-        {{ number_format(abs($numeric), $digits) }}%
+        {{ $showIcon || $flat ? '' : ($up ? '+' : '-') }}{{ number_format(abs($numeric), $digits) }}%
     </span>
 @endif

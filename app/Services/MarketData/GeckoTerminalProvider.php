@@ -678,16 +678,19 @@ class GeckoTerminalProvider implements DexDataProvider
         $retries = max(1, (int) config('marketdata.geckoterminal.retry_times', 4));
         $baseSleep = max(0, (int) config('marketdata.geckoterminal.retry_sleep_ms', 250));
 
-        $request = Http::baseUrl($this->baseUrl())
-            ->acceptJson()
-            ->timeout(30)
-            ->retry(
-                $retries,
-                fn (int $attempt): int => $baseSleep * $attempt,
-                fn (Throwable $exception): bool => $exception instanceof RequestException
-                    && $exception->response?->status() === 429,
-                throw: false,
-            );
+        $request = app(ProviderCallCounter::class)->count(
+            Http::baseUrl($this->baseUrl())
+                ->acceptJson()
+                ->timeout(30)
+                ->retry(
+                    $retries,
+                    fn (int $attempt): int => $baseSleep * $attempt,
+                    fn (Throwable $exception): bool => $exception instanceof RequestException
+                        && $exception->response?->status() === 429,
+                    throw: false,
+                ),
+            ProviderCallCounter::GECKOTERMINAL,
+        );
 
         $apiKey = config('marketdata.geckoterminal.api_key');
         $header = config('marketdata.geckoterminal.api_key_header', 'x-cg-pro-api-key');

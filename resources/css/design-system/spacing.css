@@ -1,14 +1,19 @@
 :root{
-  /* 4px base; 2px half-step exists for table chrome only */
+  /* 4px scale; 2px half-step exists for table chrome only */
   --space-0:0;--space-0-5:2px;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;
   --space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;
   --space-16:64px;--space-20:80px;--space-24:96px;
-  /* radii: tight, near-square. Pills only for status chips. */
-  --radius-none:0;--radius-xs:3px;--radius-sm:5px;--radius-md:8px;--radius-lg:12px;--radius-pill:999px;
+  /* radii: softened once, globally. 10px is the card default and 6px the control default,
+     enough to read as a current product and short of the pill-shaped look that dates as fast
+     as it arrives. Numeric tables stay on xs/sm so a dense row keeps its square rhythm; pills
+     are for status chips, filter chips, stars and switches only, never for a button or a card. */
+  --radius-none:0;--radius-xs:4px;--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-pill:999px;
   /* borders */
   --border-width:1px;--border-width-strong:2px;
   /* layout */
   --layout-max:1440px;--layout-gutter:24px;--layout-sidebar:236px;--layout-header:60px;
-  --row-height:56px;--row-height-dense:44px;
+  /* Rows are 60px, 48px dense. Density is a user setting, not a redesign, and the dense step
+     stays on the 44px touch floor rather than under it. */
+  --row-height:60px;--row-height-dense:48px;
   --focus-ring-width:2px;--focus-ring-offset:2px;
 }

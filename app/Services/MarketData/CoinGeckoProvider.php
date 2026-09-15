@@ -362,9 +362,12 @@ class CoinGeckoProvider implements ExchangeRateProvider, MarketDataProvider
 
     private function client(): PendingRequest
     {
-        $request = Http::baseUrl((string) config('marketdata.coingecko.base_url'))
-            ->acceptJson()
-            ->timeout(30);
+        $request = app(ProviderCallCounter::class)->count(
+            Http::baseUrl((string) config('marketdata.coingecko.base_url'))
+                ->acceptJson()
+                ->timeout(30),
+            ProviderCallCounter::COINGECKO,
+        );
 
         $apiKey = config('marketdata.coingecko.api_key');
 

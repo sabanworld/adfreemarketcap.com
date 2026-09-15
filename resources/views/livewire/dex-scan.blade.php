@@ -8,12 +8,12 @@
 @endphp
 
 <main data-afmc-page class="afmc-page">
-    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;margin-bottom:var(--space-4)">
-        <div style="display:flex;align-items:baseline;gap:var(--space-3);flex-wrap:wrap">
+    <div class="afmc-pagehead">
+        <div class="afmc-pagehead__title">
             <h1 style="font:var(--type-h2);margin:0">{{ __('DexScan: on-chain pairs by liquidity') }}</h1>
             <span style="font:var(--type-body-sm);color:var(--text-faint)">{{ __('Listing is automatic, never paid') }}</span>
         </div>
-        <div class="afmc-search" style="max-width:280px">
+        <div class="afmc-search afmc-pagehead__search">
             <x-afmc.icon name="search" size="18px" color="var(--text-faint)" />
             <input type="search" wire:model.live.debounce.300ms="search" placeholder="{{ __('Search pair or contract address') }}" />
         </div>
@@ -67,103 +67,122 @@
         </label>
     </div>
 
-    <div style="display:flex;gap:var(--space-2);flex-wrap:wrap;margin-bottom:var(--space-4)">
-        <button type="button" @class(['afmc-tag', 'is-active' => $chain === 'all']) wire:click="setChain('all')" aria-pressed="{{ $chain === 'all' ? 'true' : 'false' }}">{{ __('All chains') }}</button>
-        @foreach ($chains as $chainName)
-            <button type="button" @class(['afmc-tag', 'is-active' => $chain === $chainName]) wire:click="setChain('{{ $chainName }}')" aria-pressed="{{ $chain === $chainName ? 'true' : 'false' }}">{{ $chainName }}</button>
-        @endforeach
-    </div>
+    {{-- Seventeen chains as wrapping pills cost four rows and 180px of a phone screen before
+         any data. One panning row with the rest behind More is the same control Markets uses. --}}
+    @if ($shownChains->isNotEmpty())
+        <x-afmc.network-filter
+            :network="$chain"
+            :networks="$shownChains"
+            :more-networks="$moreChains"
+            action="setChain"
+            key-prefix="chain"
+            :label="__('Filter by chain')"
+            :all-label="__('All chains')"
+            :search-label="__('Search chains')"
+            :empty-label="__('No chain matches your search.')"
+            style="margin-bottom:var(--space-4)"
+        />
+    @endif
 
     <div class="afmc-card" wire:loading.class="afmc-is-loading" wire:target="setTab,setChain,gotoPage,previousPage,nextPage,verifiedOnly,search">
-        <div class="afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('DexScan pairs') }}" tabindex="0">
-            <table class="afmc-table afmc-table--dense">
-                <thead>
-                    <tr>
-                        <th class="is-sticky is-sticky--name" style="left:0"><span>{{ __('Pair') }}</span></th>
-                        <th class="hide-narrow"><span>{{ __('Quality') }}</span></th>
-                        <th class="is-right"><span>{{ __('Price') }}</span></th>
-                        <th class="is-right"><span>24h %</span></th>
-                        <th class="is-right"><span>{{ __('Liquidity') }}</span></th>
-                        <th class="is-right hide-narrow"><span>{{ __('Volume 24h') }}</span></th>
-                        <th class="is-right hide-narrow"><span>{{ __('Txns 24h') }}</span></th>
-                        <th class="is-right hide-narrow"><span>{{ __('Age') }}</span></th>
-                        <th class="is-right"><span>{{ __('Contract') }}</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($pairs as $pair)
-                        @php
-                            $audit = strtolower((string) $pair->audit_status);
-                            $tone = match ($audit) {
-                                'verified' => 'up',
-                                'partial' => 'warn',
-                                default => 'down',
-                            };
-                            $label = match ($audit) {
-                                'verified' => __('Verified'),
-                                'partial' => __('Partial'),
-                                default => __('Unverified'),
-                            };
-                        @endphp
-                        <tr wire:key="dex-{{ $pair->id }}">
-                            <td class="is-wrap is-sticky is-sticky--name" style="left:0">
-                                <a href="{{ route('dexscan.pair', $pair) }}" wire:navigate style="display:grid;gap:2px;text-decoration:none;color:inherit">
-                                    <span style="font:var(--weight-semibold) var(--text-sm)/1.2 var(--font-sans);color:var(--text-strong)">{{ $pair->pair }}</span>
-                                    <span style="font:var(--type-num);font-size:var(--text-2xs);color:var(--text-faint)">{{ $pair->dex }} · {{ $pair->chain }}</span>
-                                </a>
-                            </td>
-                            <td class="hide-narrow">
-                                {{-- Block form, never @php(…): Blade's raw-block pass matches the
-                                     first @php it sees against the next @endphp, so one inline
-                                     call swallows every directive up to the next block. --}}
+        @if ($pairs->isEmpty())
+            @php
+                $filtered = $chain !== 'all' || $tab !== 'trending' || $verifiedOnly || filled($search);
+            @endphp
+            <div class="afmc-board__empty">
+                <div class="afmc-empty">
+                    <x-afmc.icon name="search_off" class="afmc-empty__icon" />
+                    @if ($filtered)
+                        <p class="afmc-empty__title">{{ __('No pairs match this view') }}</p>
+                        <p class="afmc-empty__detail">
+                            {{ __('A chain, a tab or the unverified filter is narrowing this list. Clear them to see every pair we track.') }}
+                        </p>
+                        <button type="button" class="afmc-btn afmc-btn--secondary afmc-btn--sm" wire:click="clearFilters">
+                            {{ __('Clear filters') }}
+                        </button>
+                    @else
+                        <p class="afmc-empty__title">{{ __('No pairs yet') }}</p>
+                        <p class="afmc-empty__detail">
+                            {{ __('On-chain pairs have not been synced yet, so there is nothing to rank by liquidity.') }}
+                        </p>
+                    @endif
+                </div>
+            </div>
+        @else
+            {{-- One list, two forms, the 700px rule in afmc.css picks. Nine columns behind a
+                 sideways scroll left a phone with the pair and the price on screen. --}}
+            <div class="afmc-board">
+                <div class="afmc-board__list">
+                    <x-afmc.pair-list :pairs="$pairs" :label="__('DexScan pairs')" />
+                </div>
+
+                <div class="afmc-board__table afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('DexScan pairs') }}" tabindex="0">
+                    <table class="afmc-table afmc-table--dense">
+                        <thead>
+                            <tr>
+                                <th class="is-sticky is-sticky--name" style="left:0"><span>{{ __('Pair') }}</span></th>
+                                <th class="hide-narrow"><span>{{ __('Quality') }}</span></th>
+                                <th class="is-right"><span>{{ __('Price') }}</span></th>
+                                <th class="is-right"><span>24h %</span></th>
+                                <th class="is-right"><span>{{ __('Liquidity') }}</span></th>
+                                <th class="is-right hide-narrow"><span>{{ __('Volume 24h') }}</span></th>
+                                <th class="is-right hide-narrow"><span>{{ __('Txns 24h') }}</span></th>
+                                <th class="is-right hide-narrow"><span>{{ __('Age') }}</span></th>
+                                <th class="is-right"><span>{{ __('Contract') }}</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($pairs as $pair)
                                 @php
-                                    $tier = $quality->describe($pair);
+                                    $audit = strtolower((string) $pair->audit_status);
+                                    $tone = match ($audit) {
+                                        'verified' => 'up',
+                                        'partial' => 'warn',
+                                        default => 'down',
+                                    };
+                                    $label = match ($audit) {
+                                        'verified' => __('Verified'),
+                                        'partial' => __('Partial'),
+                                        default => __('Unverified'),
+                                    };
                                 @endphp
-                                <x-afmc.risk-level
-                                    :tier="$tier['tier']"
-                                    :label="__($tier['label'])"
-                                    :why="__($tier['why'])"
-                                />
-                            </td>
-                            <td class="is-right">{{ MarketNumberFormatter::money($pair->price !== null ? (float) $pair->price : null, 8) }}</td>
-                            <td class="is-right"><x-afmc.price-change :value="$display->change($pair->percent_change_24h)" size="sm" /></td>
-                            <td class="is-right">{{ MarketNumberFormatter::money($pair->liquidity_usd !== null ? (float) $pair->liquidity_usd : null) }}</td>
-                            <td class="is-right">{{ MarketNumberFormatter::money($pair->volume_24h !== null ? (float) $pair->volume_24h : null) }}</td>
-                            <td class="is-right">{{ $pair->txns_24h !== null ? number_format($pair->txns_24h) : '—' }}</td>
-                            <td class="is-right">{{ $pair->ageLabel() }}</td>
-                            <td class="is-right">
-                                <span class="afmc-badge afmc-badge--{{ $tone }}">{{ $label }}</span>
-                            </td>
-                        </tr>
-                    @empty
-                        @php
-                            $filtered = $chain !== 'all' || $tab !== 'trending' || $verifiedOnly || filled($search);
-                        @endphp
-                        <tr>
-                            <td colspan="9" class="afmc-table__empty">
-                                <div class="afmc-empty">
-                                    <x-afmc.icon name="search_off" class="afmc-empty__icon" />
-                                    @if ($filtered)
-                                        <p class="afmc-empty__title">{{ __('No pairs match this view') }}</p>
-                                        <p class="afmc-empty__detail">
-                                            {{ __('A chain, a tab or the unverified filter is narrowing this list. Clear them to see every pair we track.') }}
-                                        </p>
-                                        <button type="button" class="afmc-btn afmc-btn--secondary afmc-btn--sm" wire:click="clearFilters">
-                                            {{ __('Clear filters') }}
-                                        </button>
-                                    @else
-                                        <p class="afmc-empty__title">{{ __('No pairs yet') }}</p>
-                                        <p class="afmc-empty__detail">
-                                            {{ __('On-chain pairs have not been synced yet, so there is nothing to rank by liquidity.') }}
-                                        </p>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                                <tr wire:key="dex-{{ $pair->id }}">
+                                    <td class="is-wrap is-sticky is-sticky--name" style="left:0">
+                                        <a href="{{ route('dexscan.pair', $pair) }}" wire:navigate style="display:grid;gap:2px;text-decoration:none;color:inherit">
+                                            <span style="font:var(--weight-semibold) var(--text-sm)/1.2 var(--font-sans);color:var(--text-strong)">{{ $pair->pair }}</span>
+                                            <span style="font:var(--type-num);font-size:var(--text-2xs);color:var(--text-faint)">{{ $pair->dex }} · {{ $pair->chain }}</span>
+                                        </a>
+                                    </td>
+                                    <td class="hide-narrow">
+                                        {{-- Block form, never @php(…): Blade's raw-block pass matches the
+                                             first @php it sees against the next @endphp, so one inline
+                                             call swallows every directive up to the next block. --}}
+                                        @php
+                                            $tier = $quality->describe($pair);
+                                        @endphp
+                                        <x-afmc.risk-level
+                                            :tier="$tier['tier']"
+                                            :label="__($tier['label'])"
+                                            :why="__($tier['why'])"
+                                        />
+                                    </td>
+                                    <td class="is-right">{{ MarketNumberFormatter::money($pair->price !== null ? (float) $pair->price : null, 8) }}</td>
+                                    <td class="is-right"><x-afmc.price-change :value="$display->change($pair->percent_change_24h)" size="sm" /></td>
+                                    <td class="is-right">{{ MarketNumberFormatter::money($pair->liquidity_usd !== null ? (float) $pair->liquidity_usd : null) }}</td>
+                                    <td class="is-right">{{ MarketNumberFormatter::money($pair->volume_24h !== null ? (float) $pair->volume_24h : null) }}</td>
+                                    <td class="is-right">{{ $pair->txns_24h !== null ? number_format($pair->txns_24h) : '—' }}</td>
+                                    <td class="is-right">{{ $pair->ageLabel() }}</td>
+                                    <td class="is-right">
+                                        <span class="afmc-badge afmc-badge--{{ $tone }}">{{ $label }}</span>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
+
         @if ($pairs->hasPages())
             <div class="afmc-pagination">
                 <span class="afmc-pagination__meta">

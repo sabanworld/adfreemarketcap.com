@@ -12,10 +12,12 @@ class FearGreedProvider
 {
     public function fetchLatest(): FearGreedData
     {
-        $response = Http::baseUrl((string) config('marketdata.alternative_me.base_url'))
-            ->acceptJson()
-            ->timeout(20)
-            ->get('/fng/', ['limit' => 1]);
+        $response = app(ProviderCallCounter::class)->count(
+            Http::baseUrl((string) config('marketdata.alternative_me.base_url'))
+                ->acceptJson()
+                ->timeout(20),
+            ProviderCallCounter::ALTERNATIVE_ME,
+        )->get('/fng/', ['limit' => 1]);
 
         throw_unless($response->successful(), new RuntimeException(
             'Alternative.me fear and greed failed: ' . $response->status() . ' ' . $response->body()
