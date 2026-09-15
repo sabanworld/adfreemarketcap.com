@@ -11,10 +11,7 @@
 
     $change24 = $display->change($coin->percent_change_24h);
     $chartUp = ($change24 ?? 0) >= 0;
-    $volCap = null;
-    if ($coin->market_cap !== null && (float) $coin->market_cap > 0 && $coin->volume_24h !== null) {
-        $volCap = ((float) $coin->volume_24h / (float) $coin->market_cap) * 100;
-    }
+    $volCap = $coin->volumeToMarketCapPercent();
 @endphp
 
 <main data-afmc-page class="afmc-page afmc-page--detail">
@@ -164,43 +161,49 @@
                             {{ __('Exchange markets will appear after the next ticker sync.') }}
                         </p>
                     @else
-                        <div class="afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('Exchange markets') }}" tabindex="0">
-                            <table class="afmc-table afmc-table--compact">
-                                <thead>
-                                    <tr>
-                                        <th class="hide-narrow"><span>#</span></th>
-                                        <th class="is-sticky is-sticky--name" style="left:0"><span>{{ __('Exchange') }}</span></th>
-                                        <th><span>{{ __('Pair') }}</span></th>
-                                        <th class="is-right"><span>{{ __('Price') }}</span></th>
-                                        <th class="is-right hide-narrow"><span>{{ __('Volume 24h') }}</span></th>
-                                        <th class="is-right hide-narrow"><span>{{ __('Share') }}</span></th>
-                                        <th><span>{{ __('Trust') }}</span></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($tickers as $ticker)
-                                        <tr @class(['is-muted' => $ticker->is_stale || $ticker->is_anomaly])>
-                                            <td class="hide-narrow">{{ $ticker->rank }}</td>
-                                            <td class="is-sticky is-sticky--name" style="left:0">
-                                                @if ($ticker->trade_url)
-                                                    <a href="{{ $ticker->trade_url }}" rel="noopener noreferrer sponsored" target="_blank" style="color:var(--text-strong);text-decoration:underline;text-underline-offset:2px">
-                                                        {{ $ticker->exchange_name }}
-                                                    </a>
-                                                @else
-                                                    {{ $ticker->exchange_name }}
-                                                @endif
-                                            </td>
-                                            <td>{{ $ticker->pair }}</td>
-                                            <td class="is-right">{{ MarketNumberFormatter::money($ticker->price_usd !== null ? (float) $ticker->price_usd : null, 8) }}</td>
-                                            <td class="is-right hide-narrow">{{ MarketNumberFormatter::money($ticker->volume_24h_usd !== null ? (float) $ticker->volume_24h_usd : null) }}</td>
-                                            <td class="is-right hide-narrow">{{ $ticker->volume_share_percent !== null ? number_format((float) $ticker->volume_share_percent, 2).'%' : '—' }}</td>
-                                            <td>
-                                                <span class="afmc-tag">{{ __($ticker->trustLabel()) }}</span>
-                                            </td>
+                        <div class="afmc-board">
+                            <div class="afmc-board__list">
+                                <x-afmc.exchange-list :tickers="$tickers" :label="__('Exchange markets')" />
+                            </div>
+
+                            <div class="afmc-board__table afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('Exchange markets') }}" tabindex="0">
+                                <table class="afmc-table afmc-table--compact">
+                                    <thead>
+                                        <tr>
+                                            <th class="hide-narrow"><span>#</span></th>
+                                            <th class="is-sticky is-sticky--name" style="left:0"><span>{{ __('Exchange') }}</span></th>
+                                            <th><span>{{ __('Pair') }}</span></th>
+                                            <th class="is-right"><span>{{ __('Price') }}</span></th>
+                                            <th class="is-right hide-narrow"><span>{{ __('Volume 24h') }}</span></th>
+                                            <th class="is-right hide-narrow"><span>{{ __('Share') }}</span></th>
+                                            <th><span>{{ __('Trust') }}</span></th>
                                         </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($tickers as $ticker)
+                                            <tr @class(['is-muted' => $ticker->is_stale || $ticker->is_anomaly])>
+                                                <td class="hide-narrow">{{ $ticker->rank }}</td>
+                                                <td class="is-sticky is-sticky--name" style="left:0">
+                                                    @if ($ticker->trade_url)
+                                                        <a href="{{ $ticker->trade_url }}" rel="noopener noreferrer sponsored" target="_blank" style="color:var(--text-strong);text-decoration:underline;text-underline-offset:2px">
+                                                            {{ $ticker->exchange_name }}
+                                                        </a>
+                                                    @else
+                                                        {{ $ticker->exchange_name }}
+                                                    @endif
+                                                </td>
+                                                <td>{{ $ticker->pair }}</td>
+                                                <td class="is-right">{{ MarketNumberFormatter::money($ticker->price_usd !== null ? (float) $ticker->price_usd : null, 8) }}</td>
+                                                <td class="is-right hide-narrow">{{ MarketNumberFormatter::money($ticker->volume_24h_usd !== null ? (float) $ticker->volume_24h_usd : null) }}</td>
+                                                <td class="is-right hide-narrow">{{ $ticker->volume_share_percent !== null ? number_format((float) $ticker->volume_share_percent, 2).'%' : '—' }}</td>
+                                                <td>
+                                                    <span class="afmc-tag">{{ __($ticker->trustLabel()) }}</span>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                         <p style="margin:0;font:var(--type-body-sm);color:var(--text-faint)">
                             {{ __('Spot markets from our market-data provider, ordered by 24h volume. Prices refresh in the background; this table reloads every 30 seconds.') }}

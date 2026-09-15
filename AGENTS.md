@@ -128,6 +128,40 @@ Everything a human reads should sound like a person wrote it: product copy, lega
 
 `tests/Feature/CopyStyleTest.php` enforces the punctuation rule and the banned phrases across `resources/views`, `resources/css`, `lang/`, `docs/`, `README.md`, and this file. Extend the list there when you spot a new tell (including hollow slogans like "ranking cannot be bought").
 
+## Accessibility (binding, not a polish pass)
+
+A control that a thumb cannot hit, or a label a reader cannot see, is a broken control. Treat it the way you would treat a wrong price: a defect, fixed in the commit that introduced it. The target level is **WCAG 2.2 level AA**, because `resources/views/legal/accessibility.blade.php` claims exactly that in public, and a claim we do not meet is a lie on a legal page.
+
+**Touch targets**
+
+- **44px minimum on a coarse pointer**, height and width. The absolute floor is 24px (WCAG 2.2 criterion 2.5.8), and going below 44 needs a reason recorded in `tests/Feature/TouchTargetTest::EXCEPTIONS`. Today there are three: two sort headers inside a table pan region, and a clear button that sits inside a 44px field.
+- **Every interactive class declares its own floor**, in the coarse-pointer block at the **end** of `resources/css/afmc.css`. Do not rely on the `button, a[href], select, summary` rule in `resources/css/design-system/base.css`, for two reasons that both bite silently: an element selector loses to any class that sets its own `min-height`, and most controls here open with `all: unset`, which resets `min-height` at class specificity and therefore wins no matter which file loads last. That block stays last in the file for the same reason.
+- **A size modifier changes a target, it does not create one.** `.afmc-btn` carries its own padding and `min-height`, because `class="afmc-btn afmc-btn--primary"` with no size modifier once shipped 17px tall: readable, and impossible to tap.
+- `min-height` does nothing on a **non-replaced inline** element. If a control is a `<label>`, a `<span>`, or anything you reset, give it `inline-flex`/`flex` first.
+- New control means a line in that block and a green `TouchTargetTest`, which fails when an interactive rule has no floor.
+
+**Contrast**
+
+- **4.5:1 for text** (1.4.3), **3:1 for a control's own graphics** (1.4.11), **in both themes**. `tests/Unit/DesignTokenContrastTest.php` computes every pair the UI paints straight from `resources/css/design-system/colors.css`, so a ratio written in a comment is not evidence.
+- **There is no disabled grey.** Any value light enough to read as inactive is under the floor for a control (`--ink-300` measures 2.42:1). A disabled control keeps readable ink and carries the state some other way: the `.afmc-soon` marker, a hairline strikethrough, plus a `title` and an `aria-label` naming it.
+- `--text-disabled` and `--chart-axis` are **non-text only** (rules, axes, an icon whose meaning is also in text). Never a label. The test fails on `--text-disabled` anywhere in `resources/views` or `afmc.css`.
+- An **interactive glyph** needs 3:1, which is why an active watch star is `--amber-600` and not `--amber-500`.
+
+**Controls and semantics**
+
+- **A control that cannot work does not pretend.** Either hide it (the share action hides itself when the browser has no share sheet and no clipboard) or ship it visibly unavailable with the reason attached (the alert action). A dead button that looks live is the UI equivalent of an unfalsifiable claim.
+- Keep an unavailable control **focusable** (`aria-disabled="true"`, not `disabled`) so a screen reader reaches the reason.
+- **Icon-only means labelled:** `aria-label` on the control, `aria-hidden` on the glyph. `<x-afmc.icon>` already sets the latter.
+- **A disclosure is a disclosure:** `aria-expanded` plus `aria-controls` pointing at the panel's `id`, and a server-rendered `aria-expanded="false"` before Alpine binds. A market row opens in place; it is never a link, or a tap costs the reader their place in the ranking.
+- **State that only shows as a colour or an icon needs a live region.** The copy and share confirmations announce through a `role="status"` element, not through the tick alone.
+- Any **horizontally scrolling region** keeps `tabindex="0"` and a label (`data-afmc-tablescroll`), so a keyboard can pan it. Visible focus stays visible: no `outline: none` without a replacement ring.
+
+**Checking it**
+
+- `php artisan test tests/Feature/TouchTargetTest.php tests/Unit/DesignTokenContrastTest.php tests/Feature/LegalPagesTest.php` covers the floors, the ratios, and the public statement.
+- **Then look at it in the browser at 390px and 340px** (see the Sail section for which URL). A passing test does not tell you whether two buttons look equally weighted or whether a label clips at the right edge.
+- Changing responsive behaviour changes a public claim: update the accessibility statement and its test in the same commit, the way a data-flow change updates the privacy pages.
+
 ## JavaScript package manager (Yarn only)
 
 - **Use Yarn exclusively** for installing dependencies, adding/removing packages, and running package scripts. Run **`yarn …`** inside this container (the host equivalent is `./vendor/bin/sail yarn …`) so optional native packages (Rollup, esbuild) match the Sail Linux image.
@@ -140,7 +174,7 @@ Everything a human reads should sound like a person wrote it: product copy, lega
 
 - **Public UI:** Livewire (Filament 5 ships Livewire 4) + Blade + Alpine. Prefer `wire:navigate`, targeted `wire:poll`, and Alpine/Chart.js for local chart/sparkline interaction. **Never call market-data providers from Livewire request handlers**. Read from the database; enqueue or schedule sync jobs for freshness.
 
-- **Design system (public UI):** Visual language lives under `claude/AdFreeMarketCap Design System (5)/` (tokens + UI kit). Production CSS tokens are copied to `resources/css/design-system/`; Blade primitives live in `resources/views/components/afmc/` and `resources/css/afmc.css`. Below 820px, primary nav moves to the bottom tab bar and More drawer (horizontal scrolling header nav is a defect).
+- **Design system (public UI):** Visual language lives under `claude/AdFreeMarketCap Design System (7)/` (tokens + UI kit). Production CSS tokens are copied to `resources/css/design-system/`; Blade primitives live in `resources/views/components/afmc/` and `resources/css/afmc.css`. Below 820px, primary nav moves to the bottom tab bar and More drawer (horizontal scrolling header nav is a defect). Below 700px a ranked coin table is replaced by `<x-afmc.market-list>` inside `.afmc-board`, so a phone gets expandable rows rather than a sideways scroll: details in [`docs/design.md`](docs/design.md).
   - **Logo:** four-bar mark + lowercase wordmark via `<x-afmc.brand-mark>` (header/footer). Static assets live in `public/brand/` (`logo.svg` favicon; mono/inverse variants). Bar heights stay 60/100/38/78; only the second bar is amber. Do not invent a different mark.
   - **Warm paper / amber accent / green-up red-down only for price**. Do not use amber for market direction or green/red for non-price chrome.
   - **Type:** Archivo (display), Public Sans (body), JetBrains Mono (every figure, tabular-nums).

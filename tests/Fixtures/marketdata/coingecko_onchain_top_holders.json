@@ -1,0 +1,29 @@
+{
+    "data": {
+        "id": "eth_0xpepebasetokenaddress000000000000000001",
+        "type": "top_holder",
+        "attributes": {
+            "last_updated_at": "2026-09-15T05:00:00Z",
+            "holders": [
+                {
+                    "rank": 1,
+                    "address": "0xholder00000000000000000000000000000001",
+                    "label": "Wallet 1",
+                    "amount": "1000000",
+                    "percentage": "10.5",
+                    "value": "1240000",
+                    "explorer_url": "https://etherscan.io/address/0xholder00000000000000000000000000000001"
+                },
+                {
+                    "rank": 2,
+                    "address": "0xholder00000000000000000000000000000002",
+                    "label": null,
+                    "amount": "500000",
+                    "percentage": "5.25",
+                    "value": "620000",
+                    "explorer_url": "https://etherscan.io/address/0xholder00000000000000000000000000000002"
+                }
+            ]
+        }
+    }
+}

@@ -91,6 +91,20 @@ table{border-collapse:collapse;width:100%}
   [data-afmc-status]>*+*{border-left:none;border-top:1px solid var(--border-divider)}
 }
 
+/* Below 700px the board swaps the table for the expandable list. Header sorting and the
+   dense-row toggle belong to the table, so the list carries its own sort control instead. */
+[data-afmc-mobilesort]{display:none}
+@media (max-width:700px){
+  [data-afmc-mobilesort]{display:flex}
+  [data-afmc-densetoggle]{display:none}
+}
+/* A list row's second line holds market cap plus three changes. Under 380px the four no
+   longer fit, and 1h is the first to go, because 24h and 7d are what decide a tap. Dropping
+   it beats letting the market cap ellipsise or the 7d value clip at the right edge. */
+@media (max-width:380px){
+  [data-afmc-row-1h]{display:none!important}
+}
+
 /* Chip rows scroll horizontally on a phone; the bar itself is chrome, so hide it. */
 [data-afmc-chiprow]{scrollbar-width:none;-ms-overflow-style:none}
 [data-afmc-chiprow]::-webkit-scrollbar{display:none}

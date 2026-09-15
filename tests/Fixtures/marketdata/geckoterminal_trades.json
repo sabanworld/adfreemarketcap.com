@@ -1,0 +1,32 @@
+{
+    "data": [
+        {
+            "id": "trade_1",
+            "type": "trade",
+            "attributes": {
+                "tx_hash": "0xtradefakehash0001",
+                "tx_from_address": "0xtrader000000000000000000000000000001",
+                "from_token_amount": "1000",
+                "to_token_amount": "1.2",
+                "price_to_in_usd": "1.24",
+                "volume_in_usd": "1240",
+                "kind": "buy",
+                "block_timestamp": "2026-09-15T05:00:00Z"
+            }
+        },
+        {
+            "id": "trade_2",
+            "type": "trade",
+            "attributes": {
+                "tx_hash": "0xtradefakehash0002",
+                "tx_from_address": "0xtrader000000000000000000000000000002",
+                "from_token_amount": "0.5",
+                "to_token_amount": "400",
+                "price_from_in_usd": "1.22",
+                "volume_in_usd": "610",
+                "kind": "sell",
+                "block_timestamp": "2026-09-15T04:55:00Z"
+            }
+        }
+    ]
+}

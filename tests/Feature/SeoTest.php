@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Coin;
+use App\Models\DexPair;
+use App\Models\DexToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Queue;
@@ -61,8 +63,45 @@ class SeoTest extends TestCase
         $response->assertHeader('Cache-Control', 'max-age=300, public');
         $response->assertSee('<loc>' . route('home') . '</loc>', false);
         $response->assertSee('<loc>' . route('why-ad-free') . '</loc>', false);
+        $response->assertSee('<loc>' . route('dexscan') . '</loc>', false);
         $response->assertSee('<loc>' . route('coins.show', 'bitcoin') . '</loc>', false);
         $response->assertSee('<changefreq>hourly</changefreq>', false);
+    }
+
+    public function test_sitemap_includes_dex_pair_and_token_urls(): void
+    {
+        $token = DexToken::query()->create([
+            'network_id' => 'eth',
+            'address' => '0xpepebasetokenaddress000000000000000001',
+            'symbol' => 'PEPE',
+            'name' => 'Pepe',
+            'synced_at' => now(),
+        ]);
+
+        $pair = DexPair::query()->create([
+            'slug' => 'pepe-weth-ethereum-uniswap-v3',
+            'provider' => 'geckoterminal',
+            'external_id' => 'eth_pool_seo',
+            'pair' => 'PEPE/WETH',
+            'base_symbol' => 'PEPE',
+            'quote_symbol' => 'WETH',
+            'dex' => 'Uniswap V3',
+            'chain' => 'Ethereum',
+            'network_id' => 'eth',
+            'dex_token_id' => $token->id,
+            'audit_status' => 'partial',
+            'volume_24h' => 1_000_000,
+            'synced_at' => now(),
+        ]);
+
+        $response = $this->get('/sitemap.xml');
+
+        $response->assertOk();
+        $response->assertSee('<loc>' . route('dexscan.pair', $pair) . '</loc>', false);
+        $response->assertSee('<loc>' . route('dexscan.token', [
+            'network' => $token->network_id,
+            'address' => $token->address,
+        ]) . '</loc>', false);
     }
 
     public function test_sitemap_is_served_from_cache_on_repeat_hits(): void

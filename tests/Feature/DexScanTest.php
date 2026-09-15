@@ -59,7 +59,7 @@ class DexScanTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('How the Quality column is set', false);
-        $response->assertSee('Pool liquidity, how long the pair has existed, and whether the contract is verified', false);
+        $response->assertSee('Pool liquidity, how long the pair has existed, and whether the base token is listed on Markets', false);
         // We do not store how many venues list a token, so the page must not claim we weigh it.
         $response->assertDontSee('venue count', false);
     }

@@ -1,0 +1,26 @@
+{
+    "data": {
+        "id": "eth_0xpepebasetokenaddress000000000000000001",
+        "type": "token",
+        "attributes": {
+            "address": "0xpepebasetokenaddress000000000000000001",
+            "name": "Pepe",
+            "symbol": "PEPE",
+            "coingecko_coin_id": "pepe",
+            "price_usd": "1.24",
+            "fdv_usd": "5200000000",
+            "market_cap_usd": "4300000000",
+            "total_reserve_in_usd": "2600000",
+            "volume_usd": {
+                "h24": "1600000"
+            },
+            "price_change_percentage": {
+                "h24": "13.1"
+            },
+            "holders": {
+                "count": 24500
+            }
+        }
+    },
+    "included": []
+}

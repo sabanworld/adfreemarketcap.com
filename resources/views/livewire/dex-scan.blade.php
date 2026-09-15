@@ -60,7 +60,7 @@
                 >{{ $label }}</button>
             @endforeach
         </div>
-        <label class="afmc-switch" title="{{ __('Hides pairs whose contract is unverified.') }}">
+        <label class="afmc-switch" title="{{ __('Hides pairs whose base token is not listed on Markets and has no CoinGecko id.') }}">
             <input type="checkbox" role="switch" wire:model.live="verifiedOnly" />
             <span class="afmc-switch__track" aria-hidden="true"><span class="afmc-switch__thumb"></span></span>
             <span class="afmc-switch__label">{{ __('Hide unverified') }}</span>
@@ -107,10 +107,10 @@
                         @endphp
                         <tr wire:key="dex-{{ $pair->id }}">
                             <td class="is-wrap is-sticky is-sticky--name" style="left:0">
-                                <span style="display:grid;gap:2px">
+                                <a href="{{ route('dexscan.pair', $pair) }}" wire:navigate style="display:grid;gap:2px;text-decoration:none;color:inherit">
                                     <span style="font:var(--weight-semibold) var(--text-sm)/1.2 var(--font-sans);color:var(--text-strong)">{{ $pair->pair }}</span>
                                     <span style="font:var(--type-num);font-size:var(--text-2xs);color:var(--text-faint)">{{ $pair->dex }} · {{ $pair->chain }}</span>
-                                </span>
+                                </a>
                             </td>
                             <td class="hide-narrow">
                                 {{-- Block form, never @php(…): Blade's raw-block pass matches the
@@ -180,7 +180,7 @@
         <x-afmc.icon name="info" class="afmc-callout__icon" />
         <div class="afmc-callout__content">
             <p class="afmc-callout__title">{{ __('How the Quality column is set') }}</p>
-            <p class="afmc-callout__body">{{ __('Pool liquidity, how long the pair has existed, and whether the contract is verified. Nothing about price performance, and nothing a project can pay to change.') }}</p>
+            <p class="afmc-callout__body">{{ __('Pool liquidity, how long the pair has existed, and whether the base token is listed on Markets. A CoinGecko id alone only reaches partial. Nothing about price performance, and nothing a project can pay to change.') }}</p>
         </div>
     </div>
 </main>

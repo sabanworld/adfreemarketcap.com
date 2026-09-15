@@ -10,10 +10,11 @@ use Illuminate\Support\Carbon;
 /**
  * Turns what we store about a DEX pair into the Quality tier shown on DexScan.
  *
- * Three inputs, all of them facts from the provider feed: pool liquidity, how long the pair
- * has existed, and whether the contract is verified. Nothing here looks at price performance,
- * and there is no field a project can pay us to change. The tiers are deliberately pessimistic,
- * because an on-chain pair with a thin pool is a real way to lose everything.
+ * Three inputs, all of them facts from stored market data: pool liquidity, how long the pair
+ * has existed, and whether the base token is listed on Markets (audit_status). Nothing here
+ * looks at price performance, and there is no field a project can pay us to change. The tiers
+ * are deliberately pessimistic, because an on-chain pair with a thin pool is a real way to
+ * lose everything.
  */
 final class DexQualityAssessor
 {
@@ -32,7 +33,7 @@ final class DexQualityAssessor
         self::TIER_BLUE_CHIP => [
             'label' => 'Blue chip',
             'dots' => 1,
-            'why' => 'Deep pool, more than a year of trading, verified contract.',
+            'why' => 'Deep pool, more than a year of trading, base token listed on Markets.',
         ],
         self::TIER_ESTABLISHED => [
             'label' => 'Established',
@@ -47,7 +48,7 @@ final class DexQualityAssessor
         self::TIER_HIGH_RISK => [
             'label' => 'High risk',
             'dots' => 4,
-            'why' => 'Very thin pool, days old, or an unverified contract. Assume you can lose everything.',
+            'why' => 'Very thin pool, days old, or a base token we do not list on Markets. Assume you can lose everything.',
         ],
     ];
 
@@ -75,8 +76,8 @@ final class DexQualityAssessor
         $verified = $this->isVerified($pair);
         $partial = strtolower((string) $pair->audit_status) === 'partial';
 
-        // An unverified contract caps the pair at high risk: the pool can be drained or the
-        // contract can block selling, and no amount of liquidity protects you from either.
+        // An unknown Markets listing caps the pair at high risk: we treat tokens that are not
+        // on our rankings (and lack even a CoinGecko id) as unverified.
         if (! $verified && ! $partial) {
             return self::TIER_HIGH_RISK;
         }

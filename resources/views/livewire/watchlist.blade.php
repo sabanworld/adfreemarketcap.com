@@ -63,53 +63,60 @@
                     <h2 class="afmc-card__title">{{ __('Holdings view') }}</h2>
                 </div>
             </div>
-            <div class="afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('Watchlist') }}" tabindex="0">
-                <table class="afmc-table">
-                    <thead>
-                        <tr>
-                            <th class="is-sticky is-sticky--watch hide-narrow" style="width:38px;left:0"></th>
-                            <th class="is-sticky is-sticky--name" style="left:38px"><span>{{ __('Name') }}</span></th>
-                            <th class="is-right"><span>{{ __('Price') }}</span></th>
-                            <th class="is-right"><span>24h %</span></th>
-                            <th class="is-right"><span>7d %</span></th>
-                            <th class="is-right"><span>{{ __('Market cap') }}</span></th>
-                            <th class="is-right hide-narrow"><span>{{ __('Last 7 days') }}</span></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($coins as $index => $coin)
-                            @php
-                                $change24 = $display->change($coin->percent_change_24h);
-                                $spark = $display->sparkline($coin->sparkline_7d);
-                            @endphp
-                            <tr wire:key="watch-{{ $coin->id }}">
-                                <td class="is-sticky is-sticky--watch hide-narrow" style="left:0">
-                                    <x-afmc.watch-star
-                                        :coin-id="$coin->id"
-                                        :watched="true"
-                                    />
-                                </td>
-                                <td class="is-sticky is-sticky--name" style="left:38px">
-                                    <x-afmc.coin-identity
-                                        :name="$coin->name"
-                                        :symbol="$coin->symbol"
-                                        :rank="$coin->rank"
-                                        :image="$coin->image_url"
-                                        :href="route('coins.show', $coin)"
-                                        :eager="$index < 8"
-                                    />
-                                </td>
-                                <td class="is-right">{{ MarketNumberFormatter::money($coin->price !== null ? (float) $coin->price : null, 8) }}</td>
-                                <td class="is-right"><x-afmc.price-change :value="$change24" size="sm" /></td>
-                                <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_7d, '7d')" size="sm" /></td>
-                                <td class="is-right">{{ MarketNumberFormatter::money($coin->market_cap !== null ? (float) $coin->market_cap : null) }}</td>
-                                {{-- Colour and slope come from the seven-day series drawn here,
-                                     not from the 24h column beside it. --}}
-                                <td class="is-right hide-narrow"><x-afmc.sparkline :data="$spark" /></td>
+            <div class="afmc-board">
+                <div class="afmc-board__list">
+                    {{-- Every row here is already starred, so the panel action removes it. --}}
+                    <x-afmc.market-list
+                        :coins="$coins"
+                        :watched-ids="$coins->pluck('id')"
+                        :label="__('Watchlist')"
+                    />
+                </div>
+
+                <div class="afmc-board__table afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('Watchlist') }}" tabindex="0">
+                    <table class="afmc-table">
+                        <thead>
+                            <tr>
+                                <th class="is-sticky is-sticky--watch hide-narrow" style="width:38px;left:0"></th>
+                                <th class="is-sticky is-sticky--name" style="left:38px"><span>{{ __('Name') }}</span></th>
+                                <th class="is-right"><span>{{ __('Price') }}</span></th>
+                                <th class="is-right"><span>24h %</span></th>
+                                <th class="is-right"><span>7d %</span></th>
+                                <th class="is-right"><span>{{ __('Market cap') }}</span></th>
+                                <th class="is-right hide-narrow"><span>{{ __('Last 7 days') }}</span></th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach ($coins as $index => $coin)
+                                <tr wire:key="watch-{{ $coin->id }}">
+                                    <td class="is-sticky is-sticky--watch hide-narrow" style="left:0">
+                                        <x-afmc.watch-star
+                                            :coin-id="$coin->id"
+                                            :watched="true"
+                                        />
+                                    </td>
+                                    <td class="is-sticky is-sticky--name" style="left:38px">
+                                        <x-afmc.coin-identity
+                                            :name="$coin->name"
+                                            :symbol="$coin->symbol"
+                                            :rank="$coin->rank"
+                                            :image="$coin->image_url"
+                                            :href="route('coins.show', $coin)"
+                                            :eager="$index < 8"
+                                        />
+                                    </td>
+                                    <td class="is-right">{{ MarketNumberFormatter::money($coin->price !== null ? (float) $coin->price : null, 8) }}</td>
+                                    <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_24h)" size="sm" /></td>
+                                    <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_7d, '7d')" size="sm" /></td>
+                                    <td class="is-right">{{ MarketNumberFormatter::money($coin->market_cap !== null ? (float) $coin->market_cap : null) }}</td>
+                                    {{-- Colour and slope come from the seven-day series drawn here,
+                                         not from the 24h column beside it. --}}
+                                    <td class="is-right hide-narrow"><x-afmc.sparkline :data="$display->sparkline($coin->sparkline_7d)" /></td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     @endif

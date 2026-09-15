@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\MarketData;
 
+use App\Jobs\SyncDexPairDetail;
 use App\Models\DexPair;
+use App\Models\DexToken;
 use App\Models\SyncRun;
 use App\Services\MarketData\DTOs\DexPairData;
 use Illuminate\Support\Collection;
@@ -20,6 +22,7 @@ class DexSyncService
 
     public function __construct(
         private readonly DexDataProvider $provider,
+        private readonly DexAuditStatusResolver $audit,
     ) {}
 
     public function syncPairs(): SyncRun
@@ -35,16 +38,22 @@ class DexSyncService
             $pairs = $this->collectPairs();
             $processed = 0;
             $failed = 0;
+            $trendingIds = [];
 
             foreach ($pairs as $pair) {
                 try {
-                    $this->upsertPair($pair);
+                    $model = $this->upsertPair($pair);
                     $processed++;
+                    if ($pair->isTrending && $model instanceof DexPair) {
+                        $trendingIds[] = $model->id;
+                    }
                 } catch (Throwable $exception) {
                     $failed++;
                     report($exception);
                 }
             }
+
+            $this->prewarmTrendingDetails($trendingIds);
 
             $message = "Synced {$processed} DEX pairs.";
             if ($failed > 0) {
@@ -62,7 +71,7 @@ class DexSyncService
     }
 
     /**
-     * @return Collection<string, DexPairData>
+     * @return Collection<int, DexPairData>
      */
     private function collectPairs(): Collection
     {
@@ -88,13 +97,24 @@ class DexSyncService
                         quoteSymbol: $pair->quoteSymbol,
                         dex: $pair->dex,
                         chain: $pair->chain,
-                        contractAddress: $pair->contractAddress,
+                        networkId: $pair->networkId ?? $existing->networkId,
+                        contractAddress: $pair->contractAddress ?? $existing->contractAddress,
+                        baseTokenAddress: $pair->baseTokenAddress ?? $existing->baseTokenAddress,
+                        quoteTokenAddress: $pair->quoteTokenAddress ?? $existing->quoteTokenAddress,
+                        baseTokenName: $pair->baseTokenName ?? $existing->baseTokenName,
+                        coingeckoCoinId: $pair->coingeckoCoinId ?? $existing->coingeckoCoinId,
                         auditStatus: $pair->auditStatus,
                         price: $pair->price,
                         percentChange24h: $pair->percentChange24h,
                         liquidityUsd: $pair->liquidityUsd,
                         volume24h: $pair->volume24h,
+                        volume1h: $pair->volume1h ?? $existing->volume1h,
+                        volume6h: $pair->volume6h ?? $existing->volume6h,
+                        fdvUsd: $pair->fdvUsd ?? $existing->fdvUsd,
+                        marketCapUsd: $pair->marketCapUsd ?? $existing->marketCapUsd,
                         txns24h: $pair->txns24h,
+                        buys24h: $pair->buys24h ?? $existing->buys24h,
+                        sells24h: $pair->sells24h ?? $existing->sells24h,
                         pairedAt: $pair->pairedAt ?? $existing->pairedAt,
                         isTrending: true,
                         rank: $existing->rank,
@@ -125,11 +145,12 @@ class DexSyncService
         return $merged->values();
     }
 
-    private function upsertPair(DexPairData $pair): void
+    private function upsertPair(DexPairData $pair): DexPair
     {
         $slug = $this->slugFor($pair);
+        $tokenId = $this->upsertBaseToken($pair)?->id;
 
-        DexPair::query()->updateOrCreate(
+        return DexPair::query()->updateOrCreate(
             [
                 'provider' => $this->provider->name(),
                 'external_id' => $pair->externalId,
@@ -141,13 +162,23 @@ class DexSyncService
                 'quote_symbol' => $pair->quoteSymbol,
                 'dex' => $pair->dex,
                 'chain' => $pair->chain,
+                'network_id' => $pair->networkId,
                 'contract_address' => $pair->contractAddress,
-                'audit_status' => $pair->auditStatus,
+                'base_token_address' => $pair->baseTokenAddress,
+                'quote_token_address' => $pair->quoteTokenAddress,
+                'dex_token_id' => $tokenId,
+                'audit_status' => $this->audit->resolveFromPairData($pair),
                 'price' => $pair->price,
                 'percent_change_24h' => $this->percentForStorage($pair->percentChange24h),
                 'liquidity_usd' => $pair->liquidityUsd,
                 'volume_24h' => $pair->volume24h,
+                'volume_1h' => $pair->volume1h,
+                'volume_6h' => $pair->volume6h,
+                'fdv_usd' => $pair->fdvUsd,
+                'market_cap_usd' => $pair->marketCapUsd,
                 'txns_24h' => $pair->txns24h,
+                'buys_24h' => $pair->buys24h,
+                'sells_24h' => $pair->sells24h,
                 'paired_at' => $pair->pairedAt,
                 'is_trending' => $pair->isTrending,
                 'rank' => $pair->rank,
@@ -156,9 +187,47 @@ class DexSyncService
         );
     }
 
+    private function upsertBaseToken(DexPairData $pair): ?DexToken
+    {
+        if (! filled($pair->networkId) || ! filled($pair->baseTokenAddress)) {
+            return null;
+        }
+
+        return DexToken::query()->updateOrCreate(
+            [
+                'network_id' => $pair->networkId,
+                'address' => $pair->baseTokenAddress,
+            ],
+            [
+                'symbol' => $pair->baseSymbol,
+                'name' => $pair->baseTokenName,
+                'coingecko_coin_id' => $pair->coingeckoCoinId,
+                'price' => $pair->price,
+                'percent_change_24h' => $this->percentForStorage($pair->percentChange24h),
+                'fdv_usd' => $pair->fdvUsd,
+                'market_cap_usd' => $pair->marketCapUsd,
+                'liquidity_usd' => $pair->liquidityUsd,
+                'volume_24h' => $pair->volume24h,
+                'synced_at' => now(),
+            ],
+        );
+    }
+
     /**
-     * Clamp to the column range. Non-finite values become null.
+     * @param  list<int>  $pairIds
      */
+    private function prewarmTrendingDetails(array $pairIds): void
+    {
+        $limit = max(0, (int) config('marketdata.sync.dex_detail_prewarm', 5));
+        if ($limit === 0 || $pairIds === []) {
+            return;
+        }
+
+        foreach (array_slice(array_values(array_unique($pairIds)), 0, $limit) as $pairId) {
+            SyncDexPairDetail::dispatch($pairId);
+        }
+    }
+
     private function percentForStorage(?float $value): ?float
     {
         if ($value === null || ! is_finite($value)) {
@@ -168,12 +237,6 @@ class DexSyncService
         return max(-self::PERCENT_CHANGE_MAX, min(self::PERCENT_CHANGE_MAX, $value));
     }
 
-    /**
-     * Launchpads mint many tokens under the same symbol, so one chain and DEX
-     * can carry several pools that all read as "THERSOL / SOL". The slug is a
-     * route key, so keep it readable but suffix it when another pool already
-     * holds it. The suffix comes from the pool id, so it stays put across runs.
-     */
     private function slugFor(DexPairData $pair): string
     {
         $slug = DexPair::makeSlug($pair->pair, $pair->chain, $pair->dex);

@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/js/altcha.js',
                 'resources/js/analytics.js',
                 'resources/js/coin-chart.js',
+                'resources/js/dex-chart.js',
             ],
             refresh: true,
         }),

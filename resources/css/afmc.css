@@ -582,11 +582,16 @@
   padding-top: var(--space-5);
 }
 
+/* The base class is a usable control on its own. Padding used to live only in the size
+   modifiers, so `.afmc-btn .afmc-btn--primary` with no size rendered 17px tall: readable, and
+   too small to hit with a thumb. A size modifier now changes a target, it does not create one. */
 .afmc-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
+  min-height: 40px;
+  padding: 8px 14px;
   border-radius: var(--radius-sm);
   font: var(--weight-semibold) var(--text-sm) / 1.2 var(--font-sans);
   letter-spacing: var(--tracking-snug);
@@ -606,12 +611,16 @@
   transform: translateY(1px);
 }
 
+/* Dense contexts only (a card header, a table toolbar). The coarse-pointer floor below still
+   takes it to 44px on a touch screen, so this is a visual step, not a smaller target. */
 .afmc-btn--sm {
+  min-height: 32px;
   padding: 5px 10px;
   font-size: var(--text-xs);
 }
 
 .afmc-btn--md {
+  min-height: 40px;
   padding: 8px 14px;
 }
 
@@ -636,6 +645,23 @@
 .afmc-btn--ghost:hover {
   background: var(--surface-hover);
   filter: none;
+}
+
+/* A button that owns its line, used where a phone panel has room for nothing beside it. */
+.afmc-btn--full {
+  display: flex;
+  width: 100%;
+}
+
+/* A link that stands alone, on its own line or in its own paragraph. It is a target, so it
+   carries a floor like any other control. A link inside a sentence does not: WCAG 2.2
+   criterion 2.5.8 exempts a target whose size is constrained by the line height of the text
+   around it, and padding one out would open a hole in the paragraph. */
+.afmc-link {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--text-link);
 }
 
 .afmc-icon-btn {
@@ -1475,6 +1501,374 @@
   flex: none;
 }
 
+/* One ranked list, two forms: the table above 700px, the expandable list below it. Both are
+   rendered and CSS picks, because deciding in JavaScript means painting one form and then
+   swapping it, and a phone would see the table it is not meant to get. */
+.afmc-board__list {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .afmc-board__list {
+    display: block;
+  }
+
+  .afmc-board__table {
+    display: none;
+  }
+}
+
+/* Market list: the phone form of a coin row. Tapping opens the row in place instead of
+   navigating, so a reader keeps their position in the ranking. */
+.afmc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.afmc-list__item + .afmc-list__item {
+  border-top: 1px solid var(--border-divider);
+}
+
+.afmc-list__row {
+  all: unset;
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: 72px;
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  transition: background-color var(--duration-instant-ms) var(--ease-standard);
+}
+
+.afmc-list__row:hover,
+.afmc-list__row.is-open {
+  background: var(--surface-hover);
+}
+
+/*
+ * First line: the coin and its price. The seven-day line sits on the second line instead of
+ * here, because a price like $0.00000518 is eleven characters wide and, with a sparkline beside
+ * it, left "Shiba Inu" five pixels to render in at 390px. The second line had room to spare.
+ */
+.afmc-list__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 20px;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.afmc-list__price {
+  font: var(--type-num);
+  font-size: var(--text-md);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+  white-space: nowrap;
+}
+
+.afmc-list__caret {
+  color: var(--text-faint);
+  transition: transform var(--duration-fast-ms) var(--ease-standard);
+}
+
+.afmc-list__row.is-open .afmc-list__caret {
+  transform: rotate(180deg);
+}
+
+/* Second line: market cap on the left, then the three windows pushed apart. */
+.afmc-list__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  overflow: hidden;
+  font: var(--type-num);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+}
+
+.afmc-list__mc {
+  white-space: nowrap;
+}
+
+/* Next to the three windows it belongs to, and the first thing to go when the line is full. */
+.afmc-list__spark {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/*
+ * Under 380px the rank chip costs more than it earns: it is fixed width, so it takes its 30px
+ * out of the coin's name, and at that width "Dogecoin" starts losing letters. It goes to the
+ * screen reader instead of away, so the row is still announced as "Dogecoin DOGE #12", and the
+ * order of the list still carries the ranking on screen.
+ */
+@media (max-width: 380px) {
+  .afmc-list__row .afmc-identity__rank {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+.afmc-list__window {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  white-space: nowrap;
+}
+
+.afmc-list__panel {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border-divider);
+}
+
+.afmc-list__figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.afmc-list__figures > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.afmc-list__figures dt {
+  font: var(--type-label);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.afmc-list__figures dd {
+  margin: 0;
+  font: var(--type-num);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Three actions share this row, so it wraps instead of shrinking: squeezing a 44px target to
+   fit a third label on a 340px phone costs more than a second line does. */
+.afmc-list__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+/* The star alone is a 32px cell target. In a row panel it is a labelled action on the card
+   surface, sized for a thumb, and it sits beside the alert and share actions. */
+.afmc-panel-action {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  flex: 1 1 96px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  box-shadow: inset 0 0 0 1px var(--border-card);
+  font: var(--weight-medium) var(--text-sm) / 1 var(--font-sans);
+  color: var(--text-body);
+  transition: var(--transition-color);
+}
+
+.afmc-panel-action > span:not(.afmc-icon):not(.afmc-soon) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.afmc-panel-action[aria-pressed='true'] {
+  color: var(--text-brand);
+}
+
+/* No disabled grey: the label keeps a readable colour and the Soon marker carries the state.
+   The gap tightens because the marker is part of the label, not a third item. */
+.afmc-panel-action.is-soon {
+  gap: var(--space-1);
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+
+/* Phone sort control. Header sorting belongs to the table, so the list gets a select and a
+   direction toggle in its place. base.css shows this only below 700px. */
+.afmc-sortbar {
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.afmc-sortbar__label {
+  font: var(--type-label);
+  color: var(--text-muted);
+  flex: none;
+}
+
+.afmc-sortbar__select {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.afmc-sortbar__select select {
+  appearance: none;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 var(--space-8) 0 var(--space-3);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  font: var(--weight-medium) var(--text-sm) / 1 var(--font-sans);
+  color: var(--text-strong);
+  cursor: pointer;
+}
+
+.afmc-sortbar__select .afmc-icon {
+  position: absolute;
+  right: var(--space-2);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+/* Exchange list: the phone form of the markets table. Two lines a venue instead of seven
+   columns behind a sideways scroll. */
+.afmc-exlist__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.afmc-exlist__item {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+}
+
+.afmc-exlist__item + .afmc-exlist__item {
+  border-top: 1px solid var(--border-divider);
+}
+
+.afmc-exlist__item.is-muted {
+  color: var(--text-muted);
+}
+
+.afmc-exlist__line {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.afmc-exlist__rank {
+  font: var(--type-num);
+  font-size: var(--text-2xs);
+  color: var(--text-faint);
+}
+
+.afmc-exlist__name {
+  display: block;
+  font: var(--weight-medium) var(--text-sm) / 1.25 var(--font-sans);
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.afmc-exlist__price {
+  font: var(--type-num);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+  white-space: nowrap;
+}
+
+.afmc-exlist__facts {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow: hidden;
+  font: var(--type-num);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+}
+
+.afmc-exlist__facts > span {
+  white-space: nowrap;
+}
+
+.afmc-exlist__share {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+}
+
+/* The bar is relative to the busiest venue on the list, not to 100%: the top exchange rarely
+   holds a fifth of a coin's volume, and a bar that never fills reads as missing data. */
+.afmc-exlist__track {
+  display: block;
+  width: 46px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.afmc-exlist__fill {
+  display: block;
+  height: 100%;
+  background: var(--amber-500);
+}
+
+.afmc-exlist__percent {
+  min-width: 44px;
+  font: var(--type-num);
+  font-size: var(--text-2xs);
+  color: var(--text-body);
+  text-align: right;
+}
+
+.afmc-exlist__foot {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-divider);
+}
+
+.afmc-exlist__caret {
+  display: inline-flex;
+  transition: transform var(--duration-fast-ms) var(--ease-standard);
+}
+
+.afmc-exlist__caret.is-open {
+  transform: rotate(180deg);
+}
+
 .afmc-pagination {
   display: flex;
   flex-wrap: wrap;
@@ -1928,7 +2322,12 @@
   color: var(--text-strong);
 }
 
+/* The block height is the only thing in its stat, so it is a target rather than a word in a
+   sentence, and it takes a floor like any other control. */
 .afmc-mining__block-link {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
   color: var(--text-brand);
   text-decoration: none;
   border-bottom: 1px solid var(--amber-300);
@@ -2634,6 +3033,9 @@
   font: var(--type-body-sm);
   display: block;
   overflow-x: auto;
+  /* A non-visible overflow on one axis makes the other compute to auto, which paints a
+     scrollbar over the last row of a retention table that overflows by a pixel. */
+  overflow-y: hidden;
 }
 
 .afmc-legal-table th,
@@ -3318,8 +3720,10 @@ button.afmc-tag:hover:not(.is-active) {
   color: var(--text-faint);
 }
 
-/* Table empty state: explain the mechanic and offer the way out, never a shrug. */
-.afmc-table__empty {
+/* Empty state: explain the mechanic and offer the way out, never a shrug. A board renders it
+   in place of both forms, so the copy exists once rather than once per viewport. */
+.afmc-table__empty,
+.afmc-board__empty {
   height: auto;
   padding: var(--space-8) var(--space-4);
   text-align: center;
@@ -3424,4 +3828,140 @@ button.afmc-tag:hover:not(.is-active) {
 .afmc-ticker a,
 .afmc-table a {
   text-decoration: none;
+}
+
+/* HTTP error pages: slim shell without Livewire, ticker, or DB reads, so a 500
+   can still paint the brand. Theme toggle is plain JS (see errors/layout). */
+.afmc-error-body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--surface-page);
+  color: var(--text-body);
+}
+
+.afmc-error-shell__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  max-width: var(--layout-max);
+  margin: 0 auto;
+  padding: var(--space-4) var(--layout-gutter);
+}
+
+[data-theme='light'] .afmc-error-shell__theme-light,
+[data-theme='dark'] .afmc-error-shell__theme-dark {
+  display: none;
+}
+
+.afmc-error {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--space-3);
+  max-width: 36rem;
+  min-height: calc(100vh - 5.5rem);
+  margin: 0 auto;
+  padding: var(--space-8) var(--layout-gutter) var(--space-16);
+  text-align: center;
+}
+
+.afmc-error__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-faint);
+}
+
+.afmc-error__code {
+  margin: var(--space-2) 0 0;
+  font: var(--weight-semibold) var(--text-5xl) / var(--leading-flat) var(--font-mono);
+  letter-spacing: var(--tracking-tight);
+  color: var(--amber-500);
+  font-variant-numeric: tabular-nums;
+}
+
+.afmc-error__title {
+  margin: 0;
+  font: var(--type-h1);
+  letter-spacing: var(--tracking-tight);
+  color: var(--text-strong);
+}
+
+.afmc-error__detail {
+  margin: 0;
+  max-width: 42ch;
+  font: var(--type-body);
+  color: var(--text-faint);
+  text-wrap: pretty;
+}
+
+.afmc-error__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+/* ==========================================================================================
+   Touch-target floor. Last in the file on purpose, and the reason is the cascade.
+ 
+   base.css sets 44px on `button`, `a[href]`, `select` and `summary`, which is not enough on
+   its own for two reasons. An element selector loses to any class that sets its own
+   min-height, and most controls here start with `all: unset`, which resets min-height at
+   class specificity and therefore beats that floor no matter what order the files load in.
+   It also says nothing about width, which is how an icon button ended up 44 tall and 32 wide.
+ 
+   So every control a thumb has to hit is listed here, after the rule that unset it. A control
+   that appears in neither place has no floor at all, which is what tests/Feature/
+   TouchTargetTest.php checks on every build.
+ 
+   Two exceptions, both deliberate, both still clearing the 24px minimum in WCAG 2.2 success
+   criterion 2.5.8, which is the level resources/views/legal/accessibility.blade.php claims:
+     · controls inside a table pan region stay 32px, or a ranked row stops being a row,
+     · a clear button inside a 44px text field stays 32px, since the field is the target.
+   ========================================================================================== */
+@media (pointer: coarse) {
+  .afmc-btn,
+  .afmc-link,
+  .afmc-mining__block-link,
+  .afmc-nav__item,
+  .afmc-chip,
+  .afmc-check,
+  .afmc-switch,
+  button.afmc-tag,
+  .afmc-chart-ranges__item,
+  .afmc-currency__trigger,
+  .afmc-currency__quick-item,
+  .afmc-currency__option,
+  .afmc-network-filter__option,
+  .afmc-footer__cookie-btn,
+  .afmc-btc-donate__copy,
+  .afmc-tabs__item,
+  .afmc-sortbar__select select,
+  .afmc-perpage select {
+    min-height: 44px;
+  }
+
+  .afmc-icon-btn,
+  .afmc-search__submit,
+  .afmc-pagination__link {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  [data-afmc-tablescroll] .afmc-icon-btn {
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  .afmc-currency__filter-clear {
+    min-width: 32px;
+    min-height: 32px;
+  }
 }

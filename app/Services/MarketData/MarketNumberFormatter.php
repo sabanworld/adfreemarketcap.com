@@ -24,6 +24,21 @@ final class MarketNumberFormatter
     }
 
     /**
+     * The precision a phone row uses, where a price shares one line with the coin's name.
+     *
+     * Cents on a five-figure price are three characters the name needs more: with them,
+     * "Bitcoin" reads "Bit…" at 390px. They are dropped from a thousand up, which is the same
+     * figure at one less decimal, and kept below it where they carry the price.
+     */
+    public static function moneyRow(?float $usdValue): string
+    {
+        $currency = app(CurrencyService::class);
+        $value = $currency->convert($usdValue);
+
+        return self::format($value, $currency->active(), $value !== null && abs($value) >= 1000 ? 0 : 8);
+    }
+
+    /**
      * Always renders USD, for crawlable meta copy and other session-independent text.
      */
     public static function moneyUsd(?float $usdValue, int $maxDecimals = 2): string

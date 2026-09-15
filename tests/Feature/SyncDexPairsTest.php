@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Jobs\SyncDexPairs;
+use App\Models\Coin;
+use App\Models\CoinPlatform;
 use App\Models\DexPair;
 use App\Models\SyncRun;
 use App\Services\MarketData\DexSyncService;
@@ -39,6 +41,7 @@ class SyncDexPairsTest extends TestCase
             'marketdata.sync.dex_trending_pages' => 1,
             'marketdata.sync.dex_new_pages' => 1,
             'marketdata.sync.dex_networks' => [],
+            'marketdata.sync.dex_detail_prewarm' => 0,
         ]);
 
         $run = app(DexSyncService::class)->syncPairs();
@@ -55,8 +58,17 @@ class SyncDexPairsTest extends TestCase
             'quote_symbol' => 'WETH',
             'dex' => 'Uniswap V3',
             'chain' => 'Ethereum',
+            'network_id' => 'eth',
+            'base_token_address' => '0xpepebasetokenaddress000000000000000001',
             'is_trending' => 1,
             'audit_status' => 'partial',
+        ]);
+
+        $this->assertDatabaseHas('dex_tokens', [
+            'network_id' => 'eth',
+            'address' => '0xpepebasetokenaddress000000000000000001',
+            'symbol' => 'PEPE',
+            'coingecko_coin_id' => 'pepe',
         ]);
 
         $this->assertDatabaseHas('dex_pairs', [
@@ -64,6 +76,46 @@ class SyncDexPairsTest extends TestCase
             'pair' => 'NEWCOIN/USDC',
             'chain' => 'Base',
             'is_trending' => 0,
+        ]);
+    }
+
+    public function test_sync_marks_pair_verified_when_base_token_is_on_markets(): void
+    {
+        $coin = Coin::query()->create([
+            'slug' => 'pepe',
+            'symbol' => 'PEPE',
+            'name' => 'Pepe',
+            'rank' => 50,
+        ]);
+
+        CoinPlatform::query()->create([
+            'coin_id' => $coin->id,
+            'platform_id' => 'ethereum',
+            'contract_address' => '0xpepebasetokenaddress000000000000000001',
+        ]);
+
+        Http::fake([
+            'api.geckoterminal.com/api/v2/networks/trending_pools*' => Http::response(
+                $this->fixture('geckoterminal_trending_pools.json'),
+            ),
+            'api.geckoterminal.com/api/v2/networks/new_pools*' => Http::response([
+                'data' => [],
+                'included' => [],
+            ]),
+        ]);
+
+        config([
+            'marketdata.sync.dex_trending_pages' => 1,
+            'marketdata.sync.dex_new_pages' => 0,
+            'marketdata.sync.dex_networks' => [],
+            'marketdata.sync.dex_detail_prewarm' => 0,
+        ]);
+
+        app(DexSyncService::class)->syncPairs();
+
+        $this->assertDatabaseHas('dex_pairs', [
+            'external_id' => 'eth_0xfixturepooladdress00000000000000000001',
+            'audit_status' => 'verified',
         ]);
     }
 
@@ -80,6 +132,7 @@ class SyncDexPairsTest extends TestCase
 
         config([
             'marketdata.sync.dex_networks' => [],
+            'marketdata.sync.dex_detail_prewarm' => 0,
         ]);
 
         (new SyncDexPairs)->handle(app(DexSyncService::class));
@@ -120,8 +173,14 @@ class SyncDexPairsTest extends TestCase
                     $this->solanaPool('solana_pool_two'),
                 ],
                 'included' => [
-                    ['id' => 'sol_base', 'type' => 'token', 'attributes' => ['symbol' => 'THERSOL']],
-                    ['id' => 'sol_quote', 'type' => 'token', 'attributes' => ['symbol' => 'SOL']],
+                    ['id' => 'sol_base', 'type' => 'token', 'attributes' => [
+                        'symbol' => 'THERSOL',
+                        'address' => 'TherSolBase111111111111111111111111111',
+                    ]],
+                    ['id' => 'sol_quote', 'type' => 'token', 'attributes' => [
+                        'symbol' => 'SOL',
+                        'address' => 'So11111111111111111111111111111111111111112',
+                    ]],
                     ['id' => 'pumpfun', 'type' => 'dex', 'attributes' => ['name' => 'PumpFun']],
                 ],
             ]),
@@ -131,6 +190,7 @@ class SyncDexPairsTest extends TestCase
             'marketdata.sync.dex_trending_pages' => 1,
             'marketdata.sync.dex_new_pages' => 0,
             'marketdata.sync.dex_networks' => [],
+            'marketdata.sync.dex_detail_prewarm' => 0,
         ]);
 
         $run = app(DexSyncService::class)->syncPairs();
@@ -149,8 +209,14 @@ class SyncDexPairsTest extends TestCase
                 $this->solanaPool('solana_pool_two'),
             ],
             'included' => [
-                ['id' => 'sol_base', 'type' => 'token', 'attributes' => ['symbol' => 'THERSOL']],
-                ['id' => 'sol_quote', 'type' => 'token', 'attributes' => ['symbol' => 'SOL']],
+                ['id' => 'sol_base', 'type' => 'token', 'attributes' => [
+                    'symbol' => 'THERSOL',
+                    'address' => 'TherSolBase111111111111111111111111111',
+                ]],
+                ['id' => 'sol_quote', 'type' => 'token', 'attributes' => [
+                    'symbol' => 'SOL',
+                    'address' => 'So11111111111111111111111111111111111111112',
+                ]],
                 ['id' => 'pumpfun', 'type' => 'dex', 'attributes' => ['name' => 'PumpFun']],
             ],
         ];
@@ -163,6 +229,7 @@ class SyncDexPairsTest extends TestCase
             'marketdata.sync.dex_trending_pages' => 1,
             'marketdata.sync.dex_new_pages' => 0,
             'marketdata.sync.dex_networks' => [],
+            'marketdata.sync.dex_detail_prewarm' => 0,
         ]);
 
         app(DexSyncService::class)->syncPairs();
@@ -190,6 +257,7 @@ class SyncDexPairsTest extends TestCase
 
         config([
             'marketdata.sync.dex_networks' => [],
+            'marketdata.sync.dex_detail_prewarm' => 0,
         ]);
 
         $run = app(DexSyncService::class)->syncPairs();
@@ -207,8 +275,14 @@ class SyncDexPairsTest extends TestCase
                     $this->solanaPool('solana_pool_dump', '-3744620948379.6'),
                 ],
                 'included' => [
-                    ['id' => 'sol_base', 'type' => 'token', 'attributes' => ['symbol' => 'THERSOL']],
-                    ['id' => 'sol_quote', 'type' => 'token', 'attributes' => ['symbol' => 'SOL']],
+                    ['id' => 'sol_base', 'type' => 'token', 'attributes' => [
+                        'symbol' => 'THERSOL',
+                        'address' => 'TherSolBase111111111111111111111111111',
+                    ]],
+                    ['id' => 'sol_quote', 'type' => 'token', 'attributes' => [
+                        'symbol' => 'SOL',
+                        'address' => 'So11111111111111111111111111111111111111112',
+                    ]],
                     ['id' => 'pumpfun', 'type' => 'dex', 'attributes' => ['name' => 'PumpFun']],
                 ],
             ]),
@@ -222,6 +296,7 @@ class SyncDexPairsTest extends TestCase
             'marketdata.sync.dex_trending_pages' => 1,
             'marketdata.sync.dex_new_pages' => 0,
             'marketdata.sync.dex_networks' => [],
+            'marketdata.sync.dex_detail_prewarm' => 0,
         ]);
 
         $run = app(DexSyncService::class)->syncPairs();

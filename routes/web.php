@@ -9,7 +9,9 @@ use App\Http\Controllers\SitemapController;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Register;
 use App\Livewire\CoinShow;
+use App\Livewire\DexPairShow;
 use App\Livewire\DexScan;
+use App\Livewire\DexTokenShow;
 use App\Livewire\Home;
 use App\Livewire\LegalPage;
 use App\Livewire\Watchlist;
@@ -19,6 +21,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', Home::class)->name('home');
 Route::get('coins/{coin:slug}', CoinShow::class)->name('coins.show');
 Route::get('dexscan', DexScan::class)->name('dexscan');
+Route::get('dexscan/pairs/{pair:slug}', DexPairShow::class)->name('dexscan.pair');
+Route::get('dexscan/{network}/{address}', DexTokenShow::class)
+    ->where('network', '[A-Za-z0-9_-]+')
+    ->where('address', '[A-Za-z0-9]+')
+    ->name('dexscan.token');
 Route::get('why-ad-free', WhyAdFree::class)->name('why-ad-free');
 
 Route::get('legal/{page}', LegalPage::class)

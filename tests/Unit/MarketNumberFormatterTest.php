@@ -21,6 +21,22 @@ class MarketNumberFormatterTest extends TestCase
         $this->assertSame('—', MarketNumberFormatter::money(null));
     }
 
+    /**
+     * A phone row gives the price and the coin's name the same line, so the price spends no
+     * character it does not need. Cents go from a thousand up and stay below it.
+     */
+    public function test_formats_a_row_price_without_needless_cents(): void
+    {
+        $this->assertSame('$77,467', MarketNumberFormatter::moneyRow(77_467.00));
+        $this->assertSame('$1,000', MarketNumberFormatter::moneyRow(1000.49));
+        $this->assertSame('$999.95', MarketNumberFormatter::moneyRow(999.95));
+        $this->assertSame('$1.41', MarketNumberFormatter::moneyRow(1.4142));
+        $this->assertSame('$0.9998', MarketNumberFormatter::moneyRow(0.99981));
+        $this->assertSame('$0.00000518', MarketNumberFormatter::moneyRow(0.00000518));
+        $this->assertSame('$1.56T', MarketNumberFormatter::moneyRow(1_560_000_000_000));
+        $this->assertSame('—', MarketNumberFormatter::moneyRow(null));
+    }
+
     public function test_formats_percent(): void
     {
         $this->assertSame('1.23%', MarketNumberFormatter::percent(1.234));

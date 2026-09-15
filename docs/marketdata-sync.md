@@ -39,6 +39,8 @@ Roughly **~110 scheduled calls/hour**, plus on-visit detail/ticker jobs for coin
 
 DexScan uses **GeckoTerminal** (`DexDataProvider` → `GeckoTerminalProvider`). Keep call volume low on the free tier (trending + new pages by default; optional comma-separated `MARKETDATA_DEX_NETWORKS`). Do not call GeckoTerminal from Livewire. Fresh meme pools can report 24h moves far past `decimal(12, 4)` on `dex_pairs.percent_change_24h`; `DexSyncService` clamps those to ±99,999,999.9999 and continues the run if a single row still fails to write.
 
+Pair and token detail pages dispatch `SyncDexPairDetail` / `SyncDexTokenDetail` when charts, trades, or holders are missing or older than `MARKETDATA_DEX_*_STALE_MINUTES`. After each list sync, `MARKETDATA_DEX_DETAIL_PREWARM` (default 5) trending pairs also get a detail job. Top holders call CoinGecko’s Pro onchain `top_holders` endpoint and soft-fail when the key lacks access.
+
 ## Queue workers (Horizon)
 
 Horizon processes the Redis queue (`QUEUE_CONNECTION=redis`). Dashboard: `/horizon` (disallowed in `robots.txt`; local open, elsewhere a Filament admin session). The admin panel sidebar links to it under System → Horizon.

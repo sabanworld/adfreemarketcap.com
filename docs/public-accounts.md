@@ -45,11 +45,17 @@ Covered by `tests/Feature/AdminMfaTest.php`. PHPUnit forces `ADMIN_MFA_REQUIRED=
 
 ## DexScan
 
-- Table: `dex_pairs` (upserted by `provider` + `external_id`).
-- Live source: **GeckoTerminal** (`App\Services\MarketData\GeckoTerminalProvider`) via `App\Jobs\SyncDexPairs` / `DexSyncService`.
-- Cadence: `MARKETDATA_DEX_INTERVAL` minutes (default 5), see [`docs/marketdata-sync.md`](marketdata-sync.md).
-- Public page: `/dexscan` reads MySQL only (trending / gainers / new / liquidity tabs).
-- `DexPairSeeder` remains for offline demos; production freshness comes from the scheduled job.
+- Tables: `dex_pairs` (upserted by `provider` + `external_id`), `dex_tokens`, `dex_chart_series`, `dex_trades`, `dex_token_holders`.
+- Live source: **GeckoTerminal** (`App\Services\MarketData\GeckoTerminalProvider`) via `App\Jobs\SyncDexPairs` / `DexSyncService` for the list, and visit-driven `SyncDexPairDetail` / `SyncDexTokenDetail` for charts, trades, related pools, and holders.
+- Cadence: `MARKETDATA_DEX_INTERVAL` minutes (default 5), see [`docs/marketdata-sync.md`](marketdata-sync.md). After each list sync, up to `MARKETDATA_DEX_DETAIL_PREWARM` trending pairs get a detail prewarm job.
+- Public pages (MySQL only):
+  - `/dexscan` list (trending / gainers / new / liquidity)
+  - `/dexscan/pairs/{slug}` pair detail
+  - `/dexscan/{network}/{address}` token detail (GeckoTerminal network ids)
+- Hero stats on detail pages come from the list sync; charts / trades / holders warm via queued jobs and `wire:poll` while stale.
+- Trades are a recent snapshot (about the last 24 hours from GeckoTerminal), not a full history.
+- Top holders need CoinGecko onchain access (`GECKOTERMINAL_API_KEY` / `COINGECKO_API_KEY` on the Pro onchain host). Without it the Holders tab stays empty and the rest of the page still works.
+- `DexPairSeeder` remains for offline demos; it writes `provider=seed`, network ids, and demo chart series so pair/token detail pages render without calling GeckoTerminal. Production freshness for live pairs comes from the scheduled job.
 - Optional: `php artisan marketdata:sync --only-dex` or `--dex`.
 
 ### Quality column
@@ -62,12 +68,13 @@ It reads three stored fields, and nothing else:
 |-------|--------|
 | Pool liquidity | `liquidity_usd` |
 | How long the pair has existed | `paired_at` |
-| Contract verification | `audit_status` |
+| Contract / listing check | `audit_status` (`verified` = Markets platform match, `partial` = CoinGecko id only) |
 
 Rules worth knowing before you change a threshold:
 
-- An unverified contract caps the pair at **high risk** no matter how deep the pool is, because a pool can be drained and a contract can block selling.
-- A `partial` audit can reach **speculative** at best, never established or blue chip.
+- An unverified base token (not on Markets, no CoinGecko id) caps the pair at **high risk** no matter how deep the pool is.
+- A `partial` audit (CoinGecko id only) can reach **speculative** at best, never established or blue chip.
+- **verified** is set automatically when the base token contract matches a `coin_platforms` row for a ranked Markets coin (`DexAuditStatusResolver`). A CoinGecko id alone stays `partial`.
 - A missing `paired_at` or `liquidity_usd` is treated as the worst case, so an absent field can never promote a pair into a calmer tier.
 - The tier ignores price performance entirely. Nothing a project can pay for is an input.
 

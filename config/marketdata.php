@@ -74,6 +74,11 @@ return [
         'base_url' => env('GECKOTERMINAL_BASE_URL', 'https://api.geckoterminal.com/api/v2'),
         'api_key' => env('GECKOTERMINAL_API_KEY', env('COINGECKO_API_KEY')),
         'api_key_header' => str_replace('_', '-', (string) env('GECKOTERMINAL_API_KEY_HEADER', 'x-cg-pro-api-key')),
+        // Paid onchain host for top_holders (and higher limits). Same key family as CoinGecko.
+        'onchain_base_url' => env(
+            'GECKOTERMINAL_ONCHAIN_BASE_URL',
+            'https://pro-api.coingecko.com/api/v3/onchain',
+        ),
     ],
 
     'bitcoin_charts' => [
@@ -140,6 +145,13 @@ return [
             trim(...),
             explode(',', (string) env('MARKETDATA_DEX_NETWORKS', '')),
         ))),
+        'dex_detail_stale_minutes' => (int) env('MARKETDATA_DEX_DETAIL_STALE_MINUTES', 5),
+        'dex_trades_stale_minutes' => (int) env('MARKETDATA_DEX_TRADES_STALE_MINUTES', 5),
+        'dex_holders_stale_minutes' => (int) env('MARKETDATA_DEX_HOLDERS_STALE_MINUTES', 60),
+        'dex_chart_intraday_stale_minutes' => (int) env('MARKETDATA_DEX_CHART_INTRADAY_STALE_MINUTES', 30),
+        'dex_chart_short_stale_minutes' => (int) env('MARKETDATA_DEX_CHART_SHORT_STALE_MINUTES', 120),
+        'dex_chart_daily_stale_minutes' => (int) env('MARKETDATA_DEX_CHART_DAILY_STALE_MINUTES', 720),
+        'dex_detail_prewarm' => (int) env('MARKETDATA_DEX_DETAIL_PREWARM', 5),
         'insights_interval_hours' => (int) env('MARKETDATA_INSIGHTS_INTERVAL_HOURS', 6),
         'tickers_stale_minutes' => (int) env('MARKETDATA_TICKERS_STALE_MINUTES', 45),
         'tickers_pages' => (int) env('MARKETDATA_TICKERS_PAGES', 1),

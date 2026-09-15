@@ -19,7 +19,7 @@
 
 <h2>{{ __('Known limitations') }}</h2>
 <ul>
-    <li>{{ __('Wide market tables scroll sideways on a narrow screen. We keep the columns rather than reflowing them, because a table with reordered columns stops being comparable.') }}</li>
+    <li>{{ __('Below 700 pixels wide, ranked coin tables become a list of rows that open in place, and the sort control moves out of the column headers into a select above the list. The figures are the same; the columns are stacked instead of side by side. Wider than that, a table pans sideways with the asset name held still.') }}</li>
     <li>{{ __('Charts and sparklines are visual summaries. The figures behind them are always available as text in the tables on the same page.') }}</li>
     <li>{{ __('We have not commissioned an external audit yet, so this statement rests on our own testing.') }}</li>
 </ul>

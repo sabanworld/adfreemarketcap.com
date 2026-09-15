@@ -6,6 +6,8 @@ namespace App\Services\Seo;
 
 use App\Livewire\LegalPage;
 use App\Models\Coin;
+use App\Models\DexPair;
+use App\Models\DexToken;
 use App\Services\MarketData\MarketNumberFormatter;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -116,6 +118,118 @@ final class SeoService
         );
     }
 
+    public function forDexPair(DexPair $pair): PageSeo
+    {
+        $siteName = (string) config('app.name', 'adfreemarketcap.com');
+        $canonical = route('dexscan.pair', $pair);
+        $price = MarketNumberFormatter::moneyUsd($pair->price !== null ? (float) $pair->price : null, 8);
+        $description = $this->truncate(
+            __('seo.dex_pair_description', [
+                'pair' => $pair->pair,
+                'dex' => $pair->dex,
+                'chain' => $pair->chain,
+                'price' => $price,
+            ]),
+        );
+
+        return new PageSeo(
+            title: __('seo.dex_pair_title', [
+                'pair' => $pair->pair,
+                'chain' => $pair->chain,
+                'site' => $siteName,
+            ]),
+            description: $description,
+            canonical: $canonical,
+            image: $this->defaultImage(),
+            ogType: 'website',
+            jsonLd: [
+                [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'WebPage',
+                    'name' => $pair->pair,
+                    'url' => $canonical,
+                    'description' => $description,
+                ],
+                [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'BreadcrumbList',
+                    'itemListElement' => [
+                        [
+                            '@type' => 'ListItem',
+                            'position' => 1,
+                            'name' => __('seo.breadcrumb_dexscan'),
+                            'item' => route('dexscan'),
+                        ],
+                        [
+                            '@type' => 'ListItem',
+                            'position' => 2,
+                            'name' => $pair->pair,
+                            'item' => $canonical,
+                        ],
+                    ],
+                ],
+            ],
+        );
+    }
+
+    public function forDexToken(DexToken $token): PageSeo
+    {
+        $siteName = (string) config('app.name', 'adfreemarketcap.com');
+        $canonical = route('dexscan.token', [
+            'network' => $token->network_id,
+            'address' => $token->address,
+        ]);
+        $price = MarketNumberFormatter::moneyUsd($token->price !== null ? (float) $token->price : null, 8);
+        $name = $token->displayName();
+        $description = $this->truncate(
+            __('seo.dex_token_description', [
+                'name' => $name,
+                'symbol' => strtoupper($token->symbol),
+                'network' => $token->network_id,
+                'price' => $price,
+            ]),
+        );
+
+        return new PageSeo(
+            title: __('seo.dex_token_title', [
+                'name' => $name,
+                'symbol' => strtoupper($token->symbol),
+                'site' => $siteName,
+            ]),
+            description: $description,
+            canonical: $canonical,
+            image: $this->defaultImage(),
+            ogType: 'website',
+            jsonLd: [
+                [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'WebPage',
+                    'name' => $name,
+                    'url' => $canonical,
+                    'description' => $description,
+                ],
+                [
+                    '@context' => 'https://schema.org',
+                    '@type' => 'BreadcrumbList',
+                    'itemListElement' => [
+                        [
+                            '@type' => 'ListItem',
+                            'position' => 1,
+                            'name' => __('seo.breadcrumb_dexscan'),
+                            'item' => route('dexscan'),
+                        ],
+                        [
+                            '@type' => 'ListItem',
+                            'position' => 2,
+                            'name' => $name,
+                            'item' => $canonical,
+                        ],
+                    ],
+                ],
+            ],
+        );
+    }
+
     public function forStaticPage(
         string $title,
         string $description,
@@ -138,6 +252,29 @@ final class SeoService
                 ],
             ],
             robots: $robots,
+        );
+    }
+
+    /**
+     * HTTP error pages stay out of the index. They are not in the sitemap either.
+     */
+    public function forErrorPage(int $status, string $heading, string $detail): PageSeo
+    {
+        $site = (string) config('app.name', 'adfreemarketcap.com');
+
+        return new PageSeo(
+            title: __('seo.error_title', [
+                'title' => $heading,
+                'site' => $site,
+            ]),
+            description: $this->truncate(__('seo.error_description', [
+                'detail' => $detail,
+            ])),
+            canonical: url()->current(),
+            image: $this->defaultImage(),
+            ogType: 'website',
+            jsonLd: [],
+            robots: 'noindex,nofollow',
         );
     }
 
@@ -188,6 +325,39 @@ final class SeoService
                 'lastmod' => $this->lastmodForCoin($coin)?->toAtomString(),
                 'changefreq' => 'hourly',
                 'priority' => '0.8',
+            ]);
+        }
+
+        $pairs = DexPair::query()
+            ->whereNotNull('slug')
+            ->orderByDesc('volume_24h')
+            ->limit(500)
+            ->get(['slug', 'synced_at', 'updated_at']);
+
+        foreach ($pairs as $pair) {
+            $entries->push([
+                'loc' => route('dexscan.pair', $pair),
+                'lastmod' => ($pair->synced_at ?? $pair->updated_at)?->toAtomString(),
+                'changefreq' => 'hourly',
+                'priority' => '0.7',
+            ]);
+        }
+
+        $tokens = DexToken::query()
+            ->whereNotNull('synced_at')
+            ->orderByDesc('volume_24h')
+            ->limit(500)
+            ->get(['network_id', 'address', 'synced_at', 'updated_at']);
+
+        foreach ($tokens as $token) {
+            $entries->push([
+                'loc' => route('dexscan.token', [
+                    'network' => $token->network_id,
+                    'address' => $token->address,
+                ]),
+                'lastmod' => ($token->synced_at ?? $token->updated_at)?->toAtomString(),
+                'changefreq' => 'hourly',
+                'priority' => '0.7',
             ]);
         }
 

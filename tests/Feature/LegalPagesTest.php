@@ -394,6 +394,21 @@ class LegalPagesTest extends TestCase
             ->assertSee('five business days', false);
     }
 
+    /**
+     * The statement used to say we keep the columns rather than reflowing them. Ranked coin
+     * tables now become a list of expandable rows below 700px, so the old sentence described a
+     * product we no longer ship.
+     */
+    public function test_accessibility_statement_describes_the_narrow_screen_table_we_actually_ship(): void
+    {
+        $response = $this->get(route('legal.show', 'accessibility'));
+
+        $response->assertOk();
+        $response->assertSee('Below 700 pixels wide', false);
+        $response->assertSee('open in place', false);
+        $response->assertDontSee('rather than reflowing them', false);
+    }
+
     public function test_pages_show_the_configured_policy_date(): void
     {
         config(['company.policies_updated_at' => '1 October 2026']);

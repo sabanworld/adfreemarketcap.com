@@ -38,10 +38,36 @@
                 </button>
             @endforeach
         </div>
-        <label class="afmc-check">
+        {{-- Row density belongs to the table, so it goes when the table does. --}}
+        <label data-afmc-densetoggle class="afmc-check">
             <input type="checkbox" wire:model.live="dense" />
             {{ __('Dense rows') }}
         </label>
+    </div>
+
+    {{-- Below 700px the ranking is a list of expandable rows, which has no column headers to
+         sort from. This is where the sort lives on a phone. --}}
+    <div data-afmc-mobilesort class="afmc-sortbar">
+        <span class="afmc-sortbar__label">{{ __('Sort') }}</span>
+        <label class="afmc-sortbar__select">
+            <span class="afmc-visually-hidden">{{ __('Sort by') }}</span>
+            <select wire:model.live="sort">
+                @foreach (\App\Livewire\Home::SORT_COLUMNS as $column => $columnLabel)
+                    <option value="{{ $column }}" @selected($column === $sort)>{{ __($columnLabel) }}</option>
+                @endforeach
+            </select>
+            <x-afmc.icon name="expand_more" size="16px" />
+        </label>
+        <button
+            type="button"
+            class="afmc-icon-btn afmc-icon-btn--lg"
+            wire:click="toggleDirection"
+            aria-label="{{ $direction === 'asc'
+                ? __('Sorted ascending · switch to descending')
+                : __('Sorted descending · switch to ascending') }}"
+        >
+            <x-afmc.icon :name="$direction === 'asc' ? 'arrow_upward' : 'arrow_downward'" size="18px" />
+        </button>
     </div>
 
     @if ($shownNetworks->isNotEmpty())
@@ -53,127 +79,136 @@
         />
     @endif
 
-    <div class="afmc-card" wire:loading.class="afmc-is-loading" wire:target="sortBy,setTab,setNetwork,gotoPage,previousPage,nextPage,dense,search">
-        <div class="afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('Cryptocurrency prices by market cap') }}" tabindex="0">
-            <table class="afmc-table {{ $dense ? 'afmc-table--dense' : '' }}">
-                <thead>
-                    <tr>
-                        <th class="is-sticky is-sticky--watch hide-narrow" style="width:38px;left:0"></th>
-                        <th class="is-sticky is-sticky--name {{ in_array($sort, ['rank', 'name'], true) ? 'is-sorted' : '' }}" style="left:38px">
-                            <span class="afmc-table__sortpair">
-                                <button type="button" wire:click="sortBy('rank')" aria-label="{{ __('Sort by market-cap rank') }}">#
-                                    @if ($sort === 'rank')
-                                        <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
-                                    @endif
-                                </button>
-                                <button type="button" wire:click="sortBy('name')">{{ __('Name') }}
-                                    @if ($sort === 'name')
-                                        <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
-                                    @endif
-                                </button>
-                            </span>
-                        </th>
-                        <th class="is-right {{ $sort === 'price' ? 'is-sorted' : '' }}">
-                            <button type="button" wire:click="sortBy('price')">{{ __('Price') }}
-                                @if ($sort === 'price')
-                                    <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
-                                @endif
-                            </button>
-                        </th>
-                        <th class="is-right hide-narrow {{ $sort === 'percent_change_1h' ? 'is-sorted' : '' }}">
-                            <button type="button" wire:click="sortBy('percent_change_1h')">1h</button>
-                        </th>
-                        <th class="is-right {{ $sort === 'percent_change_24h' ? 'is-sorted' : '' }}">
-                            <button type="button" wire:click="sortBy('percent_change_24h')">24h %</button>
-                        </th>
-                        <th class="is-right {{ $sort === 'percent_change_7d' ? 'is-sorted' : '' }}">
-                            <button type="button" wire:click="sortBy('percent_change_7d')">7d %</button>
-                        </th>
-                        <th class="is-right {{ $sort === 'market_cap' ? 'is-sorted' : '' }}">
-                            <button type="button" wire:click="sortBy('market_cap')">{{ __('Market cap') }}</button>
-                        </th>
-                        <th class="is-right {{ $sort === 'volume_24h' ? 'is-sorted' : '' }}">
-                            <button type="button" wire:click="sortBy('volume_24h')">{{ __('Volume (24h)') }}</button>
-                        </th>
-                        <th class="is-right hide-narrow"><span>{{ __('Last 7 days') }}</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($coins as $index => $coin)
-                        @php
-                            $change24 = $display->change($coin->percent_change_24h);
-                            $spark = $display->sparkline($coin->sparkline_7d);
-                        @endphp
-                        <tr wire:key="coin-{{ $coin->id }}">
-                            <td class="is-sticky is-sticky--watch hide-narrow" style="left:0">
-                                <x-afmc.watch-star
-                                    :coin-id="$coin->id"
-                                    :watched="in_array($coin->id, $watchedIds, true)"
-                                />
-                            </td>
-                            <td class="is-sticky is-sticky--name" style="left:38px">
-                                <span class="afmc-table__namecell">
-                                    <span data-afmc-rankcell class="afmc-table__rank">{{ $coin->rank ?? '—' }}</span>
-                                    <x-afmc.coin-identity
-                                        :name="$coin->name"
-                                        :symbol="$coin->symbol"
-                                        :image="$coin->image_url"
-                                        :href="route('coins.show', $coin)"
-                                        :eager="$index < 8"
-                                    />
-                                </span>
-                            </td>
-                            <td class="is-right">{{ MarketNumberFormatter::money($coin->price !== null ? (float) $coin->price : null, 8) }}</td>
-                            {{-- 1h carries no caret: three carets in a row turn the percentage
-                                 columns into an arrow field and the sign already reads. --}}
-                            <td class="is-right hide-narrow"><x-afmc.price-change :value="$display->change($coin->percent_change_1h, '1h')" size="sm" :show-icon="false" /></td>
-                            <td class="is-right"><x-afmc.price-change :value="$change24" size="sm" /></td>
-                            <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_7d, '7d')" size="sm" /></td>
-                            <td class="is-right">{{ MarketNumberFormatter::money($coin->market_cap !== null ? (float) $coin->market_cap : null) }}</td>
-                            <td class="is-right">{{ MarketNumberFormatter::money($coin->volume_24h !== null ? (float) $coin->volume_24h : null) }}</td>
-                            {{-- Colour and slope both come from the seven-day series this cell
-                                 draws. Tinting it from the 24h column made a chart contradict
-                                 its own line. --}}
-                            <td class="is-right hide-narrow">
-                                <x-afmc.sparkline :data="$spark" />
-                            </td>
-                        </tr>
-                    @empty
-                        @php
-                            $filtered = $network !== 'all' || $tab !== 'all' || filled($search);
-                        @endphp
-                        <tr>
-                            <td colspan="9" class="afmc-table__empty">
-                                <div class="afmc-empty">
-                                    <x-afmc.icon name="search_off" class="afmc-empty__icon" />
-                                    @if ($network !== 'all')
-                                        <p class="afmc-empty__title">{{ __('Nothing on :network yet', ['network' => $networkLabel ?? __('this network')]) }}</p>
-                                        <p class="afmc-empty__detail">
-                                            {{ __('We list an asset against a chain only once we can confirm its contract, so a chain we have just added can look empty for a while.') }}
-                                        </p>
-                                    @elseif ($filtered)
-                                        <p class="afmc-empty__title">{{ __('Nothing matches this view') }}</p>
-                                        <p class="afmc-empty__detail">
-                                            {{ __('Gainers and losers are read off the 24 hour change. Clear the filters to see everything we track.') }}
-                                        </p>
-                                    @else
-                                        <p class="afmc-empty__title">{{ __('No coins yet') }}</p>
-                                        <p class="afmc-empty__detail">
-                                            {{ __('Market data has not been synced yet, so there is nothing to rank.') }}
-                                        </p>
-                                    @endif
-                                    @if ($filtered)
-                                        <button type="button" class="afmc-btn afmc-btn--secondary afmc-btn--sm" wire:click="clearFilters">
-                                            {{ __('Clear filters') }}
+    @php
+        $filtered = $network !== 'all' || $tab !== 'all' || filled($search);
+    @endphp
+
+    <div class="afmc-card" wire:loading.class="afmc-is-loading" wire:target="sortBy,sort,toggleDirection,setTab,setNetwork,gotoPage,previousPage,nextPage,dense,search">
+        @if ($coins->isEmpty())
+            <div class="afmc-board__empty">
+                <div class="afmc-empty">
+                    <x-afmc.icon name="search_off" class="afmc-empty__icon" />
+                    @if ($network !== 'all')
+                        <p class="afmc-empty__title">{{ __('Nothing on :network yet', ['network' => $networkLabel ?? __('this network')]) }}</p>
+                        <p class="afmc-empty__detail">
+                            {{ __('We list an asset against a chain only once we can confirm its contract, so a chain we have just added can look empty for a while.') }}
+                        </p>
+                    @elseif ($filtered)
+                        <p class="afmc-empty__title">{{ __('Nothing matches this view') }}</p>
+                        <p class="afmc-empty__detail">
+                            {{ __('Gainers and losers are read off the 24 hour change. Clear the filters to see everything we track.') }}
+                        </p>
+                    @else
+                        <p class="afmc-empty__title">{{ __('No coins yet') }}</p>
+                        <p class="afmc-empty__detail">
+                            {{ __('Market data has not been synced yet, so there is nothing to rank.') }}
+                        </p>
+                    @endif
+                    @if ($filtered)
+                        <button type="button" class="afmc-btn afmc-btn--secondary afmc-btn--sm" wire:click="clearFilters">
+                            {{ __('Clear filters') }}
+                        </button>
+                    @endif
+                </div>
+            </div>
+        @else
+            {{-- One ranking, two forms. Both ship and the 700px rule in base.css decides which
+                 one a viewport gets, so a phone never paints the table first. --}}
+            <div class="afmc-board">
+                <div class="afmc-board__list">
+                    <x-afmc.market-list
+                        :coins="$coins"
+                        :watched-ids="$watchedIds"
+                        :label="__('Cryptocurrency prices by market cap')"
+                    />
+                </div>
+
+                <div class="afmc-board__table afmc-table-wrap" data-afmc-tablescroll role="region" aria-label="{{ __('Cryptocurrency prices by market cap') }}" tabindex="0">
+                    <table class="afmc-table {{ $dense ? 'afmc-table--dense' : '' }}">
+                        <thead>
+                            <tr>
+                                <th class="is-sticky is-sticky--watch hide-narrow" style="width:38px;left:0"></th>
+                                <th class="is-sticky is-sticky--name {{ in_array($sort, ['rank', 'name'], true) ? 'is-sorted' : '' }}" style="left:38px">
+                                    <span class="afmc-table__sortpair">
+                                        <button type="button" wire:click="sortBy('rank')" aria-label="{{ __('Sort by market-cap rank') }}">#
+                                            @if ($sort === 'rank')
+                                                <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
+                                            @endif
                                         </button>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                                        <button type="button" wire:click="sortBy('name')">{{ __('Name') }}
+                                            @if ($sort === 'name')
+                                                <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
+                                            @endif
+                                        </button>
+                                    </span>
+                                </th>
+                                <th class="is-right {{ $sort === 'price' ? 'is-sorted' : '' }}">
+                                    <button type="button" wire:click="sortBy('price')">{{ __('Price') }}
+                                        @if ($sort === 'price')
+                                            <x-afmc.icon :name="$direction === 'asc' ? 'arrow_drop_up' : 'arrow_drop_down'" size="14px" color="var(--amber-600)" />
+                                        @endif
+                                    </button>
+                                </th>
+                                <th class="is-right hide-narrow {{ $sort === 'percent_change_1h' ? 'is-sorted' : '' }}">
+                                    <button type="button" wire:click="sortBy('percent_change_1h')">1h</button>
+                                </th>
+                                <th class="is-right {{ $sort === 'percent_change_24h' ? 'is-sorted' : '' }}">
+                                    <button type="button" wire:click="sortBy('percent_change_24h')">24h %</button>
+                                </th>
+                                <th class="is-right {{ $sort === 'percent_change_7d' ? 'is-sorted' : '' }}">
+                                    <button type="button" wire:click="sortBy('percent_change_7d')">7d %</button>
+                                </th>
+                                <th class="is-right {{ $sort === 'market_cap' ? 'is-sorted' : '' }}">
+                                    <button type="button" wire:click="sortBy('market_cap')">{{ __('Market cap') }}</button>
+                                </th>
+                                <th class="is-right {{ $sort === 'volume_24h' ? 'is-sorted' : '' }}">
+                                    <button type="button" wire:click="sortBy('volume_24h')">{{ __('Volume (24h)') }}</button>
+                                </th>
+                                <th class="is-right hide-narrow"><span>{{ __('Last 7 days') }}</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($coins as $index => $coin)
+                                <tr wire:key="coin-{{ $coin->id }}">
+                                    <td class="is-sticky is-sticky--watch hide-narrow" style="left:0">
+                                        <x-afmc.watch-star
+                                            :coin-id="$coin->id"
+                                            :watched="in_array($coin->id, $watchedIds, true)"
+                                        />
+                                    </td>
+                                    <td class="is-sticky is-sticky--name" style="left:38px">
+                                        <span class="afmc-table__namecell">
+                                            <span data-afmc-rankcell class="afmc-table__rank">{{ $coin->rank ?? '—' }}</span>
+                                            <x-afmc.coin-identity
+                                                :name="$coin->name"
+                                                :symbol="$coin->symbol"
+                                                :image="$coin->image_url"
+                                                :href="route('coins.show', $coin)"
+                                                :eager="$index < 8"
+                                            />
+                                        </span>
+                                    </td>
+                                    <td class="is-right">{{ MarketNumberFormatter::money($coin->price !== null ? (float) $coin->price : null, 8) }}</td>
+                                    {{-- 1h carries no caret: three carets in a row turn the percentage
+                                         columns into an arrow field and the sign already reads. --}}
+                                    <td class="is-right hide-narrow"><x-afmc.price-change :value="$display->change($coin->percent_change_1h, '1h')" size="sm" :show-icon="false" /></td>
+                                    <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_24h)" size="sm" /></td>
+                                    <td class="is-right"><x-afmc.price-change :value="$display->change($coin->percent_change_7d, '7d')" size="sm" /></td>
+                                    <td class="is-right">{{ MarketNumberFormatter::money($coin->market_cap !== null ? (float) $coin->market_cap : null) }}</td>
+                                    <td class="is-right">{{ MarketNumberFormatter::money($coin->volume_24h !== null ? (float) $coin->volume_24h : null) }}</td>
+                                    {{-- Colour and slope both come from the seven-day series this cell
+                                         draws. Tinting it from the 24h column made a chart contradict
+                                         its own line. --}}
+                                    <td class="is-right hide-narrow">
+                                        <x-afmc.sparkline :data="$display->sparkline($coin->sparkline_7d)" />
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @endif
 
         @if ($coins->total() > 0)
             <div class="afmc-pagination">
@@ -215,7 +250,7 @@
     />
 
     <p style="margin:var(--space-3) 0 0;font:var(--type-body-sm);color:var(--text-muted)">
-        <a href="{{ route('why-ad-free') }}" wire:navigate>{{ __('Why we build it this way') }}</a>
+        <a href="{{ route('why-ad-free') }}" wire:navigate class="afmc-link">{{ __('Why we build it this way') }}</a>
     </p>
 
     <x-afmc.mining-block style="margin-top:var(--space-10)" />

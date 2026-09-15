@@ -31,6 +31,7 @@ class Coin extends Model
         'percent_change_90d',
         'market_cap',
         'volume_24h',
+        'circulating_supply',
         'sparkline_7d',
     ];
 
@@ -115,6 +116,23 @@ class Coin extends Model
     public function chartSeries(): HasMany
     {
         return $this->hasMany(CoinChartSeries::class);
+    }
+
+    /**
+     * Turnover as a share of market cap, the one figure that says whether a rank is liquid.
+     *
+     * It lives here because the coin page and the phone market row both print it, and two
+     * copies of the formula is how a page ends up showing two different ratios.
+     */
+    public function volumeToMarketCapPercent(): ?float
+    {
+        $cap = $this->market_cap === null ? null : (float) $this->market_cap;
+
+        if ($cap === null || $cap <= 0 || $this->volume_24h === null) {
+            return null;
+        }
+
+        return (float) $this->volume_24h / $cap * 100;
     }
 
     public function detailIsStale(?int $hours = null): bool

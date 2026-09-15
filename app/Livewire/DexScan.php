@@ -70,7 +70,7 @@ class DexScan extends Component
         }
 
         if ($this->verifiedOnly) {
-            $query->verified();
+            $query->notUnverified();
         }
 
         if (filled($this->search)) {

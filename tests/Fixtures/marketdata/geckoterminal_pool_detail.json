@@ -1,0 +1,80 @@
+{
+    "data": {
+        "id": "eth_0xfixturepooladdress00000000000000000001",
+        "type": "pool",
+        "attributes": {
+            "base_token_price_usd": "1.25",
+            "address": "0xfixturepooladdress00000000000000000001",
+            "name": "PEPE / WETH 0.3%",
+            "pool_created_at": "2026-09-01T12:00:00Z",
+            "fdv_usd": "5200000000",
+            "market_cap_usd": "4300000000",
+            "price_change_percentage": {
+                "h24": "13.1"
+            },
+            "transactions": {
+                "h24": {
+                    "buys": 110,
+                    "sells": 90
+                }
+            },
+            "volume_usd": {
+                "h24": "1600000"
+            },
+            "reserve_in_usd": "2600000"
+        },
+        "relationships": {
+            "base_token": {
+                "data": {
+                    "id": "eth_token_base",
+                    "type": "token"
+                }
+            },
+            "quote_token": {
+                "data": {
+                    "id": "eth_token_quote",
+                    "type": "token"
+                }
+            },
+            "network": {
+                "data": {
+                    "id": "eth",
+                    "type": "network"
+                }
+            },
+            "dex": {
+                "data": {
+                    "id": "uniswap_v3",
+                    "type": "dex"
+                }
+            }
+        }
+    },
+    "included": [
+        {
+            "id": "eth_token_base",
+            "type": "token",
+            "attributes": {
+                "symbol": "PEPE",
+                "name": "Pepe",
+                "address": "0xpepebasetokenaddress000000000000000001",
+                "coingecko_coin_id": "pepe"
+            }
+        },
+        {
+            "id": "eth_token_quote",
+            "type": "token",
+            "attributes": {
+                "symbol": "WETH",
+                "address": "0xwethquotetokenaddress0000000000000001"
+            }
+        },
+        {
+            "id": "uniswap_v3",
+            "type": "dex",
+            "attributes": {
+                "name": "Uniswap V3"
+            }
+        }
+    ]
+}

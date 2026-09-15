@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Models\DexChartSeries;
 use App\Models\DexPair;
+use App\Models\DexToken;
+use App\Services\MarketData\DexChartService;
+use App\Services\MarketData\DexNetwork;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DexPairSeeder extends Seeder
 {
@@ -22,22 +27,47 @@ class DexPairSeeder extends Seeder
             ['DEGEN/WETH', 'DEGEN', 'WETH', 'Uniswap v3', 'Base', 'unverified', 0.0088, -12.4, 420_000, 3_100_000, 2600, 1.2, false, 8],
         ];
 
+        $charts = app(DexChartService::class);
+
         foreach ($rows as [$pair, $base, $quote, $dex, $chain, $audit, $price, $change, $liq, $vol, $txns, $daysAgo, $trending, $rank]) {
             $slug = DexPair::makeSlug($pair, $chain, $dex);
+            $networkId = DexNetwork::idFromChainLabel($chain) ?? Str::slug((string) $chain);
+            $baseAddress = '0x' . substr(md5($pair . $chain . 'base'), 0, 40);
 
-            DexPair::query()->updateOrCreate(
+            $token = DexToken::query()->updateOrCreate(
+                [
+                    'network_id' => $networkId,
+                    'address' => $baseAddress,
+                ],
+                [
+                    'symbol' => $base,
+                    'name' => $base,
+                    'price' => $price,
+                    'percent_change_24h' => $change,
+                    'liquidity_usd' => $liq,
+                    'volume_24h' => $vol,
+                    'detail_synced_at' => now(),
+                    'trades_synced_at' => now(),
+                    'synced_at' => now(),
+                ],
+            );
+
+            // Upsert by slug so older local demo rows (provider geckoterminal, null external_id)
+            // are converted into proper seed pairs instead of sitting beside a duplicate.
+            $model = DexPair::query()->updateOrCreate(
+                ['slug' => $slug],
                 [
                     'provider' => 'seed',
                     'external_id' => 'seed_' . $slug,
-                ],
-                [
-                    'slug' => $slug,
                     'pair' => $pair,
                     'base_symbol' => $base,
                     'quote_symbol' => $quote,
                     'dex' => $dex,
                     'chain' => $chain,
+                    'network_id' => $networkId,
                     'contract_address' => '0x' . substr(md5($pair . $chain), 0, 40),
+                    'base_token_address' => $baseAddress,
+                    'dex_token_id' => $token->id,
                     'audit_status' => $audit,
                     'price' => $price,
                     'percent_change_24h' => $change,
@@ -48,8 +78,49 @@ class DexPairSeeder extends Seeder
                     'is_trending' => $trending,
                     'rank' => $rank,
                     'synced_at' => now(),
+                    'detail_synced_at' => now(),
+                    'trades_synced_at' => now(),
                 ],
             );
+
+            $charts->upsertSeriesFor($model, $this->demoSeries((float) $price, (float) $change));
+            $charts->upsertSeriesFor($token, $this->demoSeries((float) $price, (float) $change));
         }
+    }
+
+    /**
+     * @return array<string, list<array{0: int, 1: float}>>
+     */
+    private function demoSeries(float $price, float $change24h): array
+    {
+        $end = now()->getTimestampMs();
+        $intraday = [];
+        $short = [];
+        $daily = [];
+
+        $startIntraday = $price / max(0.01, 1 + ($change24h / 100));
+        for ($i = 0; $i < 288; $i++) {
+            $t = $end - ((287 - $i) * 5 * 60 * 1000);
+            $progress = $i / 287;
+            $intraday[] = [$t, $startIntraday + (($price - $startIntraday) * $progress)];
+        }
+
+        for ($i = 0; $i < 168; $i++) {
+            $t = $end - ((167 - $i) * 3600 * 1000);
+            $wave = sin($i / 8) * ($price * 0.02);
+            $short[] = [$t, max(0.00000001, $price + $wave)];
+        }
+
+        for ($i = 0; $i < 365; $i++) {
+            $t = $end - ((364 - $i) * 86400 * 1000);
+            $wave = sin($i / 20) * ($price * 0.08);
+            $daily[] = [$t, max(0.00000001, $price + $wave)];
+        }
+
+        return [
+            DexChartSeries::SERIES_INTRADAY => $intraday,
+            DexChartSeries::SERIES_SHORT => $short,
+            DexChartSeries::SERIES_DAILY => $daily,
+        ];
     }
 }

@@ -4,12 +4,29 @@
     'height' => 36,
     'up' => null,
     'fill' => true,
+    'maxPoints' => null,
 ])
 
 @php
     $spark = array_values(array_filter(is_array($data) ? $data : [], fn ($v) => is_numeric($v)));
     $width = (int) $width;
     $height = (int) $height;
+    // One point per two pixels, because a 52px line cannot draw 168 hourly prices and the
+    // coordinate list is the heaviest thing in a market row. Both ends survive the resample,
+    // so the colour and the slope still come from the same first and last price the
+    // percentage beside it was read from.
+    $maxPoints = max(2, (int) ($maxPoints ?? ceil($width / 2)));
+
+    if (count($spark) > $maxPoints) {
+        $lastIndex = count($spark) - 1;
+        $resampled = [];
+
+        for ($step = 0; $step < $maxPoints; $step++) {
+            $resampled[] = $spark[(int) round($step * $lastIndex / ($maxPoints - 1))];
+        }
+
+        $spark = $resampled;
+    }
 
     $points = [];
     $flat = false;

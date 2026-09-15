@@ -1,6 +1,6 @@
 # Public UI design
 
-The production front-end follows the **AdFreeMarketCap Design System** under `claude/AdFreeMarketCap Design System (5)/` (reference kit).
+The production front-end follows the **AdFreeMarketCap Design System** under `claude/AdFreeMarketCap Design System (7)/` (reference kit).
 
 ## Mapping
 
@@ -12,6 +12,7 @@ The production front-end follows the **AdFreeMarketCap Design System** under `cl
 | `MarketsScreen.jsx` | `resources/views/livewire/home.blade.php` + `App\Livewire\Home` |
 | `CoinDetailScreen.jsx` | `resources/views/livewire/coin-show.blade.php` + `App\Livewire\CoinShow` |
 | `DexScanScreen.jsx` | `resources/views/livewire/dex-scan.blade.php` + `App\Livewire\DexScan` |
+| `CoinDetailScreen.jsx` | `resources/views/livewire/coin-show.blade.php` + `App\Livewire\CoinShow` (pair/token Dex detail pages reuse this layout pattern via `DexPairShow` / `DexTokenShow`) |
 | `WatchlistScreen.jsx` | `resources/views/livewire/watchlist.blade.php` + `App\Livewire\Watchlist` (account-backed; keep production copy) |
 
 ## Responsive shell
@@ -19,7 +20,14 @@ The production front-end follows the **AdFreeMarketCap Design System** under `cl
 - Above 820px: sticky header with inline primary nav.
 - At and below 820px: header nav hides; `BottomTabBar` (`bottom-tab-bar.blade.php`) takes over. Sign-in and secondary links live in `NavDrawer` (`nav-drawer.blade.php`) via More.
 - At and below 700px: search collapses behind an icon button; currency picker uses a bottom sheet, teleported to `<body>` (see [`docs/currency.md`](currency.md)).
-- Market tables pan horizontally with a sticky identity column; they do not reflow into cards. Columns marked `hide-narrow` drop below 700px.
+- **A ranked coin list has two forms, and CSS picks.** `.afmc-board` (`afmc.css`) holds both: the `<table>` above 700px, and `<x-afmc.market-list>` below it, matching `MarketBoard` / `MarketList` in the kit. Both are server-rendered and the breakpoint hides one, because choosing in JavaScript means painting the wrong form first and swapping it. Same pattern for the coin page's exchange markets, where the phone form is `<x-afmc.exchange-list>`.
+  - A list row **opens in place** rather than navigating: the panel carries volume, vol/cap and circulating supply, three `.afmc-panel-action` buttons, and the link to the coin page. Never make the row itself a link, or a tap costs the reader their place in the ranking.
+  - Panel actions are watch, alert and share, matching `MarketList`'s `onWatch` / `onAlert` / `onShare`. **Alert is not built**, so it keeps readable ink, carries the `.afmc-soon` marker plus an `aria-label` naming that state, and has nothing wired to it. Share hands the coin URL to the visitor's own share sheet, falling back to their clipboard, and hides itself when the browser offers neither; the behaviour is registered once as the `afmcShare` Alpine component in `resources/js/app.js`, because fifty rows may not each carry a copy of it. Neither action makes a request, so neither is in the cookie table.
+  - Column-header sorting goes with the table, so the list gets `[data-afmc-mobilesort]` (a select plus a direction toggle) and `[data-afmc-densetoggle]` hides. Options come from `App\Livewire\Home::SORT_COLUMNS`, which the header, the select and the query all read.
+  - **The row's first line belongs to the coin and its price.** The sparkline sits on the second line beside the changes it agrees with, and the price drops its cents from a thousand up (`MarketNumberFormatter::moneyRow()`). With the kit's own arrangement, an eleven-character price like `$0.00000518` plus a 52px line left "Shiba Inu" five pixels of the 390px row to render in, and twenty of fifty names were losing letters. The table keeps the cents, since a wide row has the characters to spare.
+  - Under 380px, `[data-afmc-row-1h]` drops the 1h figure from the row's second line: 24h and 7d are what decide a tap. The rank chip goes visually hidden at the same width, because it is fixed width and takes its 30px straight out of the name; the row is still announced as "Dogecoin DOGE #12" and the order of the list still carries the ranking on screen.
+- Tables that stay tables on a phone (DexScan, treasury holders, DEX trades and holders) pan horizontally with a sticky identity column. Columns marked `hide-narrow` drop below 700px.
+- `<x-afmc.sparkline>` resamples to one point per two pixels, keeping both ends so the line still agrees with the percentage beside it. A 52px row sparkline carrying 168 hourly prices is most of the weight of a market row and none of the information.
 
 ## Non-negotiables
 
@@ -30,6 +38,8 @@ The production front-end follows the **AdFreeMarketCap Design System** under `cl
 - **A chart says what it plots.** A canvas is opaque to a screen reader, so the coin chart carries `role="img"` and a name on `.afmc-chart-frame`, naming the asset, the period and the currency. The name lives on the frame rather than the canvas because `wire:ignore` stops at the canvas, which is the part Chart.js owns; putting it inside that boundary froze the label on whichever range loaded first. Period wording comes from `CoinChartService::spokenRange()`, since the buttons say `7D` and a screen reader needs "7 days".
 - **A modal surface owns focus.** `<x-afmc.nav-drawer>` uses `x-trap.noscroll` (Alpine's focus plugin ships with Livewire), which traps Tab inside the drawer, locks the body, and hands focus back to the tab-bar button that opened it. Escape closing a drawer that then drops focus to the top of the document is a defect, not a detail.
 - **Confirm in text, not only in colour.** The donate copy button swaps to a tick, so it also writes into an `aria-live="polite"` status. It only confirms when the copy actually succeeded: both the async clipboard and the selection fallback are refused when the document is not focused, and claiming success there would be a lie.
+- **A control is 44px on a touch screen, and it declares that itself.** The floors live in one coarse-pointer block at the end of `resources/css/afmc.css`, last in the file because most controls open with `all: unset`, which resets `min-height` at class specificity and beats the element-level rule in `design-system/base.css` whatever the load order. A size modifier (`.afmc-btn--sm`) changes a target rather than creating one, which is why `.afmc-btn` carries its own padding: without it, `class="afmc-btn afmc-btn--primary"` rendered 17px tall. Exceptions are in-table controls and a clear button inside a field, both still over the 24px WCAG 2.2 minimum, both listed in `tests/Feature/TouchTargetTest.php`.
+- **Contrast is measured, not eyeballed.** `tests/Unit/DesignTokenContrastTest.php` recomputes every pair the UI paints from `design-system/colors.css` in both themes: 4.5:1 for text, 3:1 for a control's graphics. There is no disabled grey, so an unavailable control keeps readable ink and carries the state in a `.afmc-soon` marker plus an `aria-label`, and `--text-disabled` stays out of labels entirely. Full rules in [`AGENTS.md`](../AGENTS.md).
 - **An undefined token fails silently.** `var(--type-caption)` or `var(--amber-400)` does not throw, it resolves to nothing, and the rule is dropped or the element renders invisible. The amber ramp is 50/100/300/500/600/700 and the type roles are the ones in `resources/css/design-system/typography.css`; check a step exists, and that it exists in **both** themes, before using it.
 - **Market status is one grid, not four boxes.** `<x-afmc.market-status>` puts sentiment, total market cap and AFMC10 in three equal panels (`[data-afmc-status]` in `design-system/base.css`, never `auto-fit`, which strands a panel on its own row), each with the same label / figure / caption silhouette. The altcoin-season scale (`<x-afmc.threshold-bar>`) gets its own full-width row underneath, because its zone labels are unreadable in a third of the width.
 - **AFMC10 explains itself on the page.** A number nobody can look up elsewhere carries its method in its caption. Keep that sentence true to `App\Services\MarketData\MarketStatusCalculator` (it is market-cap weighted, not equal-weighted).
@@ -40,6 +50,10 @@ The production front-end follows the **AdFreeMarketCap Design System** under `cl
 - **Who to name.** Product copy names the person behind the site through `config('company.person')` (`COMPANY_PERSON`, "Anees®"), never `the creator`. Legal pages name the operating company (`config('company.legal_name')`), because that is the party a visitor deals with. `tests/Feature/CopyStyleTest.php` fails the build on `the creator` and `our creator`, and a pick note may carry a `:person` placeholder that the card fills in.
 - DexScan and Watchlist are live in nav. Exchanges stays disabled until that surface ships. Watchlist requires `auth` on the `web` guard (see [`docs/public-accounts.md`](public-accounts.md)). Primary nav carries pages only, so the home page anchors (`#pledge`, `#picks`, `#mining`) are reached by scrolling.
 - The miners block (`<x-afmc.mining-block>`, `config/mining.php`) links to a company `config('company.person')` is partnered with, so it carries the partner badge and the payout warning next to the link. Same rule as picks: it is a disclosure, not ad inventory. It sits at `#mining` on the home page, and under the Markets table on the coin pages listed in `MINING_COINS` (Bitcoin by default; pass `:coin` and the block hides itself elsewhere). Covered by `tests/Feature/MiningBlockTest.php`.
+
+## HTTP error pages
+
+Laravel status views live under `resources/views/errors/` and share one AFMC layout (`layout.blade.php`). They use the same tokens, brand mark, and Vite CSS as the rest of the site, but skip Livewire, the ticker, the tab bar, and the cookie bar so a failing request cannot cascade into another database or Livewire error while painting the page. Copy is in `lang/en/errors.php`. Meta is `noindex,nofollow` via `SeoService::forErrorPage()`.
 
 ## Theme + cookie notice
 

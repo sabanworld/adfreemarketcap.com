@@ -30,6 +30,23 @@ class Home extends Component
      */
     public const PER_PAGE_OPTIONS = [20, 50, 100];
 
+    /**
+     * Sortable columns, owned once so the header, the phone sort control and the query cannot
+     * drift apart.
+     *
+     * @var array<string, string>
+     */
+    public const SORT_COLUMNS = [
+        'rank' => 'Market cap rank',
+        'name' => 'Name',
+        'price' => 'Price',
+        'percent_change_1h' => '1h change',
+        'percent_change_24h' => '24h change',
+        'percent_change_7d' => '7d change',
+        'market_cap' => 'Market cap',
+        'volume_24h' => 'Volume 24h',
+    ];
+
     #[Url]
     public string $search = '';
 
@@ -90,6 +107,26 @@ class Home extends Component
         $this->resetPage();
     }
 
+    /**
+     * The phone list has no column headers to sort from, so it drives this property directly.
+     * Picking a column starts on the direction that column is usually read in.
+     */
+    public function updatedSort(): void
+    {
+        if (! array_key_exists($this->sort, self::SORT_COLUMNS)) {
+            $this->sort = 'rank';
+        }
+
+        $this->direction = $this->sort === 'rank' ? 'asc' : 'desc';
+        $this->resetPage();
+    }
+
+    public function toggleDirection(): void
+    {
+        $this->direction = $this->direction === 'asc' ? 'desc' : 'asc';
+        $this->resetPage();
+    }
+
     public function updatedPerPage(): void
     {
         if (! in_array($this->perPage, self::PER_PAGE_OPTIONS, true)) {
@@ -129,9 +166,7 @@ class Home extends Component
 
     public function sortBy(string $column): void
     {
-        $allowed = ['rank', 'name', 'price', 'percent_change_1h', 'percent_change_24h', 'percent_change_7d', 'market_cap', 'volume_24h'];
-
-        if (! in_array($column, $allowed, true)) {
+        if (! array_key_exists($column, self::SORT_COLUMNS)) {
             return;
         }
 
@@ -207,8 +242,7 @@ class Home extends Component
             });
         }
 
-        $allowed = ['rank', 'name', 'price', 'percent_change_1h', 'percent_change_24h', 'percent_change_7d', 'market_cap', 'volume_24h'];
-        $sort = in_array($this->sort, $allowed, true) ? $this->sort : 'rank';
+        $sort = array_key_exists($this->sort, self::SORT_COLUMNS) ? $this->sort : 'rank';
         $direction = $this->direction === 'desc' ? 'desc' : 'asc';
 
         if ($direction === 'desc') {

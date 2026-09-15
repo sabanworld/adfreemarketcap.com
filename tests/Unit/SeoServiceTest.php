@@ -40,4 +40,14 @@ class SeoServiceTest extends TestCase
         $this->assertStringEndsWith("\n", $body);
         $this->assertStringContainsString('Sitemap: ' . route('sitemap'), $body);
     }
+
+    public function test_for_error_page_is_noindex_without_json_ld(): void
+    {
+        $seo = app(SeoService::class)->forErrorPage(404, 'Page not found', 'That address is not on this site.');
+
+        $this->assertStringContainsString('Page not found', $seo->title);
+        $this->assertStringContainsString('That address is not on this site.', $seo->description);
+        $this->assertSame('noindex,nofollow', $seo->robots);
+        $this->assertSame([], $seo->jsonLd);
+    }
 }
