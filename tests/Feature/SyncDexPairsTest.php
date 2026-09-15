@@ -24,6 +24,13 @@ class SyncDexPairsTest extends TestCase
         parent::setUp();
 
         Http::preventStrayRequests();
+
+        config([
+            'marketdata.geckoterminal.base_url' => 'https://api.geckoterminal.com/api/v2',
+            'marketdata.geckoterminal.api_key' => '',
+            'marketdata.geckoterminal.retry_times' => 1,
+            'marketdata.geckoterminal.retry_sleep_ms' => 0,
+        ]);
     }
 
     public function test_sync_dex_pairs_persists_geckoterminal_payload(): void

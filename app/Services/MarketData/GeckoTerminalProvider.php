@@ -11,12 +11,14 @@ use App\Services\MarketData\DTOs\DexPairDetailData;
 use App\Services\MarketData\DTOs\DexTokenDetailData;
 use App\Services\MarketData\DTOs\DexTradeData;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 class GeckoTerminalProvider implements DexDataProvider
 {
@@ -233,27 +235,12 @@ class GeckoTerminalProvider implements DexDataProvider
      */
     private function fetchTokenHolders(string $network, string $tokenAddress): array
     {
-        $apiKey = config('marketdata.geckoterminal.api_key');
-        if (! is_string($apiKey) || $apiKey === '') {
+        if (! $this->hasApiKey()) {
             return [[], true];
         }
 
-        $baseUrl = (string) config(
-            'marketdata.geckoterminal.onchain_base_url',
-            'https://pro-api.coingecko.com/api/v3/onchain',
-        );
-        $header = config('marketdata.geckoterminal.api_key_header', 'x-cg-pro-api-key');
         $path = '/networks/' . rawurlencode($network) . '/tokens/' . rawurlencode($tokenAddress) . '/top_holders';
-
-        $request = Http::baseUrl(rtrim($baseUrl, '/'))
-            ->acceptJson()
-            ->timeout(30);
-
-        if (is_string($header) && $header !== '') {
-            $request = $request->withHeaders([$header => $apiKey]);
-        }
-
-        $response = $request->get($path, ['holders' => 20]);
+        $response = $this->client()->get($path, ['holders' => 20]);
 
         if (in_array($response->status(), [401, 403, 404], true)) {
             return [[], true];
@@ -662,17 +649,51 @@ class GeckoTerminalProvider implements DexDataProvider
         return (float) $value;
     }
 
+    /**
+     * A Pro key must hit CoinGecko's onchain host. The public GeckoTerminal
+     * host ignores the key and keeps the free-tier ceiling, which is why a
+     * 500/min plan still saw 429s on token detail.
+     */
+    private function baseUrl(): string
+    {
+        if ($this->hasApiKey()) {
+            return rtrim((string) config(
+                'marketdata.geckoterminal.onchain_base_url',
+                'https://pro-api.coingecko.com/api/v3/onchain',
+            ), '/');
+        }
+
+        return rtrim((string) config('marketdata.geckoterminal.base_url'), '/');
+    }
+
+    private function hasApiKey(): bool
+    {
+        $apiKey = config('marketdata.geckoterminal.api_key');
+
+        return is_string($apiKey) && $apiKey !== '';
+    }
+
     private function client(): PendingRequest
     {
-        $request = Http::baseUrl((string) config('marketdata.geckoterminal.base_url'))
+        $retries = max(1, (int) config('marketdata.geckoterminal.retry_times', 4));
+        $baseSleep = max(0, (int) config('marketdata.geckoterminal.retry_sleep_ms', 250));
+
+        $request = Http::baseUrl($this->baseUrl())
             ->acceptJson()
-            ->timeout(30);
+            ->timeout(30)
+            ->retry(
+                $retries,
+                fn (int $attempt): int => $baseSleep * $attempt,
+                fn (Throwable $exception): bool => $exception instanceof RequestException
+                    && $exception->response?->status() === 429,
+                throw: false,
+            );
 
         $apiKey = config('marketdata.geckoterminal.api_key');
         $header = config('marketdata.geckoterminal.api_key_header', 'x-cg-pro-api-key');
 
-        if (is_string($apiKey) && $apiKey !== '' && is_string($header) && $header !== '') {
-            $request = $request->withHeaders([$header => $apiKey]);
+        if ($this->hasApiKey() && is_string($header) && $header !== '') {
+            $request = $request->withHeaders([$header => (string) $apiKey]);
         }
 
         return $request;

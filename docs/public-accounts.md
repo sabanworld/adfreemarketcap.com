@@ -54,7 +54,7 @@ Covered by `tests/Feature/AdminMfaTest.php`. PHPUnit forces `ADMIN_MFA_REQUIRED=
   - `/dexscan/{network}/{address}` token detail (GeckoTerminal network ids)
 - Hero stats on detail pages come from the list sync; charts / trades / holders warm via queued jobs and `wire:poll` while stale.
 - Trades are a recent snapshot (about the last 24 hours from GeckoTerminal), not a full history.
-- Top holders need CoinGecko onchain access (`GECKOTERMINAL_API_KEY` / `COINGECKO_API_KEY` on the Pro onchain host). Without it the Holders tab stays empty and the rest of the page still works.
+- With a CoinGecko Pro key (`GECKOTERMINAL_API_KEY` / `COINGECKO_API_KEY`), Dex calls use the Pro onchain host so the paid rate limit applies. Without a key, lists and detail still work on the public GeckoTerminal host; the Holders tab stays empty.
 - `DexPairSeeder` remains for offline demos; it writes `provider=seed`, network ids, and demo chart series so pair/token detail pages render without calling GeckoTerminal. Production freshness for live pairs comes from the scheduled job.
 - Optional: `php artisan marketdata:sync --only-dex` or `--dex`.
 

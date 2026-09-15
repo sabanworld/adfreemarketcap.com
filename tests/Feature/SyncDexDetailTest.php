@@ -27,6 +27,14 @@ class SyncDexDetailTest extends TestCase
         parent::setUp();
 
         Http::preventStrayRequests();
+
+        config([
+            'marketdata.geckoterminal.base_url' => 'https://api.geckoterminal.com/api/v2',
+            'marketdata.geckoterminal.onchain_base_url' => 'https://pro-api.coingecko.com/api/v3/onchain',
+            'marketdata.geckoterminal.api_key' => '',
+            'marketdata.geckoterminal.retry_times' => 1,
+            'marketdata.geckoterminal.retry_sleep_ms' => 0,
+        ]);
     }
 
     public function test_sync_pair_detail_persists_trades_and_charts(): void
@@ -133,7 +141,7 @@ class SyncDexDetailTest extends TestCase
         Http::fake(function (Request $request) use ($holdersStatus) {
             $url = $request->url();
 
-            if (str_contains($url, 'pro-api.coingecko.com')) {
+            if (str_contains($url, '/top_holders')) {
                 if ($holdersStatus !== 200) {
                     return Http::response(['error' => 'forbidden'], $holdersStatus);
                 }

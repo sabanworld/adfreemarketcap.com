@@ -71,14 +71,19 @@ return [
     ],
 
     'geckoterminal' => [
+        // Public free host. Used only when no API key is set.
         'base_url' => env('GECKOTERMINAL_BASE_URL', 'https://api.geckoterminal.com/api/v2'),
+        // Falls back to COINGECKO_API_KEY. When set, every Dex call (lists, detail,
+        // trades, OHLCV, holders) goes to onchain_base_url so the Pro rate limit applies.
         'api_key' => env('GECKOTERMINAL_API_KEY', env('COINGECKO_API_KEY')),
         'api_key_header' => str_replace('_', '-', (string) env('GECKOTERMINAL_API_KEY_HEADER', 'x-cg-pro-api-key')),
-        // Paid onchain host for top_holders (and higher limits). Same key family as CoinGecko.
         'onchain_base_url' => env(
             'GECKOTERMINAL_ONCHAIN_BASE_URL',
             'https://pro-api.coingecko.com/api/v3/onchain',
         ),
+        // Shared CoinGecko Pro quota can still 429 under a detail burst; retry briefly.
+        'retry_times' => (int) env('GECKOTERMINAL_RETRY_TIMES', 4),
+        'retry_sleep_ms' => (int) env('GECKOTERMINAL_RETRY_SLEEP_MS', 250),
     ],
 
     'bitcoin_charts' => [
