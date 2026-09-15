@@ -53,10 +53,10 @@
             <li>{{ __('Rank follows market capitalisation as our data providers report it, one formula for every asset. We do not reorder the table by hand, and placement in it is not for sale.') }}</li>
             <li>{{ __('Risk flags follow liquidity and trading history. Nobody can pay to have one softened or taken off.') }}</li>
             @if ($advertising)
-                <li>{{ __('One third-party request by default: a cookieless visitor counter from Simple Analytics in Amsterdam. No cookie, no stored IP address.') }}</li>
+                <li>{{ __('One third-party request by default: a cookieless page view sent to Plausible in Estonia. No cookie, no stored IP address, and the counting code comes from our own domain.') }}</li>
                 <li>{{ __('One more, only if you say yes to it. See "The one thing we ask you about" below.') }}</li>
             @else
-                <li>{{ __('One third-party request on the whole site: a cookieless visitor counter from Simple Analytics in Amsterdam. No cookie, no stored IP address.') }}</li>
+                <li>{{ __('One third-party request on the whole site: a cookieless page view sent to Plausible in Estonia. No cookie, no stored IP address, and the counting code comes from our own domain.') }}</li>
             @endif
             <li>{{ __('Fonts, icons and styles all come from this domain.') }}</li>
             <li>{{ __('Pages read from our own database. Your visit does not reach a market data provider.') }}</li>

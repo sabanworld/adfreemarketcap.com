@@ -9,6 +9,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/altcha.js',
+                'resources/js/analytics.js',
                 'resources/js/coin-chart.js',
             ],
             refresh: true,

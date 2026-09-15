@@ -6,14 +6,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Visitor statistics (Simple Analytics)
+    | Visitor statistics (Plausible)
     |--------------------------------------------------------------------------
     |
-    | The public layout loads a cookieless counter from Simple Analytics B.V.
-    | (Amsterdam). It runs for every visitor because it writes nothing to the
-    | device, and it is disclosed in resources/views/legal/privacy-policy and
-    | cookie-policy. Changing anything here is a policy change: see
-    | docs/privacy-and-legal.md before touching it.
+    | The public layout counts page views with Plausible Insights OÜ (Tartu,
+    | Estonia), which processes and stores the figures in Germany. The tracker
+    | comes from the @plausible-analytics/tracker package through Vite, so the
+    | browser fetches no file from Plausible and the measurement request is the
+    | only thing that leaves it. Nothing is written to the device, which is why
+    | it runs for everyone, and it is disclosed in resources/views/legal/
+    | privacy-policy and cookie-policy. Changing anything here is a policy
+    | change: see docs/privacy-and-legal.md before touching it.
     |
     | The only other third-party request is the Google Ads tag in
     | config/google-ads.php, which is off by default and never loads before the
@@ -26,14 +29,35 @@ return [
 
     'enabled' => (bool) env('ANALYTICS_ENABLED', env('APP_ENV') === 'production'),
 
-    'script_url' => env('ANALYTICS_SCRIPT_URL', 'https://scripts.simpleanalyticscdn.com/latest.js'),
+    /*
+    | The site as it is registered in the Plausible dashboard. Every event
+    | carries it, so it decides which dashboard the figures land in rather than
+    | being read from the address the visitor is on.
+    */
 
-    'noscript_url' => env('ANALYTICS_NOSCRIPT_URL', 'https://queue.simpleanalyticscdn.com/noscript.gif'),
+    'domain' => env('ANALYTICS_DOMAIN', 'adfreemarketcap.com'),
+
+    'endpoint' => env('ANALYTICS_ENDPOINT', 'https://plausible.io/api/event'),
 
     /*
-    | Simple Analytics drops visits from browsers that send Do Not Track. Keep
-    | this false so that setting keeps working; the privacy policy says it does.
+    | Plausible has no Do Not Track check of its own, so resources/js/analytics.js
+    | makes one: a browser sending Do Not Track or Global Privacy Control gets no
+    | tracker at all. Keep this false, because the privacy policy promises that.
     */
+
     'collect_dnt' => (bool) env('ANALYTICS_COLLECT_DNT', false),
+
+    /*
+    | What is counted besides page views. The privacy policy names each of these
+    | one by one, so changing a line here means changing that copy in the same
+    | commit; tests/Feature/AnalyticsTest.php fails until you do. Scroll depth
+    | and time on the page come with the tracker and cannot be switched off.
+    */
+
+    'capture' => [
+        'outbound_links' => (bool) env('ANALYTICS_CAPTURE_OUTBOUND_LINKS', true),
+        'file_downloads' => (bool) env('ANALYTICS_CAPTURE_FILE_DOWNLOADS', true),
+        'form_submissions' => (bool) env('ANALYTICS_CAPTURE_FORM_SUBMISSIONS', true),
+    ],
 
 ];

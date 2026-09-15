@@ -13,6 +13,7 @@
         })();
     </script>
     <x-afmc.consent />
+    <x-afmc.analytics />
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     <style>[x-cloak]{display:none!important}</style>
@@ -54,6 +55,5 @@
             hidden
         ></div>
     @endif
-    <x-afmc.analytics />
 </body>
 </html>

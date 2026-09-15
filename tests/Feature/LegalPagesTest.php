@@ -199,8 +199,10 @@ class LegalPagesTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Statistics without cookies', false);
-        $response->assertSee('Simple Analytics', false);
+        $response->assertSee('Plausible', false);
         $response->assertSee('It sets no cookie, writes nothing to local storage', false);
+        // The one key the tracker reads is a flag the visitor sets themselves.
+        $response->assertSee('a key named plausible_ignore', false);
     }
 
     public function test_privacy_policy_discloses_the_visitor_counter(): void
@@ -209,12 +211,14 @@ class LegalPagesTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Visitor statistics', false);
-        $response->assertSee('Simple Analytics B.V., Amsterdam', false);
-        // What it measures, what happens to the IP, the basis, and the way out.
-        $response->assertSee('your time zone, and your device and browser type', false);
-        $response->assertSee('every IP address is dropped without being logged or stored', false);
+        $response->assertSee('Plausible Insights OÜ, Tartu', false);
+        // What it measures, what happens to the IP, the basis, and the ways out.
+        $response->assertSee('your device, operating system, and browser', false);
+        $response->assertSee('Clicks on links leading off this site, file downloads, and the fact that a form was submitted', false);
+        $response->assertSee('a salt that is deleted every 24 hours', false);
         $response->assertSee('Legitimate interests in measuring use of the site, article 6(1)(f) GDPR', false);
-        $response->assertSee('discards visits from browsers that send Do Not Track', false);
+        $response->assertSee('Do Not Track or Global Privacy Control in your browser and the counter never starts', false);
+        $response->assertSee('plausible_ignore', false);
     }
 
     public function test_cookie_policy_stays_silent_about_advertising_while_no_tag_ships(): void
@@ -265,7 +269,7 @@ class LegalPagesTest extends TestCase
         // Withdrawal has to be named as plainly as the consent was taken.
         $response->assertSee('You can withdraw it in the footer', false);
         // Two claims that stop being true the moment a second tag ships.
-        $response->assertDontSee('the only third-party file your browser loads here', false);
+        $response->assertDontSee('the only request that leaves this site', false);
         $response->assertDontSee('We run no advertising and no ad networks.', false);
     }
 
@@ -275,7 +279,7 @@ class LegalPagesTest extends TestCase
 
         $response->assertOk();
         $response->assertDontSee('Google', false);
-        $response->assertSee('the only third-party file your browser loads here', false);
+        $response->assertSee('the count itself is the only request that leaves this site', false);
     }
 
     public function test_why_ad_free_separates_adverts_on_the_site_from_adverts_pointing_at_it(): void

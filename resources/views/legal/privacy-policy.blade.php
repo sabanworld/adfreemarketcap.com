@@ -49,10 +49,10 @@
             'retention' => __('Up to two years after the matter is closed'),
         ],
         [
-            'data' => __('Page address, referring page, campaign parameters, time zone, and device and browser type, sent to our statistics provider'),
+            'data' => __('Page address, referring page, campaign parameters, country from your IP address, device and browser type, and clicks on links leading off the site, sent to our statistics provider'),
             'purpose' => __('Counting page views and seeing which pages get read'),
             'basis' => __('Legitimate interests in measuring use of the site, article 6(1)(f) GDPR'),
-            'retention' => __('Kept as aggregate counts that hold no identifier pointing back to you'),
+            'retention' => __('Kept as counts. The identifier behind them is a hash with a salt that is deleted every 24 hours'),
         ],
         [
             'data' => __('Public Nostr note text, author pubkey, and display name cached for community remarks'),
@@ -120,13 +120,13 @@
 
 <h2>{{ __('Visitor statistics') }}</h2>
 @if ($advertising)
-    <p>{{ __('We count page views with Simple Analytics, a Dutch service that works without cookies. If your browser runs no JavaScript, one image counts the visit instead.') }}</p>
+    <p>{{ __('We count page views with Plausible, an Estonian service that works without cookies and keeps its data in Germany. The counting code is part of our own bundle, so your browser fetches no file from them.') }}</p>
 @else
-    <p>{{ __('We count page views with Simple Analytics, a Dutch service that works without cookies. Their script is the only third-party file your browser loads here. If your browser runs no JavaScript, one image counts the visit instead.') }}</p>
+    <p>{{ __('We count page views with Plausible, an Estonian service that works without cookies and keeps its data in Germany. The counting code is part of our own bundle, so your browser fetches no file from them and the count itself is the only request that leaves this site.') }}</p>
 @endif
-<p>{{ __('What gets measured is the page address, the page you came from, campaign parameters in the link you followed, your time zone, and your device and browser type. No cookie is set, nothing is written to your device, and no profile is built across pages or sites.') }}</p>
-<p>{{ __('Fetching that script means your IP address reaches Simple Analytics, the way it does for any request your browser makes. They state that every IP address is dropped without being logged or stored, and that they read your country from your time zone instead of your IP. Their servers and their own suppliers are in the EU.') }}</p>
-<p>{{ __('Our basis is the legitimate interest in knowing which pages get read, under article 6(1)(f) GDPR. Since nothing is stored on your device, this counter needs no consent under article 5(3) of the ePrivacy Directive. Two ways to stay out of the count: Simple Analytics discards visits from browsers that send Do Not Track, and blocking the script in your browser or extension leaves the site fully usable.') }}</p>
+<p>{{ __('Each page view sends the address of the page without its query string, apart from campaign parameters such as utm_source, the page you came from, and your device, operating system, and browser. Clicks on links leading off this site, file downloads, and the fact that a form was submitted are counted the same way, without anything you typed into it. How far down a page you scrolled and how long it stayed open are sent as well. No cookie is set, nothing is written to your device, and no profile is built across pages or sites.') }}</p>
+    <p>{{ __('The request that carries the count also carries your IP address, the way any request your browser makes does. Plausible reads your country, region, and city from it and then drops it, so it is never written to their logs, their database, or a disk. To count you once a day without a cookie, they hash your IP address and browser together with a salt that is deleted every 24 hours, which leaves nothing that can be traced back to you or matched to the next day.') }}</p>
+<p>{{ __('Our basis is the legitimate interest in knowing which pages get read, under article 6(1)(f) GDPR. Since nothing is stored on your device, this counter needs no consent under article 5(3) of the ePrivacy Directive. Three ways to stay out of the count: switch on Do Not Track or Global Privacy Control in your browser and the counter never starts, set plausible_ignore to true in local storage for this site, or block requests to plausible.io. Each one leaves the site fully usable.') }}</p>
 
 @if ($advertising)
     <h2>{{ __('Advertising measurement') }}</h2>
@@ -155,7 +155,7 @@
 </ul>
 
 <h2>{{ __('Who else can see the data') }}</h2>
-<p>{{ __('We use a small number of service providers. The ones that handle personal data for us do so on our instructions, under a data processing agreement as article 28 GDPR requires, and may only use the data to deliver their service to us. Our statistics provider receives no personal data, so it is named below without such an agreement.') }}</p>
+<p>{{ __('We use a small number of service providers. The ones that handle personal data for us do so on our instructions, under a data processing agreement as article 28 GDPR requires, and may only use the data to deliver their service to us. Plausible is one of them: your IP address reaches it while a page view is counted, and its data processing agreement at plausible.io/dpa sets out what it may do with it.') }}</p>
 @if ($advertising)
     <p>{{ __('Google is the exception to that pattern. For advert measurement it decides some of its own purposes rather than acting only on our instructions, so we name it as a recipient and rely on your consent. It appears in the table for the same reason the others do: you should be able to see who is involved.') }}</p>
 @endif

@@ -116,11 +116,12 @@
 @endif
 
 <h2>{{ __('Statistics without cookies') }}</h2>
-<p>{{ __('We count page views with Simple Analytics, a Dutch service. It sets no cookie, writes nothing to local storage, and uses no fingerprinting, so it adds no item to the table above. Storage is what article 5(3) of the ePrivacy Directive asks consent for, and this counter uses none, which is why it runs for everyone.') }}</p>
+<p>{{ __('We count page views with Plausible, a European service. It sets no cookie, writes nothing to local storage, and builds no fingerprint, so it adds no item to the table above. Storage is what article 5(3) of the ePrivacy Directive asks consent for, and this counter uses none, which is why it runs for everyone.') }}</p>
+<p>{{ __('One thing it does read from local storage is a key named plausible_ignore, which exists only if you put it there yourself to opt out. It is never written by us or by the counter.') }}</p>
 @if ($advertising)
     <p>{{ __('The Privacy policy sets out what the counter measures, what happens to your IP address, and how to stay out of the count.') }}</p>
 @else
-    <p>{{ __('Their script is the only file on this site that your browser fetches from another company. Fonts, styles, and icons are served from our own domain. The Privacy policy sets out what the counter measures, what happens to your IP address, and how to stay out of the count.') }}</p>
+    <p>{{ __('The counting code is bundled with our own scripts, so the only request that leaves this site is the count itself. Fonts, styles, and icons are served from our own domain. The Privacy policy sets out what the counter measures, what happens to your IP address, and how to stay out of the count.') }}</p>
 @endif
 
 @if ($advertising)

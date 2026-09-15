@@ -11,38 +11,70 @@ class AnalyticsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_no_third_party_request_is_rendered_while_the_counter_is_off(): void
+    public function test_nothing_is_rendered_while_the_counter_is_off(): void
     {
         config(['analytics.enabled' => false]);
 
         $response = $this->get(route('home'));
 
         $response->assertOk();
-        $response->assertDontSee('simpleanalyticscdn.com', false);
+        $response->assertDontSee('afmc-analytics', false);
+        $response->assertDontSee('plausible', false);
     }
 
-    public function test_counter_renders_the_script_and_the_noscript_pixel_when_enabled(): void
+    public function test_counter_renders_its_settings_when_enabled(): void
     {
         config(['analytics.enabled' => true]);
 
         $response = $this->get(route('home'));
 
         $response->assertOk();
-        $response->assertSee('<script async src="https://scripts.simpleanalyticscdn.com/latest.js"', false);
-        $response->assertSee('<noscript><img src="https://queue.simpleanalyticscdn.com/noscript.gif" alt="" referrerpolicy="no-referrer-when-downgrade">', false);
+        $response->assertSee('<script type="application/json" id="afmc-analytics">', false);
+        $response->assertSee('"domain":"' . config('analytics.domain') . '"', false);
+        $response->assertSee('"endpoint":"https:\/\/plausible.io\/api\/event"', false);
+    }
+
+    public function test_the_tracker_is_served_from_our_own_domain(): void
+    {
+        config(['analytics.enabled' => true]);
+
+        // The privacy and cookie policies both say the browser fetches no file
+        // from Plausible, which only holds while the tracker ships in our own
+        // bundle instead of a script tag pointing at plausible.io.
+        $this->get(route('home'))->assertDontSee('src="https://plausible.io', false);
     }
 
     public function test_do_not_track_is_honoured_unless_configuration_says_otherwise(): void
     {
-        config(['analytics.enabled' => true, 'analytics.collect_dnt' => false]);
+        config(['analytics.enabled' => true]);
 
-        // The privacy policy promises that a Do Not Track browser stays out of the
-        // count, which only holds while the opt-out attribute is absent.
-        $this->get(route('home'))->assertDontSee('data-collect-dnt', false);
+        // Plausible has no Do Not Track check, so resources/js/analytics.js skips
+        // the tracker itself. The privacy policy promises it, and this flag is
+        // what would take it away.
+        $this->assertFalse(config('analytics.collect_dnt'));
+        $this->get(route('home'))->assertSee('"collectDnt":false', false);
 
         config(['analytics.collect_dnt' => true]);
 
-        $this->get(route('home'))->assertSee('data-collect-dnt="true"', false);
+        $this->get(route('home'))->assertSee('"collectDnt":true', false);
+    }
+
+    public function test_what_is_captured_matches_what_the_privacy_policy_says(): void
+    {
+        // Each of these is named in the Visitor statistics section of the privacy
+        // policy. Turning one off means rewriting that paragraph in the same
+        // change, so this test is the reminder.
+        $this->assertTrue(config('analytics.capture.outbound_links'));
+        $this->assertTrue(config('analytics.capture.file_downloads'));
+        $this->assertTrue(config('analytics.capture.form_submissions'));
+
+        config(['analytics.enabled' => true]);
+
+        $response = $this->get(route('home'));
+
+        $response->assertSee('"outboundLinks":true', false);
+        $response->assertSee('"fileDownloads":true', false);
+        $response->assertSee('"formSubmissions":true', false);
     }
 
     public function test_the_counter_stays_off_in_the_test_environment_by_default(): void

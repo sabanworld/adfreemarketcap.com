@@ -31,21 +31,26 @@ The policies are written against this list. Keep them in step.
 - **Cloudflare** sits in front as reverse proxy and bot filter, so it processes request metadata as a processor.
 - **Market data providers** (CoinGecko, CoinPaprika, GeckoTerminal, Bitcoin.com charts, Alternative.me) are called server side by scheduled jobs. No visitor data is sent to them, and public pages never call them per request.
 - **Nostr HTTP gateways** (default Divine at `gateway.divine.video`, with Nostr.Band as fallback) are called server side to cache public community notes. Visitors do not contact relays; View opens the note on Primal (`primal.net`).
-- **Visitor statistics:** Simple Analytics (`config/analytics.php`, rendered by `resources/views/components/afmc/analytics.blade.php`). Legal basis: legitimate interests. See below.
+- **Visitor statistics:** Plausible (`config/analytics.php`, rendered by `resources/views/components/afmc/analytics.blade.php`, tracker in `resources/js/analytics.js`). Legal basis: legitimate interests. See below.
 - **Advert measurement:** the Google Ads conversion tag (`config/google-ads.php`, rendered by `resources/views/components/afmc/consent.blade.php`). Off by default. Legal basis: consent. See below.
 
 Browser storage while the advert tag is off: the session cookie, `XSRF-TOKEN`, the optional `remember_web_*` cookie, and two local storage keys (`afmc-theme`, `afmc-cookies`). Turning the tag on swaps `afmc-cookies` for `afmc-consent` and adds Google's `_gcl_*` and `_gac_*` cookies once accepted. Every item is listed by name in the cookie policy.
 
-## Visitor statistics (Simple Analytics)
+## Visitor statistics (Plausible)
 
-The public layout loads `https://scripts.simpleanalyticscdn.com/latest.js`, plus a `noscript` image from `https://queue.simpleanalyticscdn.com/noscript.gif` for browsers without JavaScript. This is the only third-party request a visitor makes unless they accept the advert tag below.
+The tracker comes from the `@plausible-analytics/tracker` package and is built by Vite as its own entry, so **the browser fetches no file from Plausible**. The hosted `plausible.io/js/pa-….js` snippet is served through Bunny CDN, which would have put a second company in front of every page load for no benefit. The only request that leaves the browser is the measurement `POST` to `https://plausible.io/api/event`, and that stays the single third-party request unless the visitor accepts the advert tag below.
+
+Keeping it a separate Vite entry matters: bundled into `app.js` it would be unblockable without breaking the site, and "block requests to plausible.io" is one of the ways out the privacy policy offers.
 
 What the choice rests on, and therefore what the policies claim:
 
-- Simple Analytics B.V. is based in Amsterdam and keeps data with EU suppliers.
-- It sets no cookie and writes nothing to the device, so [article 5(3)](https://eur-lex.europa.eu/eli/dir/2002/58/oj) consent does not apply and the cookie bar stays a notice.
-- It states that it drops every IP address without logging or storing it, derives country from the time zone, and uses no fingerprinting.
-- It drops visits from browsers that send Do Not Track. `ANALYTICS_COLLECT_DNT` would turn that off, which the privacy policy currently rules out, so leave it false.
+- Plausible Insights OÜ is registered in Tartu, Estonia, and processes and stores the figures in Germany ([data policy](https://plausible.io/data-policy), [DPA](https://plausible.io/dpa)). It acts as our processor, so the privacy policy names it as one rather than claiming it receives nothing.
+- It sets no cookie and writes nothing to the device, so [article 5(3)](https://eur-lex.europa.eu/eli/dir/2002/58/oj) consent does not apply and the cookie bar stays a notice. The one thing it touches is a **read** of `localStorage.plausible_ignore`, a flag the visitor sets themselves to opt out. The cookie policy names that key.
+- Country, region, and city are derived from the IP address, which is then discarded. Daily uniqueness comes from `hash(daily_salt + domain + ip + user_agent)` with the salt deleted every 24 hours.
+- Query strings are discarded apart from campaign parameters (`ref`, `utm_*`).
+- **Plausible has no Do Not Track check of its own.** `resources/js/analytics.js` makes one, and also honours Global Privacy Control, because Do Not Track alone is gone from most browsers. `ANALYTICS_COLLECT_DNT` would turn that off, which the privacy policy rules out, so leave it false.
+- `config('analytics.capture')` switches outbound link clicks, file downloads, and form submissions. All three are on, and the privacy policy names each one, so a change here rewrites that paragraph. Scroll depth and time on the page ship with the tracker and cannot be switched off, so they are disclosed too.
+- Form capture sends an event when a visitor submits login or register. It carries the event name and the page address, never a field value.
 
 `ANALYTICS_ENABLED` defaults to true only when `APP_ENV=production`, which keeps local page loads and the test suite off the network and out of the figures. Tests cover both states in `tests/Feature/AnalyticsTest.php`.
 
@@ -87,7 +92,7 @@ PHPUnit can prove the markup is right. It cannot prove that Reject and Accept *l
 
 ## Rules that are easy to break
 
-- **Two third-party requests, and the second one is opt-in.** Fonts are self-hosted through Vite (`resources/css/design-system/fonts.css`) and the Material Symbols subset is built by `scripts/build-icon-font.mjs`. Adding a CDN, a font host, or an embed makes the policy pages false.
+- **Two third-party requests, and the second one is opt-in.** Fonts are self-hosted through Vite (`resources/css/design-system/fonts.css`), the Material Symbols subset is built by `scripts/build-icon-font.mjs`, and the Plausible tracker is bundled rather than pulled from a CDN. Adding a CDN, a font host, or an embed makes the policy pages false.
 - **Anything new that writes to the device goes behind the same gate.** It stays off until the visitor accepts, refusing stays as easy as accepting, and both policy pages plus the cookie bar change in the same release.
 - **Adverts on the site and adverts pointing at the site are different things.** The pledge is about the first: no ad slots, no sponsored rows, no paid rankings. Buying Google adverts to bring people here does not breach it, but measuring them on the visitor's device does need consent, and the copy has to keep the two apart rather than blur them.
 - **The EU ODR platform is gone.** Regulation (EU) 2024/3228 closed it on 20 July 2025 and removed the duty to link to it. Consumers are pointed at national ADR bodies and ACM ConsuWijzer instead.

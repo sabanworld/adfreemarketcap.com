@@ -89,7 +89,7 @@ return [
     |
     */
 
-    'policies_updated_at' => env('COMPANY_POLICIES_UPDATED_AT', '14 September 2026'),
+    'policies_updated_at' => env('COMPANY_POLICIES_UPDATED_AT', '15 September 2026'),
 
     /*
     |--------------------------------------------------------------------------
@@ -168,8 +168,8 @@ return [
         ],
         'analytics' => [
             'category' => 'Visitor statistics, without cookies or stored IP addresses',
-            'name' => 'Simple Analytics B.V., Amsterdam',
-            'location' => 'The Netherlands, with content delivery from European edge locations',
+            'name' => 'Plausible Insights OÜ, Tartu',
+            'location' => 'Estonia, with the figures processed and stored in Germany',
             'transfer' => null,
         ],
         // Rendered only while config('google-ads.enabled') is true, because a

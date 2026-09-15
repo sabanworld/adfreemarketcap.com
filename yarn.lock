@@ -315,6 +315,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@plausible-analytics/tracker@npm:^0.4.6":
+  version: 0.4.6
+  resolution: "@plausible-analytics/tracker@npm:0.4.6"
+  checksum: 10c0/65d07135142921791098c8b0fadc2ff867c06940618a28b64864e00db7cbf0fe72310268ff5372c0ddfead66287b6c5f48a7916a355c1bd76d1d9c997ba03861
+  languageName: node
+  linkType: hard
+
 "@rollup/rollup-android-arm-eabi@npm:4.63.1":
   version: 4.63.1
   resolution: "@rollup/rollup-android-arm-eabi@npm:4.63.1"
@@ -1706,6 +1713,7 @@ __metadata:
     "@fontsource-variable/archivo": "npm:^5.3.0"
     "@fontsource-variable/jetbrains-mono": "npm:^5.3.0"
     "@fontsource-variable/public-sans": "npm:^5.3.0"
+    "@plausible-analytics/tracker": "npm:^0.4.6"
     "@tailwindcss/vite": "npm:^4.0.0"
     altcha: "npm:^3.2.2"
     axios: "npm:^1.11.0"
