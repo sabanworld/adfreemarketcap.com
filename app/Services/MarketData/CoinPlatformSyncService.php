@@ -35,36 +35,41 @@ class CoinPlatformSyncService
                 ->pluck('coin_id', 'external_id');
 
             $processed = 0;
+            $now = now();
+            /** @var array<int, true> $coinIds */
+            $coinIds = [];
+            /** @var list<array{coin_id: int, platform_id: string, contract_address: string, created_at: mixed, updated_at: mixed}> $insertRows */
+            $insertRows = [];
 
-            DB::transaction(function () use ($rows, $providerMap, &$processed): void {
-                foreach ($rows as $row) {
-                    $coinId = $providerMap->get($row['external_id']);
-                    if ($coinId === null) {
-                        continue;
-                    }
+            foreach ($rows as $row) {
+                $coinId = $providerMap->get($row['external_id']);
+                if ($coinId === null) {
+                    continue;
+                }
 
-                    $coinId = (int) $coinId;
-                    $platformIds = [];
+                $coinId = (int) $coinId;
+                $coinIds[$coinId] = true;
 
-                    foreach ($row['platforms'] as $platformId => $contract) {
-                        $platformIds[] = $platformId;
-                        CoinPlatform::query()->updateOrCreate(
-                            [
-                                'coin_id' => $coinId,
-                                'platform_id' => $platformId,
-                            ],
-                            [
-                                'contract_address' => $contract,
-                            ],
-                        );
-                        $processed++;
-                    }
+                foreach ($row['platforms'] as $platformId => $contract) {
+                    $insertRows[] = [
+                        'coin_id' => $coinId,
+                        'platform_id' => $platformId,
+                        'contract_address' => $contract,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                    $processed++;
+                }
+            }
 
-                    $deleteQuery = CoinPlatform::query()->where('coin_id', $coinId);
-                    if ($platformIds !== []) {
-                        $deleteQuery->whereNotIn('platform_id', $platformIds);
-                    }
-                    $deleteQuery->delete();
+            DB::transaction(function () use ($coinIds, $insertRows): void {
+                $ids = array_keys($coinIds);
+                if ($ids !== []) {
+                    CoinPlatform::query()->whereIn('coin_id', $ids)->delete();
+                }
+
+                foreach (array_chunk($insertRows, 500) as $chunk) {
+                    CoinPlatform::query()->insert($chunk);
                 }
             });
 

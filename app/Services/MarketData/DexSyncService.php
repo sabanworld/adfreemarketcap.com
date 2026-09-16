@@ -36,21 +36,31 @@ class DexSyncService
 
         try {
             $pairs = $this->collectPairs();
+            $this->audit->warmListedLookup($pairs);
+
+            $tokensByKey = $this->preloadTokens($pairs);
+            $pairsByExternalId = $this->preloadPairs($pairs);
+            $slugOwners = $this->preloadSlugOwners($pairs);
+
             $processed = 0;
             $failed = 0;
             $trendingIds = [];
 
-            foreach ($pairs as $pair) {
-                try {
-                    $model = $this->upsertPair($pair);
-                    $processed++;
-                    if ($pair->isTrending && $model instanceof DexPair) {
-                        $trendingIds[] = $model->id;
+            try {
+                foreach ($pairs as $pair) {
+                    try {
+                        $model = $this->upsertPair($pair, $tokensByKey, $pairsByExternalId, $slugOwners);
+                        $processed++;
+                        if ($pair->isTrending && $model instanceof DexPair) {
+                            $trendingIds[] = $model->id;
+                        }
+                    } catch (Throwable $exception) {
+                        $failed++;
+                        report($exception);
                     }
-                } catch (Throwable $exception) {
-                    $failed++;
-                    report($exception);
                 }
+            } finally {
+                $this->audit->clearListedLookup();
             }
 
             $this->prewarmTrendingDetails($trendingIds);
@@ -64,6 +74,7 @@ class DexSyncService
 
             return $run->fresh();
         } catch (Throwable $exception) {
+            $this->audit->clearListedLookup();
             $run->markFailed($exception->getMessage());
 
             throw $exception;
@@ -145,72 +156,197 @@ class DexSyncService
         return $merged->values();
     }
 
-    private function upsertPair(DexPairData $pair): DexPair
+    /**
+     * @param  Collection<int, DexPairData>  $pairs
+     * @return Collection<string, DexToken>
+     */
+    private function preloadTokens(Collection $pairs): Collection
     {
-        $slug = $this->slugFor($pair);
-        $tokenId = $this->upsertBaseToken($pair)?->id;
+        /** @var Collection<string, DexToken> $tokens */
+        $tokens = collect();
 
-        return DexPair::query()->updateOrCreate(
-            [
-                'provider' => $this->provider->name(),
-                'external_id' => $pair->externalId,
-            ],
-            [
-                'slug' => $slug,
-                'pair' => $pair->pair,
-                'base_symbol' => $pair->baseSymbol,
-                'quote_symbol' => $pair->quoteSymbol,
-                'dex' => $pair->dex,
-                'chain' => $pair->chain,
-                'network_id' => $pair->networkId,
-                'contract_address' => $pair->contractAddress,
-                'base_token_address' => $pair->baseTokenAddress,
-                'quote_token_address' => $pair->quoteTokenAddress,
-                'dex_token_id' => $tokenId,
-                'audit_status' => $this->audit->resolveFromPairData($pair),
-                'price' => $pair->price,
-                'percent_change_24h' => $this->percentForStorage($pair->percentChange24h),
-                'liquidity_usd' => $pair->liquidityUsd,
-                'volume_24h' => $pair->volume24h,
-                'volume_1h' => $pair->volume1h,
-                'volume_6h' => $pair->volume6h,
-                'fdv_usd' => $pair->fdvUsd,
-                'market_cap_usd' => $pair->marketCapUsd,
-                'txns_24h' => $pair->txns24h,
-                'buys_24h' => $pair->buys24h,
-                'sells_24h' => $pair->sells24h,
-                'paired_at' => $pair->pairedAt,
-                'is_trending' => $pair->isTrending,
-                'rank' => $pair->rank,
-                'synced_at' => now(),
-            ],
-        );
+        $byNetwork = $pairs
+            ->filter(fn (DexPairData $pair): bool => filled($pair->networkId) && filled($pair->baseTokenAddress))
+            ->groupBy(fn (DexPairData $pair): string => (string) $pair->networkId);
+
+        foreach ($byNetwork as $networkId => $group) {
+            $addresses = $group
+                ->map(fn (DexPairData $pair): string => (string) $pair->baseTokenAddress)
+                ->unique()
+                ->values()
+                ->all();
+
+            if ($addresses === []) {
+                continue;
+            }
+
+            foreach (
+                DexToken::query()
+                    ->where('network_id', $networkId)
+                    ->whereIn('address', $addresses)
+                    ->get() as $token
+            ) {
+                $tokens->put($this->tokenKey($token->network_id, $token->address), $token);
+            }
+        }
+
+        return $tokens;
     }
 
-    private function upsertBaseToken(DexPairData $pair): ?DexToken
+    /**
+     * @param  Collection<int, DexPairData>  $pairs
+     * @return Collection<string, DexPair>
+     */
+    private function preloadPairs(Collection $pairs): Collection
+    {
+        $externalIds = $pairs->map(fn (DexPairData $pair): string => $pair->externalId)->all();
+
+        if ($externalIds === []) {
+            return collect();
+        }
+
+        return DexPair::query()
+            ->where('provider', $this->provider->name())
+            ->whereIn('external_id', $externalIds)
+            ->get()
+            ->keyBy('external_id');
+    }
+
+    /**
+     * @param  Collection<int, DexPairData>  $pairs
+     * @return Collection<string, array{provider: string, external_id: string}>
+     */
+    private function preloadSlugOwners(Collection $pairs): Collection
+    {
+        $candidateSlugs = $pairs
+            ->map(fn (DexPairData $pair): string => DexPair::makeSlug($pair->pair, $pair->chain, $pair->dex))
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($candidateSlugs === []) {
+            return collect();
+        }
+
+        return DexPair::query()
+            ->whereIn('slug', $candidateSlugs)
+            ->get(['slug', 'provider', 'external_id'])
+            ->mapWithKeys(fn (DexPair $pair): array => [
+                $pair->slug => [
+                    'provider' => (string) $pair->provider,
+                    'external_id' => (string) $pair->external_id,
+                ],
+            ]);
+    }
+
+    /**
+     * @param  Collection<string, DexToken>  $tokensByKey
+     * @param  Collection<string, DexPair>  $pairsByExternalId
+     * @param  Collection<string, array{provider: string, external_id: string}>  $slugOwners
+     */
+    private function upsertPair(
+        DexPairData $pair,
+        Collection $tokensByKey,
+        Collection $pairsByExternalId,
+        Collection $slugOwners,
+    ): DexPair {
+        $slug = $this->slugFor($pair, $slugOwners);
+        $tokenId = $this->upsertBaseToken($pair, $tokensByKey)?->id;
+
+        $attributes = [
+            'slug' => $slug,
+            'pair' => $pair->pair,
+            'base_symbol' => $pair->baseSymbol,
+            'quote_symbol' => $pair->quoteSymbol,
+            'dex' => $pair->dex,
+            'chain' => $pair->chain,
+            'network_id' => $pair->networkId,
+            'contract_address' => $pair->contractAddress,
+            'base_token_address' => $pair->baseTokenAddress,
+            'quote_token_address' => $pair->quoteTokenAddress,
+            'dex_token_id' => $tokenId,
+            'audit_status' => $this->audit->resolveFromPairData($pair),
+            'price' => $pair->price,
+            'percent_change_24h' => $this->percentForStorage($pair->percentChange24h),
+            'liquidity_usd' => $pair->liquidityUsd,
+            'volume_24h' => $pair->volume24h,
+            'volume_1h' => $pair->volume1h,
+            'volume_6h' => $pair->volume6h,
+            'fdv_usd' => $pair->fdvUsd,
+            'market_cap_usd' => $pair->marketCapUsd,
+            'txns_24h' => $pair->txns24h,
+            'buys_24h' => $pair->buys24h,
+            'sells_24h' => $pair->sells24h,
+            'paired_at' => $pair->pairedAt,
+            'is_trending' => $pair->isTrending,
+            'rank' => $pair->rank,
+            'synced_at' => now(),
+        ];
+
+        $existing = $pairsByExternalId->get($pair->externalId);
+        if ($existing instanceof DexPair) {
+            $existing->fill($attributes);
+            $existing->save();
+
+            return $existing;
+        }
+
+        $created = DexPair::query()->create([
+            'provider' => $this->provider->name(),
+            'external_id' => $pair->externalId,
+            ...$attributes,
+        ]);
+
+        $pairsByExternalId->put($pair->externalId, $created);
+        $slugOwners->put($slug, [
+            'provider' => $this->provider->name(),
+            'external_id' => $pair->externalId,
+        ]);
+
+        return $created;
+    }
+
+    /**
+     * @param  Collection<string, DexToken>  $tokensByKey
+     */
+    private function upsertBaseToken(DexPairData $pair, Collection $tokensByKey): ?DexToken
     {
         if (! filled($pair->networkId) || ! filled($pair->baseTokenAddress)) {
             return null;
         }
 
-        return DexToken::query()->updateOrCreate(
-            [
-                'network_id' => $pair->networkId,
-                'address' => $pair->baseTokenAddress,
-            ],
-            [
-                'symbol' => $pair->baseSymbol,
-                'name' => $pair->baseTokenName,
-                'coingecko_coin_id' => $pair->coingeckoCoinId,
-                'price' => $pair->price,
-                'percent_change_24h' => $this->percentForStorage($pair->percentChange24h),
-                'fdv_usd' => $pair->fdvUsd,
-                'market_cap_usd' => $pair->marketCapUsd,
-                'liquidity_usd' => $pair->liquidityUsd,
-                'volume_24h' => $pair->volume24h,
-                'synced_at' => now(),
-            ],
-        );
+        $attributes = [
+            'symbol' => $pair->baseSymbol,
+            'name' => $pair->baseTokenName,
+            'coingecko_coin_id' => $pair->coingeckoCoinId,
+            'price' => $pair->price,
+            'percent_change_24h' => $this->percentForStorage($pair->percentChange24h),
+            'fdv_usd' => $pair->fdvUsd,
+            'market_cap_usd' => $pair->marketCapUsd,
+            'liquidity_usd' => $pair->liquidityUsd,
+            'volume_24h' => $pair->volume24h,
+            'synced_at' => now(),
+        ];
+
+        $key = $this->tokenKey($pair->networkId, $pair->baseTokenAddress);
+        $existing = $tokensByKey->get($key);
+
+        if ($existing instanceof DexToken) {
+            $existing->fill($attributes);
+            $existing->save();
+
+            return $existing;
+        }
+
+        $created = DexToken::query()->create([
+            'network_id' => $pair->networkId,
+            'address' => $pair->baseTokenAddress,
+            ...$attributes,
+        ]);
+
+        $tokensByKey->put($key, $created);
+
+        return $created;
     }
 
     /**
@@ -237,22 +373,35 @@ class DexSyncService
         return max(-self::PERCENT_CHANGE_MAX, min(self::PERCENT_CHANGE_MAX, $value));
     }
 
-    private function slugFor(DexPairData $pair): string
+    /**
+     * @param  Collection<string, array{provider: string, external_id: string}>  $slugOwners
+     */
+    private function slugFor(DexPairData $pair, Collection $slugOwners): string
     {
         $slug = DexPair::makeSlug($pair->pair, $pair->chain, $pair->dex);
+        $owner = $slugOwners->get($slug);
 
-        $takenByAnotherPool = DexPair::query()
-            ->where('slug', $slug)
-            ->whereNot(function ($query) use ($pair): void {
-                $query->where('provider', $this->provider->name())
-                    ->where('external_id', $pair->externalId);
-            })
-            ->exists();
+        if ($owner === null
+            || ($owner['provider'] === $this->provider->name() && $owner['external_id'] === $pair->externalId)) {
+            $slugOwners->put($slug, [
+                'provider' => $this->provider->name(),
+                'external_id' => $pair->externalId,
+            ]);
 
-        if (! $takenByAnotherPool) {
             return $slug;
         }
 
-        return $slug . '-' . substr(sha1($pair->externalId), 0, 6);
+        $suffixed = $slug . '-' . substr(sha1($pair->externalId), 0, 6);
+        $slugOwners->put($suffixed, [
+            'provider' => $this->provider->name(),
+            'external_id' => $pair->externalId,
+        ]);
+
+        return $suffixed;
+    }
+
+    private function tokenKey(string $networkId, string $address): string
+    {
+        return $networkId . '|' . $address;
     }
 }

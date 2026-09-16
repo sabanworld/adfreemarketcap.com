@@ -101,7 +101,13 @@ class CoinChartSyncService
                 return $run->fresh();
             }
 
-            $coins = Coin::query()->whereIn('slug', $slugs)->get();
+            $coins = Coin::query()
+                ->with([
+                    'providerIds' => fn ($query) => $query->where('provider', 'coingecko'),
+                    'chartSeries',
+                ])
+                ->whereIn('slug', $slugs)
+                ->get();
             $processed = 0;
 
             foreach ($coins as $coin) {

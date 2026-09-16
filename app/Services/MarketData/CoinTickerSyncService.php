@@ -59,7 +59,12 @@ class CoinTickerSyncService
             return $run->fresh();
         }
 
-        $coins = Coin::query()->whereNotNull('rank')->orderBy('rank')->limit($limit)->get();
+        $coins = Coin::query()
+            ->with(['providerIds' => fn ($query) => $query->where('provider', 'coingecko')])
+            ->whereNotNull('rank')
+            ->orderBy('rank')
+            ->limit($limit)
+            ->get();
 
         try {
             $processed = 0;
@@ -122,6 +127,7 @@ class CoinTickerSyncService
         }
 
         $coins = Coin::query()
+            ->with(['providerIds' => fn ($query) => $query->where('provider', 'coingecko')])
             ->where(function ($query) use ($slugs): void {
                 $query->whereIn('slug', $slugs)
                     ->orWhereHas('providerIds', function ($providerQuery) use ($slugs): void {
@@ -180,9 +186,15 @@ class CoinTickerSyncService
      */
     private function persistTickers(Coin $coin): array
     {
-        $externalId = $coin->providerIds()
-            ->where('provider', 'coingecko')
-            ->value('external_id');
+        if ($coin->relationLoaded('providerIds')) {
+            $externalId = $coin->providerIds
+                ->first(fn ($providerId): bool => $providerId->provider === 'coingecko')
+                ?->external_id;
+        } else {
+            $externalId = $coin->providerIds()
+                ->where('provider', 'coingecko')
+                ->value('external_id');
+        }
 
         if (! is_string($externalId) || $externalId === '') {
             $externalId = $coin->slug;

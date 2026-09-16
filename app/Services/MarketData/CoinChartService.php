@@ -225,9 +225,15 @@ final class CoinChartService
 
     public function coingeckoExternalId(Coin $coin): ?string
     {
-        $mapping = $coin->providerIds()
-            ->where('provider', 'coingecko')
-            ->first();
+        if ($coin->relationLoaded('providerIds')) {
+            $mapping = $coin->providerIds->first(
+                fn (CoinProviderId $providerId): bool => $providerId->provider === 'coingecko',
+            );
+        } else {
+            $mapping = $coin->providerIds()
+                ->where('provider', 'coingecko')
+                ->first();
+        }
 
         if ($mapping instanceof CoinProviderId && filled($mapping->external_id)) {
             return $mapping->external_id;

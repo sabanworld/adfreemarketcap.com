@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Coin;
+use App\Models\CoinProviderId;
 use App\Models\SyncRun;
 use App\Services\MarketData\MarketSyncService;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -203,6 +206,55 @@ class SyncMarketDataTest extends TestCase
             'last_provider' => 'coinpaprika',
         ]);
         $this->assertTrue(Coin::query()->where('symbol', 'BTC')->exists());
+    }
+
+    public function test_sync_markets_select_queries_stay_flat_across_many_coins(): void
+    {
+        $payload = [];
+
+        for ($i = 1; $i <= 25; $i++) {
+            $externalId = "coin-{$i}";
+            $coin = Coin::query()->create([
+                'slug' => $externalId,
+                'symbol' => 'C' . $i,
+                'name' => "Coin {$i}",
+                'rank' => $i,
+                'price' => 1.0,
+            ]);
+
+            CoinProviderId::query()->create([
+                'coin_id' => $coin->id,
+                'provider' => 'coingecko',
+                'external_id' => $externalId,
+            ]);
+
+            $payload[] = $this->coinGeckoCoin($externalId, 'c' . $i, "Coin {$i}", $i);
+        }
+
+        Http::fake([
+            'api.coingecko.com/api/v3/coins/markets*' => Http::response($payload),
+        ]);
+
+        config([
+            'marketdata.primary' => 'coingecko',
+            'marketdata.failover' => 'coinpaprika',
+            'marketdata.sync.markets_pages' => 1,
+            'marketdata.sync.per_page' => 100,
+            'marketdata.cryptoapis.api_key' => null,
+        ]);
+
+        $selects = 0;
+        Event::listen(QueryExecuted::class, function (QueryExecuted $query) use (&$selects): void {
+            if (str_starts_with(strtolower($query->sql), 'select')) {
+                $selects++;
+            }
+        });
+
+        app(MarketSyncService::class)->syncMarkets();
+
+        // The previous path issued several SELECTs per coin. A batched upsert keeps
+        // lookups to a handful of whereIn queries regardless of page size.
+        $this->assertLessThan(20, $selects);
     }
 
     private function syncWithCryptoApisKey(): SyncRun

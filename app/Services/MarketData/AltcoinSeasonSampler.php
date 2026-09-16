@@ -25,6 +25,7 @@ class AltcoinSeasonSampler
     public function alts(): Collection
     {
         return Coin::query()
+            ->with($this->coingeckoProviderIdsEagerLoad())
             ->whereNotNull('rank')
             ->where('slug', '!=', 'bitcoin')
             ->whereNotIn('symbol', $this->excludedSymbols())
@@ -35,7 +36,10 @@ class AltcoinSeasonSampler
 
     public function bitcoin(): ?Coin
     {
-        return Coin::query()->where('slug', 'bitcoin')->first();
+        return Coin::query()
+            ->with($this->coingeckoProviderIdsEagerLoad())
+            ->where('slug', 'bitcoin')
+            ->first();
     }
 
     /**
@@ -66,5 +70,15 @@ class AltcoinSeasonSampler
         $symbols = config('marketdata.altcoin_season.exclude_symbols', []);
 
         return array_map(strtoupper(...), $symbols);
+    }
+
+    /**
+     * @return array<string, callable>
+     */
+    private function coingeckoProviderIdsEagerLoad(): array
+    {
+        return [
+            'providerIds' => fn ($query) => $query->where('provider', 'coingecko'),
+        ];
     }
 }

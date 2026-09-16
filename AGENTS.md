@@ -85,9 +85,19 @@ Full reasoning, the trade-offs already taken, the pre-PR checklist, and the test
 
 - **No live HTTP in tests:** PHPUnit must **never** call real third-party APIs (CoinGecko, CoinPaprika, CoinMarketCap, CryptoCompare, Binance, etc.). Use `Http::fake()` with `Http::preventStrayRequests()` when exercising HTTP clients, or mocks/fakes bound in the container for `testing`. Prefer fixture JSON under `tests/Fixtures/marketdata/` for provider responses.
 
-## Code style (Duster)
+## Code style (Rector + Duster)
 
-**Use Duster only** for formatting and bundled lint fixes, because it wraps **Pint** plus other tools (e.g. TLint), so it is more complete than running Pint alone.
+**After every PHP implementation** (feature, fix, refactor), run Rector then Duster before you call the work done. Do not leave either for a follow-up PR.
+
+1. **Rector** applies the configured levels in `rector.php` (dead code, code quality, coding style). Levels start low and rise one at a time across PRs; do not jump the numbers in `rector.php` as part of ordinary feature work.
+
+```bash
+vendor/bin/rector
+```
+
+Review the diff. Keep intentional PHPStan / Laravel annotations Rector may drop (for example `/** @use HasFactory<…> */`). Re-run until clean, or skip a specific rule in `rector.php` with a short comment when a change is wrong for this codebase.
+
+2. **Duster** for formatting and bundled lint fixes. It wraps **Pint** plus other tools (e.g. TLint), so it is more complete than running Pint alone. Run it after Rector so formatting lands on the refactored code.
 
 ```bash
 ./vendor/bin/duster fix --dirty

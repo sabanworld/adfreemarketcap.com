@@ -6,6 +6,7 @@ namespace App\Services\MarketData;
 
 use App\Models\CoinPlatform;
 use App\Services\MarketData\DTOs\DexPairData;
+use Illuminate\Support\Collection;
 
 /**
  * Decides dex_pairs.audit_status from facts we already store.
@@ -51,6 +52,14 @@ final class DexAuditStatusResolver
         'ton',
     ];
 
+    /**
+     * When set, listedOnMarkets reads this instead of querying. Keyed by platform_id
+     * then address key (lowercased unless the network is case-sensitive).
+     *
+     * @var array<string, array<string, true>>|null
+     */
+    private ?array $listedLookup = null;
+
     public function resolve(?string $networkId, ?string $baseTokenAddress, ?string $coingeckoCoinId): string
     {
         if ($this->listedOnMarkets($networkId, $baseTokenAddress)) {
@@ -69,6 +78,71 @@ final class DexAuditStatusResolver
         return $this->resolve($pair->networkId, $pair->baseTokenAddress, $pair->coingeckoCoinId);
     }
 
+    /**
+     * Prefetch Markets platform hits for a batch of pairs so syncPairs does not
+     * run a whereHas exists() query per pool.
+     *
+     * @param  Collection<int, DexPairData>|iterable<DexPairData>  $pairs
+     */
+    public function warmListedLookup(iterable $pairs): void
+    {
+        /** @var array<string, array{network: string, addresses: array<string, string>}> $wanted */
+        $wanted = [];
+
+        foreach ($pairs as $pair) {
+            $networkId = $pair->networkId;
+            $address = $pair->baseTokenAddress;
+
+            if (! filled($networkId) || ! filled($address)) {
+                continue;
+            }
+
+            $platformId = self::NETWORK_TO_PLATFORM[$networkId] ?? null;
+            if (! is_string($platformId) || $platformId === '') {
+                continue;
+            }
+
+            $wanted[$platformId]['network'] = $networkId;
+            $wanted[$platformId]['addresses'][$address] = $address;
+        }
+
+        $this->listedLookup = [];
+
+        foreach ($wanted as $platformId => $info) {
+            $networkId = $info['network'];
+            $addresses = array_values($info['addresses']);
+
+            $query = CoinPlatform::query()
+                ->where('platform_id', $platformId)
+                ->whereNotNull('contract_address')
+                ->whereHas('coin', function ($coinQuery): void {
+                    $coinQuery->whereNotNull('rank');
+                });
+
+            if (in_array($networkId, self::CASE_SENSITIVE_NETWORKS, true)) {
+                $placeholders = implode(',', array_fill(0, count($addresses), '?'));
+                $query->whereRaw('BINARY `contract_address` in (' . $placeholders . ')', $addresses);
+            } else {
+                $lowered = array_map(strtolower(...), $addresses);
+                $placeholders = implode(',', array_fill(0, count($lowered), '?'));
+                $query->whereRaw('LOWER(`contract_address`) in (' . $placeholders . ')', $lowered);
+            }
+
+            foreach ($query->pluck('contract_address') as $contract) {
+                if (! is_string($contract) || $contract === '') {
+                    continue;
+                }
+
+                $this->listedLookup[$platformId][$this->addressKey($networkId, $contract)] = true;
+            }
+        }
+    }
+
+    public function clearListedLookup(): void
+    {
+        $this->listedLookup = null;
+    }
+
     public function listedOnMarkets(?string $networkId, ?string $baseTokenAddress): bool
     {
         if (! filled($networkId) || ! filled($baseTokenAddress)) {
@@ -78,6 +152,10 @@ final class DexAuditStatusResolver
         $platformId = self::NETWORK_TO_PLATFORM[$networkId] ?? null;
         if (! is_string($platformId) || $platformId === '') {
             return false;
+        }
+
+        if ($this->listedLookup !== null) {
+            return isset($this->listedLookup[$platformId][$this->addressKey($networkId, $baseTokenAddress)]);
         }
 
         $query = CoinPlatform::query()
@@ -94,5 +172,14 @@ final class DexAuditStatusResolver
         }
 
         return $query->exists();
+    }
+
+    private function addressKey(string $networkId, string $address): string
+    {
+        if (in_array($networkId, self::CASE_SENSITIVE_NETWORKS, true)) {
+            return $address;
+        }
+
+        return strtolower($address);
     }
 }

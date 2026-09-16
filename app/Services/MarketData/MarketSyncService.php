@@ -52,16 +52,11 @@ class MarketSyncService
             $precise = $this->precisePercentChanges($fetched);
 
             foreach ($fetched as $result) {
-                foreach ($result['coins'] as $coinData) {
-                    $this->upsertMarketCoin(
-                        $coinData,
-                        $result['provider'],
-                        $result['provider'] === 'coingecko'
-                            ? $precise->get(Str::upper($coinData->symbol))
-                            : null,
-                    );
-                    $processed++;
-                }
+                $processed += $this->upsertMarketCoinsPage(
+                    $result['coins'],
+                    $result['provider'],
+                    $result['provider'] === 'coingecko' ? $precise : collect(),
+                );
             }
 
             $run->update(['provider' => $providerUsed]);
@@ -188,58 +183,132 @@ class MarketSyncService
         }
     }
 
-    private function upsertMarketCoin(MarketCoinData $data, string $provider, ?PercentChangeData $precise = null): void
+    /**
+     * Resolve every coin on a page with a handful of lookups, then write inside one
+     * transaction. The old path ran provider-id + coin + updateOrCreate SELECTs per row.
+     *
+     * @param  Collection<int, MarketCoinData>  $coins
+     * @param  Collection<string, PercentChangeData>  $precise
+     */
+    private function upsertMarketCoinsPage(Collection $coins, string $provider, Collection $precise): int
     {
-        DB::transaction(function () use ($data, $provider, $precise): void {
-            $existingMap = CoinProviderId::query()
-                ->where('provider', $provider)
-                ->where('external_id', $data->externalId)
-                ->first();
+        if ($coins->isEmpty()) {
+            return 0;
+        }
 
-            $slug = $this->slugFor($data, $provider);
+        $externalIds = $coins->map(fn (MarketCoinData $coin): string => $coin->externalId)->all();
+        $slugsByExternalId = [];
+        foreach ($coins as $coinData) {
+            $slugsByExternalId[$coinData->externalId] = $this->slugFor($coinData, $provider);
+        }
 
-            $coin = $existingMap?->coin
-                ?? Coin::query()->where('slug', $slug)->first()
-                ?? new Coin(['slug' => $slug]);
+        /** @var Collection<string, CoinProviderId> $mapsByExternalId */
+        $mapsByExternalId = CoinProviderId::query()
+            ->with('coin')
+            ->where('provider', $provider)
+            ->whereIn('external_id', $externalIds)
+            ->get()
+            ->keyBy('external_id');
 
-            if (! $coin->exists) {
-                $coin->slug = $slug;
+        $missingSlugs = [];
+        foreach ($slugsByExternalId as $externalId => $slug) {
+            $map = $mapsByExternalId->get($externalId);
+            if ($map instanceof CoinProviderId && $map->coin instanceof Coin) {
+                continue;
             }
+            $missingSlugs[] = $slug;
+        }
 
-            $coin->fill([
-                'symbol' => $data->symbol,
-                'name' => $data->name,
-                'image_url' => $data->imageUrl ?? $coin->image_url,
-                'rank' => $data->rank,
-                'price' => $data->price,
-                'percent_change_1h' => $precise?->percentChange1h ?? $data->percentChange1h,
-                'percent_change_24h' => $data->percentChange24h,
-                'percent_change_7d' => $precise?->percentChange7d ?? $data->percentChange7d,
-                // percent_change_90d is deliberately absent: no ranking provider reports a
-                // 90-day window, so NinetyDayChangeSyncService derives it from chart history.
-                // Listing it here would overwrite that with null on every ranking sync.
-                'percent_change_30d' => $data->percentChange30d,
-                'percent_change_200d' => $data->percentChange200d,
-                'percent_change_1y' => $data->percentChange1y,
-                'market_cap' => $data->marketCap,
-                'volume_24h' => $data->volume24h,
-                'circulating_supply' => $data->circulatingSupply,
-                'sparkline_7d' => $data->sparkline7d ?? $coin->sparkline_7d,
-                'last_provider' => $provider,
-                'market_synced_at' => now(),
-            ]);
-            $coin->save();
+        /** @var Collection<string, Coin> $coinsBySlug */
+        $coinsBySlug = $missingSlugs === []
+            ? collect()
+            : Coin::query()->whereIn('slug', array_values(array_unique($missingSlugs)))->get()->keyBy('slug');
 
-            CoinProviderId::query()->updateOrCreate(
-                [
-                    'coin_id' => $coin->id,
-                    'provider' => $provider,
-                ],
-                [
-                    'external_id' => $data->externalId,
-                ],
-            );
+        $knownCoinIds = $mapsByExternalId
+            ->map(fn (CoinProviderId $map): int => (int) $map->coin_id)
+            ->merge($coinsBySlug->map(fn (Coin $coin): int => $coin->id))
+            ->unique()
+            ->values()
+            ->all();
+
+        /** @var Collection<int, CoinProviderId> $providerIdsByCoinId */
+        $providerIdsByCoinId = $knownCoinIds === []
+            ? collect()
+            : CoinProviderId::query()
+                ->where('provider', $provider)
+                ->whereIn('coin_id', $knownCoinIds)
+                ->get()
+                ->keyBy('coin_id');
+
+        DB::transaction(function () use (
+            $coins,
+            $provider,
+            $precise,
+            $slugsByExternalId,
+            $mapsByExternalId,
+            $coinsBySlug,
+            $providerIdsByCoinId,
+        ): void {
+            foreach ($coins as $coinData) {
+                $slug = $slugsByExternalId[$coinData->externalId];
+                $map = $mapsByExternalId->get($coinData->externalId);
+
+                $coin = ($map instanceof CoinProviderId ? $map->coin : null)
+                    ?? $coinsBySlug->get($slug)
+                    ?? new Coin(['slug' => $slug]);
+
+                if (! $coin->exists) {
+                    $coin->slug = $slug;
+                }
+
+                $coin->fill([
+                    'symbol' => $coinData->symbol,
+                    'name' => $coinData->name,
+                    'image_url' => $coinData->imageUrl ?? $coin->image_url,
+                    'rank' => $coinData->rank,
+                    'price' => $coinData->price,
+                    'percent_change_1h' => $precise->get(Str::upper($coinData->symbol))?->percentChange1h
+                        ?? $coinData->percentChange1h,
+                    'percent_change_24h' => $coinData->percentChange24h,
+                    'percent_change_7d' => $precise->get(Str::upper($coinData->symbol))?->percentChange7d
+                        ?? $coinData->percentChange7d,
+                    // percent_change_90d is deliberately absent: no ranking provider reports a
+                    // 90-day window, so NinetyDayChangeSyncService derives it from chart history.
+                    // Listing it here would overwrite that with null on every ranking sync.
+                    'percent_change_30d' => $coinData->percentChange30d,
+                    'percent_change_200d' => $coinData->percentChange200d,
+                    'percent_change_1y' => $coinData->percentChange1y,
+                    'market_cap' => $coinData->marketCap,
+                    'volume_24h' => $coinData->volume24h,
+                    'circulating_supply' => $coinData->circulatingSupply,
+                    'sparkline_7d' => $coinData->sparkline7d ?? $coin->sparkline_7d,
+                    'last_provider' => $provider,
+                    'market_synced_at' => now(),
+                ]);
+                $coin->save();
+
+                if (! $coinsBySlug->has($slug)) {
+                    $coinsBySlug->put($slug, $coin);
+                }
+
+                $providerMap = $providerIdsByCoinId->get($coin->id);
+                if ($providerMap instanceof CoinProviderId) {
+                    $providerMap->external_id = $coinData->externalId;
+                    $providerMap->save();
+                } else {
+                    $providerMap = CoinProviderId::query()->create([
+                        'coin_id' => $coin->id,
+                        'provider' => $provider,
+                        'external_id' => $coinData->externalId,
+                    ]);
+                    $providerIdsByCoinId->put($coin->id, $providerMap);
+                }
+
+                $mapsByExternalId->put($coinData->externalId, $providerMap);
+            }
         });
+
+        return $coins->count();
     }
 
     private function slugFor(MarketCoinData $data, string $provider): string

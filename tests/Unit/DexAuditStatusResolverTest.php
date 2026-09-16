@@ -8,7 +8,9 @@ use App\Models\Coin;
 use App\Models\CoinPlatform;
 use App\Services\MarketData\DexAuditStatusResolver;
 use App\Services\MarketData\DTOs\DexPairData;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 class DexAuditStatusResolverTest extends TestCase
@@ -162,5 +164,104 @@ class DexAuditStatusResolverTest extends TestCase
             DexAuditStatusResolver::STATUS_VERIFIED,
             app(DexAuditStatusResolver::class)->resolveFromPairData($data),
         );
+    }
+
+    public function test_warm_listed_lookup_avoids_per_pair_queries(): void
+    {
+        $coin = Coin::query()->create([
+            'slug' => 'pepe',
+            'symbol' => 'PEPE',
+            'name' => 'Pepe',
+            'rank' => 50,
+        ]);
+
+        CoinPlatform::query()->create([
+            'coin_id' => $coin->id,
+            'platform_id' => 'ethereum',
+            'contract_address' => '0xPePeBaseTokenAddress000000000000000001',
+        ]);
+
+        $pairs = collect([
+            new DexPairData(
+                externalId: 'eth_a',
+                pair: 'PEPE/WETH',
+                baseSymbol: 'PEPE',
+                quoteSymbol: 'WETH',
+                dex: 'Uniswap V3',
+                chain: 'Ethereum',
+                networkId: 'eth',
+                contractAddress: '0xpool',
+                baseTokenAddress: '0xpepebasetokenaddress000000000000000001',
+                quoteTokenAddress: null,
+                baseTokenName: 'Pepe',
+                coingeckoCoinId: 'pepe',
+                auditStatus: 'unverified',
+                price: 1.0,
+                percentChange24h: 0.0,
+                liquidityUsd: 1.0,
+                volume24h: 1.0,
+                volume1h: null,
+                volume6h: null,
+                fdvUsd: null,
+                marketCapUsd: null,
+                txns24h: null,
+                buys24h: null,
+                sells24h: null,
+                pairedAt: null,
+                isTrending: false,
+                rank: null,
+            ),
+            new DexPairData(
+                externalId: 'eth_b',
+                pair: 'UNKNOWN/WETH',
+                baseSymbol: 'UNKNOWN',
+                quoteSymbol: 'WETH',
+                dex: 'Uniswap V3',
+                chain: 'Ethereum',
+                networkId: 'eth',
+                contractAddress: '0xpool2',
+                baseTokenAddress: '0xunknown000000000000000000000000000001',
+                quoteTokenAddress: null,
+                baseTokenName: 'Unknown',
+                coingeckoCoinId: null,
+                auditStatus: 'unverified',
+                price: 1.0,
+                percentChange24h: 0.0,
+                liquidityUsd: 1.0,
+                volume24h: 1.0,
+                volume1h: null,
+                volume6h: null,
+                fdvUsd: null,
+                marketCapUsd: null,
+                txns24h: null,
+                buys24h: null,
+                sells24h: null,
+                pairedAt: null,
+                isTrending: false,
+                rank: null,
+            ),
+        ]);
+
+        $resolver = app(DexAuditStatusResolver::class);
+        $resolver->warmListedLookup($pairs);
+
+        $selects = 0;
+        Event::listen(QueryExecuted::class, function (QueryExecuted $query) use (&$selects): void {
+            if (str_starts_with(strtolower($query->sql), 'select')) {
+                $selects++;
+            }
+        });
+
+        $this->assertSame(
+            DexAuditStatusResolver::STATUS_VERIFIED,
+            $resolver->resolveFromPairData($pairs[0]),
+        );
+        $this->assertSame(
+            DexAuditStatusResolver::STATUS_UNVERIFIED,
+            $resolver->resolveFromPairData($pairs[1]),
+        );
+        $this->assertSame(0, $selects);
+
+        $resolver->clearListedLookup();
     }
 }

@@ -417,6 +417,11 @@ class MarketStatusAndNetworksTest extends TestCase
             'provider' => 'coingecko',
             'external_id' => 'pepe',
         ]);
+        CoinPlatform::query()->create([
+            'coin_id' => $coin->id,
+            'platform_id' => 'base',
+            'contract_address' => '0xstale',
+        ]);
 
         config(['marketdata.coingecko.base_url' => 'https://api.coingecko.com/api/v3']);
 
@@ -450,6 +455,10 @@ class MarketStatusAndNetworksTest extends TestCase
         ]);
         $this->assertDatabaseMissing('coin_platforms', [
             'platform_id' => 'solana',
+        ]);
+        $this->assertDatabaseMissing('coin_platforms', [
+            'coin_id' => $coin->id,
+            'platform_id' => 'base',
         ]);
     }
 
