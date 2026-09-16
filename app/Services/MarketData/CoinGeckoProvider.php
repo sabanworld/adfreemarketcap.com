@@ -12,11 +12,13 @@ use App\Services\MarketData\DTOs\MarketCoinData;
 use App\Services\MarketData\Exceptions\ProviderCoinNotFoundException;
 use App\Support\PlainText;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 class CoinGeckoProvider implements ExchangeRateProvider, MarketDataProvider
 {
@@ -362,10 +364,20 @@ class CoinGeckoProvider implements ExchangeRateProvider, MarketDataProvider
 
     private function client(): PendingRequest
     {
+        $retries = max(1, (int) config('marketdata.coingecko.retry_times', 4));
+        $baseSleep = max(0, (int) config('marketdata.coingecko.retry_sleep_ms', 250));
+
         $request = app(ProviderCallCounter::class)->count(
             Http::baseUrl((string) config('marketdata.coingecko.base_url'))
                 ->acceptJson()
-                ->timeout(30),
+                ->timeout(30)
+                ->retry(
+                    $retries,
+                    fn (int $attempt): int => $baseSleep * $attempt,
+                    fn (Throwable $exception): bool => $exception instanceof RequestException
+                        && $exception->response?->status() === 429,
+                    throw: false,
+                ),
             ProviderCallCounter::COINGECKO,
         );
 

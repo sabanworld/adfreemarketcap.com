@@ -15,6 +15,7 @@ use App\Jobs\SyncNinetyDayChanges;
 use App\Jobs\SyncNostrFeed;
 use App\Jobs\SyncStaleCoinDetails;
 use App\Jobs\SyncTopCoinTickers;
+use Illuminate\Console\Scheduling\Event;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -37,104 +38,112 @@ $ninetyDayInterval = max(1, min(59, (int) config('marketdata.sync.ninety_day_int
 $platformsHours = max(1, (int) config('marketdata.sync.platforms_interval_hours', 24));
 $nostrInterval = max(1, min(59, (int) config('marketdata.sync.nostr_interval_minutes', 30)));
 
-Schedule::job(new SyncMarketData)
-    ->cron("*/{$marketsInterval} * * * *")
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('marketdata:sync-markets')
-    ->sentryMonitor();
+$sentryMonitor = static function (Event $event): Event {
+    if (config('sentry.cron_monitoring')) {
+        $event->sentryMonitor();
+    }
 
-Schedule::job(new SyncGlobalData)
-    ->cron("*/{$marketsInterval} * * * *")
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('marketdata:sync-global')
-    ->sentryMonitor();
+    return $event;
+};
 
-Schedule::job(new SyncMarketStatus)
-    ->cron("*/{$statusInterval} * * * *")
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('marketdata:sync-status')
-    ->sentryMonitor();
+$sentryMonitor(
+    Schedule::job(new SyncMarketData)
+        ->cron("*/{$marketsInterval} * * * *")
+        ->withoutOverlapping()
+        ->name('marketdata:sync-markets')
+);
+
+$sentryMonitor(
+    Schedule::job(new SyncGlobalData)
+        ->cron("*/{$marketsInterval} * * * *")
+        ->withoutOverlapping()
+        ->name('marketdata:sync-global')
+);
+
+$sentryMonitor(
+    Schedule::job(new SyncMarketStatus)
+        ->cron("*/{$statusInterval} * * * *")
+        ->withoutOverlapping()
+        ->name('marketdata:sync-status')
+);
 
 // Hourly, but almost every run is a no-op: it only fetches coins whose 90-day change has gone
 // stale, so this is a once-a-day pass spread across as many runs as the per-run time budget needs.
 // The snapshot beside it can therefore be up to an hour behind a freshly derived figure, which is
 // immaterial for a 90-day number.
-Schedule::job(new SyncNinetyDayChanges)
-    ->cron("*/{$ninetyDayInterval} * * * *")
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('marketdata:sync-ninety-day')
-    ->sentryMonitor();
+$sentryMonitor(
+    Schedule::job(new SyncNinetyDayChanges)
+        ->cron("*/{$ninetyDayInterval} * * * *")
+        ->withoutOverlapping()
+        ->name('marketdata:sync-ninety-day')
+);
 
-Schedule::job(new SyncDexPairs)
-    ->cron("*/{$dexInterval} * * * *")
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('marketdata:sync-dex')
-    ->sentryMonitor();
+$sentryMonitor(
+    Schedule::job(new SyncDexPairs)
+        ->cron("*/{$dexInterval} * * * *")
+        ->withoutOverlapping()
+        ->name('marketdata:sync-dex')
+);
 
-Schedule::job(new SyncHotCoinTickers)
-    ->cron("*/{$hotTickersInterval} * * * *")
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('marketdata:sync-hot-tickers')
-    ->sentryMonitor();
+$sentryMonitor(
+    Schedule::job(new SyncHotCoinTickers)
+        ->cron("*/{$hotTickersInterval} * * * *")
+        ->withoutOverlapping()
+        ->name('marketdata:sync-hot-tickers')
+);
 
-Schedule::job(new SyncHotCoinCharts)
-    ->cron("*/{$hotChartsInterval} * * * *")
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('marketdata:sync-hot-charts')
-    ->sentryMonitor();
+$sentryMonitor(
+    Schedule::job(new SyncHotCoinCharts)
+        ->cron("*/{$hotChartsInterval} * * * *")
+        ->withoutOverlapping()
+        ->name('marketdata:sync-hot-charts')
+);
 
 if ($tickersTopCoins > 0) {
-    Schedule::job(new SyncTopCoinTickers)
-        ->cron("*/{$tickersInterval} * * * *")
-        ->withoutOverlapping()
-        ->onOneServer()
-        ->name('marketdata:sync-tickers')
-        ->sentryMonitor();
+    $sentryMonitor(
+        Schedule::job(new SyncTopCoinTickers)
+            ->cron("*/{$tickersInterval} * * * *")
+            ->withoutOverlapping()
+            ->name('marketdata:sync-tickers')
+    );
 }
 
-Schedule::job(new SyncStaleCoinDetails)
-    ->cron("*/{$detailInterval} * * * *")
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('marketdata:sync-coin-details')
-    ->sentryMonitor();
+$sentryMonitor(
+    Schedule::job(new SyncStaleCoinDetails)
+        ->cron("*/{$detailInterval} * * * *")
+        ->withoutOverlapping()
+        ->name('marketdata:sync-coin-details')
+);
 
-Schedule::job(new SyncCurrencyRates)
-    ->cron("*/{$currencyInterval} * * * *")
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('marketdata:sync-currency-rates')
-    ->sentryMonitor();
+$sentryMonitor(
+    Schedule::job(new SyncCurrencyRates)
+        ->cron("*/{$currencyInterval} * * * *")
+        ->withoutOverlapping()
+        ->name('marketdata:sync-currency-rates')
+);
 
-Schedule::job(new SyncCoinInsights)
-    ->cron("15 */{$insightsHours} * * *")
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('marketdata:sync-insights')
-    ->sentryMonitor();
+$sentryMonitor(
+    Schedule::job(new SyncCoinInsights)
+        ->cron("15 */{$insightsHours} * * *")
+        ->withoutOverlapping()
+        ->name('marketdata:sync-insights')
+);
 
-Schedule::job(new SyncCoinPlatforms)
-    ->cron("30 */{$platformsHours} * * *")
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('marketdata:sync-platforms')
-    ->sentryMonitor();
+$sentryMonitor(
+    Schedule::job(new SyncCoinPlatforms)
+        ->cron("30 */{$platformsHours} * * *")
+        ->withoutOverlapping()
+        ->name('marketdata:sync-platforms')
+);
 
-Schedule::job(new SyncNostrFeed)
-    ->cron("*/{$nostrInterval} * * * *")
-    ->withoutOverlapping()
-    ->onOneServer()
-    ->name('marketdata:sync-nostr')
-    ->sentryMonitor();
+$sentryMonitor(
+    Schedule::job(new SyncNostrFeed)
+        ->cron("*/{$nostrInterval} * * * *")
+        ->withoutOverlapping()
+        ->name('marketdata:sync-nostr')
+);
 
-Schedule::command('horizon:snapshot')
-    ->everyFiveMinutes()
-    ->onOneServer()
-    ->sentryMonitor();
+$sentryMonitor(
+    Schedule::command('horizon:snapshot')
+        ->everyFiveMinutes()
+);

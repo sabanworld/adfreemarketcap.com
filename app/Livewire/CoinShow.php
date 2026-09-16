@@ -98,7 +98,6 @@ class CoinShow extends Component
             'tickers' => $coin->tickers,
             'chartRange' => $range,
             'chartPoints' => $chartPoints,
-            'chartLabels' => $charts->chartLabels($chartPoints, $range),
             'availableRanges' => $availableRanges,
             'rangeMeta' => CoinChartService::RANGES,
             'spokenRange' => $charts->spokenRange($range),
@@ -125,8 +124,10 @@ class CoinShow extends Component
         $display = app(MarketDisplayService::class);
         $unit = $display->unit();
         $values = array_map(static fn (array $point): float => $point[1], $points);
+        $timestamps = array_map(static fn (array $point): int => (int) $point[0], $points);
         $payload = Js::from([
-            'labels' => $charts->chartLabels($points, $range),
+            'timestamps' => $timestamps,
+            'range' => $range,
             'values' => $values,
             'up' => ($display->change($coin->percent_change_24h) ?? 0) >= 0,
             'symbol' => $unit->symbol,

@@ -6,8 +6,8 @@
     $unit = $display->unit();
     $change24 = $display->change($pair->percent_change_24h);
     $chartUp = ($change24 ?? 0) >= 0;
-    $labels = $chartLabels ?? [];
     $values = array_map(static fn (array $point): float => $point[1], $chartPoints ?? []);
+    $timestamps = array_map(static fn (array $point): int => (int) $point[0], $chartPoints ?? []);
     $truncate = static function (?string $value, int $keep = 4): string {
         if (! filled($value)) {
             return '—';
@@ -222,7 +222,8 @@
 
 @script
 <script>
-    const labels = @js($labels);
+    const timestamps = @js($timestamps);
+    const range = @js($chartRange);
     const values = @js($values);
     const up = @js($chartUp);
     const symbol = @js($unit->symbol);
@@ -230,7 +231,7 @@
 
     requestAnimationFrame(() => {
         if (window.afmcMountDexChart) {
-            window.afmcMountDexChart({ labels, values, up, symbol, symbolAfter });
+            window.afmcMountDexChart({ timestamps, range, values, up, symbol, symbolAfter });
         }
     });
 </script>

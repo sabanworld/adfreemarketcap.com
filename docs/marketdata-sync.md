@@ -21,7 +21,7 @@ Public pages read rankings and coin details from MySQL only. Freshness comes fro
 | `App\Jobs\SyncCurrencyRates` | every `CURRENCY_RATES_INTERVAL` minutes (default 30) | `config/currency.php`, see [`docs/currency.md`](currency.md) |
 | `horizon:snapshot` | every 5 minutes | Horizon metrics |
 
-Schedule definitions live in [`routes/console.php`](../routes/console.php). Events use `withoutOverlapping()` and `onOneServer()` so a slow run does not stack.
+Schedule definitions live in [`routes/console.php`](../routes/console.php). Events use `withoutOverlapping()` so a slow run does not stack.
 
 ### Approximate CoinGecko call budget (defaults)
 
@@ -39,7 +39,7 @@ Roughly **~110 scheduled calls/hour**, plus on-visit detail/ticker jobs for coin
 
 DexScan uses **GeckoTerminal / CoinGecko onchain** (`DexDataProvider` → `GeckoTerminalProvider`). With no API key, calls hit the public `api.geckoterminal.com` host (strict free-tier ceiling). When `GECKOTERMINAL_API_KEY` or `COINGECKO_API_KEY` is set, every Dex call (lists, pair/token detail, trades, OHLCV, holders) goes to `GECKOTERMINAL_ONCHAIN_BASE_URL` (`pro-api.coingecko.com/api/v3/onchain`) so the Pro rate limit applies. Keep call volume modest either way (trending + new pages by default; optional comma-separated `MARKETDATA_DEX_NETWORKS`). Do not call the provider from Livewire. Fresh meme pools can report 24h moves far past `decimal(12, 4)` on `dex_pairs.percent_change_24h`; `DexSyncService` clamps those to ±99,999,999.9999 and continues the run if a single row still fails to write.
 
-Pair and token detail pages dispatch `SyncDexPairDetail` / `SyncDexTokenDetail` when charts, trades, or holders are missing or older than `MARKETDATA_DEX_*_STALE_MINUTES`. After each list sync, `MARKETDATA_DEX_DETAIL_PREWARM` (default 5) trending pairs also get a detail job. One token detail is several requests (token, pools, trades, three OHLCV series, holders), and those share the CoinGecko Pro minute budget with markets/tickers/charts when the same key is used. A 429 is retried with `GECKOTERMINAL_RETRY_TIMES` / `GECKOTERMINAL_RETRY_SLEEP_MS`. Top holders soft-fail when the key lacks access.
+Pair and token detail pages dispatch `SyncDexPairDetail` / `SyncDexTokenDetail` when charts, trades, or holders are missing or older than `MARKETDATA_DEX_*_STALE_MINUTES`. After each list sync, `MARKETDATA_DEX_DETAIL_PREWARM` (default 5) trending pairs also get a detail job. One token detail is several requests (token, pools, trades, three OHLCV series, holders), and those share the CoinGecko Pro minute budget with markets/tickers/charts when the same key is used. A 429 is retried with `GECKOTERMINAL_RETRY_TIMES` / `GECKOTERMINAL_RETRY_SLEEP_MS` on Dex, and with `COINGECKO_RETRY_TIMES` / `COINGECKO_RETRY_SLEEP_MS` on CoinGecko REST (charts, detail, tickers, markets). Top holders soft-fail when the key lacks access.
 
 Each outbound HTTP attempt (including retries) increments `provider_call_hours`. Admin → System → API calls, or `php artisan marketdata:call-stats`, shows this hour, today, and this month per provider. CoinGecko REST and Dex onchain are also summed as one Pro quota. Counts are server-side only; nothing is logged from the visitor browser.
 
@@ -179,4 +179,4 @@ Run the scheduler every minute (Horizon separately under Supervisor):
 * * * * * cd /path/to/app && php artisan schedule:run --no-interaction
 ```
 
-Scheduled jobs call `->sentryMonitor()` only when `config('sentry.cron_monitoring')` is true (default: production). Local Sail leaves it off so `schedule:work` does not overwrite Sentry monitor schedules or raise missed check-ins. Set `SENTRY_CRON_MONITORING=true` to opt in.
+Scheduled jobs call `->sentryMonitor()` only when `config('sentry.cron_monitoring')` is true (default: production). Local Sail leaves it off so `schedule:work` does not overwrite Sentry monitor schedules or raise missed check-ins. Set `SENTRY_CRON_MONITORING=true` to opt in. Monitors upsert on the first real check-in (`schedule:run` actually fires the task), and only when `SENTRY_LARAVEL_DSN` is set for that process; the env flag alone does not create them.

@@ -6,7 +6,6 @@ namespace App\Services\MarketData;
 
 use App\Models\DexChartSeries;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 class DexChartService
 {
@@ -98,32 +97,20 @@ class DexChartService
     }
 
     /**
-     * Category labels for Chart.js. The stored series uses millisecond timestamps;
-     * printing those on the axis is noise.
+     * Label band for chart axes. Actual strings are formatted in the browser
+     * (visitor timezone via Intl); this only names which style to use.
      *
-     * @param  list<array{0: int, 1: float}>  $points
-     * @return list<string>
+     * @return 'time'|'day'|'month'
      */
-    public function chartLabels(array $points, string $range): array
+    public function chartLabelStyle(string $range): string
     {
         $range = $this->normalizeRange($range);
-        $format = match (true) {
-            in_array($range, ['1h', '12h', '1d'], true) => 'H:i',
-            in_array($range, ['7d', '1m', '3m'], true) => 'M j',
-            default => 'M Y',
+
+        return match (true) {
+            in_array($range, ['1h', '12h', '1d'], true) => 'time',
+            in_array($range, ['7d', '1m', '3m'], true) => 'day',
+            default => 'month',
         };
-
-        $labels = [];
-
-        foreach ($points as $point) {
-            if (! isset($point[0]) || ! is_numeric($point[0])) {
-                continue;
-            }
-
-            $labels[] = Carbon::createFromTimestamp((int) floor(((int) $point[0]) / 1000))->format($format);
-        }
-
-        return $labels;
     }
 
     /**

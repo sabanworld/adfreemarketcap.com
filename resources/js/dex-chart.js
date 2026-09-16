@@ -1,4 +1,5 @@
 import Chart from 'chart.js/auto';
+import { formatChartLabel } from './local-time';
 
 function cssVar(name, fallback) {
     const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -48,7 +49,9 @@ function paintTheme(chart, up) {
  * Livewire morph must not touch the canvas (wire:ignore); call this from @script
  * whenever range data changes.
  *
- * @param {{ labels?: string[], values?: number[], up?: boolean, symbol?: string, symbolAfter?: boolean }} payload
+ * Labels are built in the visitor's timezone from epoch ms + range (not server UTC strings).
+ *
+ * @param {{ timestamps?: number[], range?: string, values?: number[], up?: boolean, symbol?: string, symbolAfter?: boolean }} payload
  */
 export function mountDexChart(payload = {}) {
     const canvas = document.getElementById('dex-chart');
@@ -57,7 +60,11 @@ export function mountDexChart(payload = {}) {
         return;
     }
 
-    const labels = Array.isArray(payload.labels) ? payload.labels : JSON.parse(canvas.dataset.labels || '[]');
+    const timestamps = Array.isArray(payload.timestamps)
+        ? payload.timestamps
+        : JSON.parse(canvas.dataset.timestamps || '[]');
+    const range = typeof payload.range === 'string' ? payload.range : (canvas.dataset.range || '7d');
+    const labels = timestamps.map((ms) => formatChartLabel(Number(ms), range));
     const values = Array.isArray(payload.values) ? payload.values : JSON.parse(canvas.dataset.values || '[]');
     const up = typeof payload.up === 'boolean' ? payload.up : canvas.dataset.up === '1';
     const symbol = typeof payload.symbol === 'string' ? payload.symbol : (canvas.dataset.symbol || '$');
@@ -199,7 +206,7 @@ document.addEventListener('livewire:navigated', () => {
     // Full navigations re-run @script; this is a safety net if data attrs exist.
     const canvas = document.getElementById('dex-chart');
 
-    if (canvas?.dataset?.labels) {
+    if (canvas?.dataset?.timestamps) {
         mountDexChart();
     }
 });

@@ -35,6 +35,10 @@ return [
         'base_url' => env('COINGECKO_BASE_URL', 'https://api.coingecko.com/api/v3'),
         'api_key' => env('COINGECKO_API_KEY'),
         'api_key_header' => str_replace('_', '-', (string) env('COINGECKO_API_KEY_HEADER', 'x-cg-demo-api-key')),
+        // Shared Pro minute budget with Dex onchain can still 429 under a burst;
+        // retry briefly so chart and detail jobs recover instead of failing hard.
+        'retry_times' => (int) env('COINGECKO_RETRY_TIMES', 4),
+        'retry_sleep_ms' => (int) env('COINGECKO_RETRY_SLEEP_MS', 250),
     ],
 
     'coinpaprika' => [

@@ -6,8 +6,8 @@
     $display = app(MarketDisplayService::class);
     $unit = $display->unit();
 
-    $labels = $chartLabels ?? [];
     $values = array_map(static fn (array $point): float => $point[1], $chartPoints ?? []);
+    $timestamps = array_map(static fn (array $point): int => (int) $point[0], $chartPoints ?? []);
 
     $change24 = $display->change($coin->percent_change_24h);
     $chartUp = ($change24 ?? 0) >= 0;
@@ -456,7 +456,8 @@
         };
 
         const initial = {
-            labels: @js($labels),
+            timestamps: @js($timestamps),
+            range: @js($chartRange),
             values: @js($values),
             up: @js($chartUp),
             symbol: @js($unit->symbol),

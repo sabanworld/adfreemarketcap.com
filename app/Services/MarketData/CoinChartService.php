@@ -8,7 +8,6 @@ use App\Models\Coin;
 use App\Models\CoinChartSeries;
 use App\Models\CoinProviderId;
 use App\Services\Currency\MarketDisplayService;
-use Illuminate\Support\Carbon;
 use InvalidArgumentException;
 
 final class CoinChartService
@@ -153,24 +152,20 @@ final class CoinChartService
     }
 
     /**
-     * @return list<string>
+     * Label band for chart axes. Actual strings are formatted in the browser
+     * (visitor timezone via Intl); this only names which style to use.
+     *
+     * @return 'time'|'day'|'month'
      */
-    public function chartLabels(array $points, string $range): array
+    public function chartLabelStyle(string $range): string
     {
         $range = $this->normalizeRange($range);
-        $format = match (true) {
-            in_array($range, ['1h', '12h', '1d'], true) => 'H:i',
-            in_array($range, ['7d', '1m', '3m'], true) => 'M j',
-            default => 'M Y',
+
+        return match (true) {
+            in_array($range, ['1h', '12h', '1d'], true) => 'time',
+            in_array($range, ['7d', '1m', '3m'], true) => 'day',
+            default => 'month',
         };
-
-        $labels = [];
-
-        foreach ($points as [$timestamp]) {
-            $labels[] = Carbon::createFromTimestamp((int) floor(((int) $timestamp) / 1000))->format($format);
-        }
-
-        return $labels;
     }
 
     /**

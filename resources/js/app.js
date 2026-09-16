@@ -1,4 +1,8 @@
 import './bootstrap';
+import { hydrateLocalTimes } from './local-time';
+
+hydrateLocalTimes();
+document.addEventListener('livewire:navigated', () => hydrateLocalTimes());
 
 /*
  * Share action for a market row panel.
