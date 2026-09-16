@@ -138,12 +138,12 @@ class NostrFeedSyncService
             $run->markSucceeded($processed, $message);
 
             return $run->fresh();
-        } catch (Throwable $exception) {
+        } catch (Throwable $throwable) {
             if ($run->fresh()?->status !== SyncRun::STATUS_FAILED) {
-                $run->markFailed($exception->getMessage());
+                $run->markFailed($throwable->getMessage());
             }
 
-            throw $exception;
+            throw $throwable;
         }
     }
 

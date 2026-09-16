@@ -35,7 +35,7 @@ class CoinGeckoProviderTest extends TestCase
                 ->push([
                     'status' => [
                         'error_code' => 429,
-                        'error_message' => 'You\'ve exceeded the Rate Limit.',
+                        'error_message' => "You've exceeded the Rate Limit.",
                     ],
                 ], 429)
                 ->push([
@@ -81,7 +81,7 @@ class CoinGeckoProviderTest extends TestCase
             'pro-api.coingecko.com/api/v3/coins/bitcoin/market_chart*' => Http::response([
                 'status' => [
                     'error_code' => 429,
-                    'error_message' => 'You\'ve exceeded the Rate Limit.',
+                    'error_message' => "You've exceeded the Rate Limit.",
                 ],
             ], 429),
         ]);

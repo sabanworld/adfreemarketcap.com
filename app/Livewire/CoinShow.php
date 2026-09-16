@@ -79,6 +79,7 @@ class CoinShow extends Component
     {
         $coin = $this->loadCoin();
         $coin->loadMissing('chartSeries');
+
         $pageSeo = $seo->forCoin($coin);
 
         $range = $charts->normalizeRange($this->chartRange);

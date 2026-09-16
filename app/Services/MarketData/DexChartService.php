@@ -85,7 +85,7 @@ class DexChartService
             return $this->normalizePoints($points);
         }
 
-        $cutoff = (int) (now()->getTimestampMs() - ($seconds * 1000));
+        $cutoff = now()->getTimestampMs() - ($seconds * 1000);
 
         return $this->normalizePoints(array_values(array_filter(
             $points,

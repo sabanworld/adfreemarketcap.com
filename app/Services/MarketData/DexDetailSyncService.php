@@ -72,10 +72,10 @@ class DexDetailSyncService
             $run->markSucceeded(1, 'Synced DEX pair detail for ' . $pair->slug);
 
             return $run->fresh();
-        } catch (Throwable $exception) {
-            $run->markFailed($exception->getMessage());
+        } catch (Throwable $throwable) {
+            $run->markFailed($throwable->getMessage());
 
-            throw $exception;
+            throw $throwable;
         }
     }
 
@@ -122,10 +122,10 @@ class DexDetailSyncService
             $run->markSucceeded(1, 'Synced DEX token detail for ' . $token->network_id . '/' . $token->address);
 
             return $run->fresh();
-        } catch (Throwable $exception) {
-            $run->markFailed($exception->getMessage());
+        } catch (Throwable $throwable) {
+            $run->markFailed($throwable->getMessage());
 
-            throw $exception;
+            throw $throwable;
         }
     }
 

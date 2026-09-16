@@ -138,7 +138,7 @@ class ExchangeWidgetTest extends TestCase
         $response->assertOk();
         // @json escapes forward slashes, so the literal URL string is not in the HTML.
         $response->assertSee('changenow.io\/embeds\/exchange-widget\/v2\/stepper-connector.js', false);
-        $response->assertDontSee('<script defer type=\'text/javascript\' src=\'https://changenow.io', false);
+        $response->assertDontSee("<script defer type='text/javascript' src='https://changenow.io", false);
         $response->assertDontSee('<script src="https://changenow.io', false);
     }
 

@@ -63,6 +63,7 @@ class NostrFeedProvider
             if ($driver === null || $baseUrl === null || $baseUrl === '') {
                 continue;
             }
+
             $backends[] = ['driver' => $driver, 'base_url' => $baseUrl];
         }
 
@@ -205,9 +206,11 @@ class NostrFeedProvider
             if (! is_array($tag) || ! isset($tag[0], $tag[1])) {
                 continue;
             }
+
             if ($tag[0] !== 't' || ! is_string($tag[1]) || $tag[1] === '') {
                 continue;
             }
+
             $tags[] = strtolower($tag[1]);
         }
 

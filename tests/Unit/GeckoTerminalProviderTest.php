@@ -114,7 +114,7 @@ class GeckoTerminalProviderTest extends TestCase
                 ->push([
                     'status' => [
                         'error_code' => 429,
-                        'error_message' => 'You\'ve exceeded the Rate Limit.',
+                        'error_message' => "You've exceeded the Rate Limit.",
                     ],
                 ], 429)
                 ->push(['data' => [], 'included' => []]),
@@ -137,7 +137,7 @@ class GeckoTerminalProviderTest extends TestCase
             'pro-api.coingecko.com/api/v3/onchain/networks/trending_pools*' => Http::response([
                 'status' => [
                     'error_code' => 429,
-                    'error_message' => 'You\'ve exceeded the Rate Limit.',
+                    'error_message' => "You've exceeded the Rate Limit.",
                 ],
             ], 429),
         ]);

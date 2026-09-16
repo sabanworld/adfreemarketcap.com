@@ -122,6 +122,6 @@ final class DexQualityAssessor
             return 0.0;
         }
 
-        return (float) $pair->paired_at->diffInDays(Carbon::now(), true);
+        return $pair->paired_at->diffInDays(Carbon::now(), true);
     }
 }

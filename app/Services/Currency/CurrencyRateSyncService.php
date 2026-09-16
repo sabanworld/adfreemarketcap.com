@@ -58,10 +58,10 @@ class CurrencyRateSyncService
             $run->markSucceeded($processed, "Synced {$processed} currency rates.");
 
             return $run->fresh();
-        } catch (Throwable $exception) {
-            $run->markFailed($exception->getMessage());
+        } catch (Throwable $throwable) {
+            $run->markFailed($throwable->getMessage());
 
-            throw $exception;
+            throw $throwable;
         }
     }
 }

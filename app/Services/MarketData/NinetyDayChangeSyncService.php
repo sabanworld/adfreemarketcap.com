@@ -76,10 +76,10 @@ class NinetyDayChangeSyncService
             $run->markSucceeded($processed, $message);
 
             return $run->fresh();
-        } catch (Throwable $exception) {
-            $run->markFailed($exception->getMessage());
+        } catch (Throwable $throwable) {
+            $run->markFailed($throwable->getMessage());
 
-            throw $exception;
+            throw $throwable;
         }
     }
 
@@ -93,8 +93,8 @@ class NinetyDayChangeSyncService
 
         try {
             $points = $this->coinGecko->fetchMarketChart($externalId, '90', 'daily');
-        } catch (ProviderCoinNotFoundException $exception) {
-            $this->cleaner->clean($coin, $exception->provider, $exception->externalId);
+        } catch (ProviderCoinNotFoundException $providerCoinNotFoundException) {
+            $this->cleaner->clean($coin, $providerCoinNotFoundException->provider, $providerCoinNotFoundException->externalId);
 
             return false;
         }

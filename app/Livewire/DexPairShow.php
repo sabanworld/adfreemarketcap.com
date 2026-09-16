@@ -66,6 +66,7 @@ class DexPairShow extends Component
     {
         $pair = $this->loadPair();
         $pair->loadMissing(['token', 'chartSeries', 'trades' => fn ($q) => $q->orderByDesc('traded_at')->limit(50)]);
+
         $token = $pair->token;
 
         if ($token !== null) {

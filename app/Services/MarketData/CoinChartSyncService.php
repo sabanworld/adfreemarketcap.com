@@ -118,10 +118,10 @@ class CoinChartSyncService
             $run->markSucceeded($processed, 'Synced chart series for hot majors.');
 
             return $run->fresh();
-        } catch (Throwable $exception) {
-            $run->markFailed($exception->getMessage());
+        } catch (Throwable $throwable) {
+            $run->markFailed($throwable->getMessage());
 
-            throw $exception;
+            throw $throwable;
         }
     }
 }

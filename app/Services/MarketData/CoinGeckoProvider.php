@@ -139,9 +139,11 @@ class CoinGeckoProvider implements ExchangeRateProvider, MarketDataProvider
                     if (! is_string($platformId) || $platformId === '') {
                         continue;
                     }
+
                     if (! is_string($contract) || $contract === '') {
                         continue;
                     }
+
                     $platforms[$platformId] = $contract;
                 }
             }

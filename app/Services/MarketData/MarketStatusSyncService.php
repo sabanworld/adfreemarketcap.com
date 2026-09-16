@@ -52,10 +52,10 @@ class MarketStatusSyncService
             $run->markSucceeded(1, 'Synced fear and greed, AFMC10, and altcoin season.');
 
             return $run->fresh();
-        } catch (Throwable $exception) {
-            $run->markFailed($exception->getMessage());
+        } catch (Throwable $throwable) {
+            $run->markFailed($throwable->getMessage());
 
-            throw $exception;
+            throw $throwable;
         }
     }
 

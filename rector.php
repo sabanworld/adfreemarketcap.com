@@ -16,6 +16,6 @@ return RectorConfig::configure()
     ->withSkip([
         __DIR__ . '/bootstrap/cache',
     ])
-    ->withDeadCodeLevel(0)
-    ->withCodeQualityLevel(0)
-    ->withCodingStyleLevel(0);
+    ->withDeadCodeLevel(10)
+    ->withCodeQualityLevel(10)
+    ->withCodingStyleLevel(10);

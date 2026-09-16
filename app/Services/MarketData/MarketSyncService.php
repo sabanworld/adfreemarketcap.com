@@ -66,10 +66,10 @@ class MarketSyncService
             Cache::forget(SitemapController::CACHE_KEY);
 
             return $run->fresh();
-        } catch (Throwable $exception) {
-            $run->markFailed($exception->getMessage());
+        } catch (Throwable $throwable) {
+            $run->markFailed($throwable->getMessage());
 
-            throw $exception;
+            throw $throwable;
         }
     }
 
@@ -101,10 +101,10 @@ class MarketSyncService
             $run->markSucceeded(1, 'Synced global market stats.');
 
             return $run->fresh();
-        } catch (Throwable $exception) {
-            $run->markFailed($exception->getMessage());
+        } catch (Throwable $throwable) {
+            $run->markFailed($throwable->getMessage());
 
-            throw $exception;
+            throw $throwable;
         }
     }
 
@@ -176,8 +176,8 @@ class MarketSyncService
             return $this->cryptoApis
                 ->fetchPercentChangesBySymbol($symbols->count())
                 ->filter(fn (PercentChangeData $changes, string $symbol): bool => $counts->get($symbol) === 1);
-        } catch (Throwable $exception) {
-            report($exception);
+        } catch (Throwable $throwable) {
+            report($throwable);
 
             return collect();
         }
@@ -216,6 +216,7 @@ class MarketSyncService
             if ($map instanceof CoinProviderId && $map->coin instanceof Coin) {
                 continue;
             }
+
             $missingSlugs[] = $slug;
         }
 

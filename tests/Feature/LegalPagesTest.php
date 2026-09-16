@@ -143,6 +143,7 @@ class LegalPagesTest extends TestCase
             $home->assertSee('href="' . $pick['url'] . '"', false);
             $home->assertSee($pick['name'], false);
         }
+
         // An outbound link must not hand the destination our referrer or window.
         $home->assertSee('rel="noopener noreferrer"', false);
 
@@ -173,6 +174,7 @@ class LegalPagesTest extends TestCase
         $response = $this->get(route('home'));
 
         $response->assertOk();
+
         $person = (string) config('company.person');
 
         $response->assertSee('afmc-pick__badge afmc-pick__badge--interest', false);
@@ -195,6 +197,7 @@ class LegalPagesTest extends TestCase
         $response = $this->get(route('home'));
 
         $response->assertOk();
+
         $person = (string) config('company.person');
 
         $response->assertSee('afmc-pick__badge afmc-pick__badge--interest', false);

@@ -26,6 +26,7 @@ class ScheduleTest extends TestCase
         if ((int) config('marketdata.sync.tickers_top_coins') > 0) {
             $this->assertStringContainsString('marketdata:sync-tickers', $output);
         }
+
         $this->assertStringContainsString('marketdata:sync-coin-details', $output);
         $this->assertStringContainsString('marketdata:sync-insights', $output);
         $this->assertStringContainsString('marketdata:sync-platforms', $output);

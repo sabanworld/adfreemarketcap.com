@@ -106,10 +106,13 @@ class GeckoTerminalProvider implements DexDataProvider
 
         $symbol = data_get($attributes, 'symbol');
         $symbol = is_string($symbol) && $symbol !== '' ? Str::upper($symbol) : 'TOKEN';
+
         $name = data_get($attributes, 'name');
         $name = is_string($name) && $name !== '' ? $name : null;
+
         $address = data_get($attributes, 'address');
         $address = is_string($address) && $address !== '' ? $address : $tokenAddress;
+
         $coingeckoId = data_get($attributes, 'coingecko_coin_id');
         $coingeckoId = is_string($coingeckoId) && $coingeckoId !== '' ? $coingeckoId : null;
 
@@ -449,6 +452,7 @@ class GeckoTerminalProvider implements DexDataProvider
         $chain = $this->chainLabel($networkId ?? '');
         $coingeckoId = data_get($baseToken, 'attributes.coingecko_coin_id');
         $coingeckoId = is_string($coingeckoId) && $coingeckoId !== '' ? $coingeckoId : null;
+
         $baseName = data_get($baseToken, 'attributes.name');
         $baseName = is_string($baseName) && $baseName !== '' ? $baseName : null;
 

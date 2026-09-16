@@ -35,10 +35,10 @@ class CoinTickerSyncService
             $run->markSucceeded($result['count'], $result['message']);
 
             return $run->fresh();
-        } catch (Throwable $exception) {
-            $run->markFailed($exception->getMessage());
+        } catch (Throwable $throwable) {
+            $run->markFailed($throwable->getMessage());
 
-            throw $exception;
+            throw $throwable;
         }
     }
 
@@ -91,6 +91,7 @@ class CoinTickerSyncService
             if ($removed > 0) {
                 $message .= " Cleaned up {$removed} unknown or delisted ids.";
             }
+
             if ($failed > 0) {
                 $message .= " Failed {$failed} after provider errors.";
             }
@@ -98,10 +99,10 @@ class CoinTickerSyncService
             $run->markSucceeded($processed, $message);
 
             return $run->fresh();
-        } catch (Throwable $exception) {
-            $run->markFailed($exception->getMessage());
+        } catch (Throwable $throwable) {
+            $run->markFailed($throwable->getMessage());
 
-            throw $exception;
+            throw $throwable;
         }
     }
 
@@ -164,9 +165,11 @@ class CoinTickerSyncService
             if ($removed > 0) {
                 $message .= " Cleaned up {$removed} unknown or delisted ids.";
             }
+
             if ($failed > 0) {
                 $message .= " Failed {$failed} after provider errors.";
             }
+
             if ($missing > 0) {
                 $message .= " {$missing} configured hot slug(s) not in the database yet.";
             }
@@ -174,10 +177,10 @@ class CoinTickerSyncService
             $run->markSucceeded($processed, $message);
 
             return $run->fresh();
-        } catch (Throwable $exception) {
-            $run->markFailed($exception->getMessage());
+        } catch (Throwable $throwable) {
+            $run->markFailed($throwable->getMessage());
 
-            throw $exception;
+            throw $throwable;
         }
     }
 
@@ -208,8 +211,8 @@ class CoinTickerSyncService
             for ($page = 1; $page <= $pages; $page++) {
                 $tickers = $tickers->concat($this->coingecko->fetchCoinTickers($externalId, $page));
             }
-        } catch (ProviderCoinNotFoundException $exception) {
-            $message = $this->cleaner->clean($coin, $exception->provider, $exception->externalId);
+        } catch (ProviderCoinNotFoundException $providerCoinNotFoundException) {
+            $message = $this->cleaner->clean($coin, $providerCoinNotFoundException->provider, $providerCoinNotFoundException->externalId);
 
             return [
                 'count' => 0,

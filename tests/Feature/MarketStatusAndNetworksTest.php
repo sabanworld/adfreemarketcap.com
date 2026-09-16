@@ -581,7 +581,7 @@ class MarketStatusAndNetworksTest extends TestCase
                         'pubkey' => $pubkey,
                         'created_at' => now()->timestamp,
                         'kind' => 1,
-                        'content' => 'Nostr is so dead, it is hardly worth the effort in development. Sorry. We used Nostr in its heyday to launch the block party, and we still have a core audience here, so we stay. But the network effect is not here. As a small startup, it does not make sense to allocate resources in this way. We have a functional marketplace. We were Nostr\'s first Bitcoin mining block party.',
+                        'content' => "Nostr is so dead, it is hardly worth the effort in development. Sorry. We used Nostr in its heyday to launch the block party, and we still have a core audience here, so we stay. But the network effect is not here. As a small startup, it does not make sense to allocate resources in this way. We have a functional marketplace. We were Nostr's first Bitcoin mining block party.",
                         'tags' => [],
                         'sig' => str_repeat('4', 128),
                     ],

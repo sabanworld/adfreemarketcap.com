@@ -86,8 +86,8 @@ class MarketDataAggregator
                 'provider' => $primary->name(),
                 $resultKey => $callback($primary),
             ];
-        } catch (Throwable $exception) {
-            $errors[] = $primary->name() . ': ' . $exception->getMessage();
+        } catch (Throwable $throwable) {
+            $errors[] = $primary->name() . ': ' . $throwable->getMessage();
         }
 
         $failover = $this->failover();
@@ -101,8 +101,8 @@ class MarketDataAggregator
                 'provider' => $failover->name(),
                 $resultKey => $callback($failover),
             ];
-        } catch (Throwable $exception) {
-            $errors[] = $failover->name() . ': ' . $exception->getMessage();
+        } catch (Throwable $throwable) {
+            $errors[] = $failover->name() . ': ' . $throwable->getMessage();
         }
 
         throw new RuntimeException('Market data sync failed: ' . implode(' | ', $errors));

@@ -39,10 +39,10 @@ class CoinInsightSyncService
             $run->markSucceeded($processed, 'Synced Bitcoin treasury holdings and market cycles.');
 
             return $run->fresh();
-        } catch (Throwable $exception) {
-            $run->markFailed($exception->getMessage());
+        } catch (Throwable $throwable) {
+            $run->markFailed($throwable->getMessage());
 
-            throw $exception;
+            throw $throwable;
         }
     }
 
