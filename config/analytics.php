@@ -40,12 +40,14 @@ return [
     'endpoint' => env('ANALYTICS_ENDPOINT', 'https://plausible.io/api/event'),
 
     /*
-    | Plausible has no Do Not Track check of its own, so resources/js/analytics.js
-    | makes one: a browser sending Do Not Track or Global Privacy Control gets no
-    | tracker at all. Keep this false, because the privacy policy promises that.
+    | When true (the default), the counter runs even if the browser sends Do Not
+    | Track or Global Privacy Control. Plausible itself never checked those
+    | signals; we used to skip the tracker ourselves. The privacy policy names
+    | the remaining ways out (plausible_ignore and blocking plausible.io), so
+    | leave this true unless you deliberately want to honour the signals again.
     */
 
-    'collect_dnt' => (bool) env('ANALYTICS_COLLECT_DNT', false),
+    'collect_dnt' => (bool) env('ANALYTICS_COLLECT_DNT', true),
 
     /*
     | What is counted besides page views. The privacy policy names each of these

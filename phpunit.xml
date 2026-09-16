@@ -44,6 +44,8 @@
              which branch of the policy pages the suite checks. -->
         <env name="GOOGLE_ADS_ENABLED" value="false" force="true"/>
         <env name="GOOGLE_ADS_CONVERSION_ID" value="" force="true"/>
+        <env name="EXCHANGE_WIDGET_ENABLED" value="false" force="true"/>
+        <env name="EXCHANGE_WIDGET_LINK_ID" value="" force="true"/>
         <env name="ALTCHA_ENABLED" value="true" force="true"/>
         <env name="ALTCHA_HMAC_SECRET" value="testing-altcha-hmac-secret-key-32b" force="true"/>
         <env name="ALTCHA_HMAC_KEY_SECRET" value="testing-altcha-hmac-key-secret-32b" force="true"/>

@@ -7,10 +7,9 @@ import { init } from '@plausible-analytics/tracker';
 
 const settings = JSON.parse(document.getElementById('afmc-analytics')?.textContent || 'null');
 
-// Plausible has no Do Not Track check of its own, so this is where the promise
-// in the privacy policy is kept: a browser that asks not to be tracked loads
-// the tracker and sends nothing at all. Global Privacy Control counts too,
-// because Do Not Track alone is gone from most browsers.
+// Do Not Track and Global Privacy Control are ignored by default
+// (collectDnt: true). The privacy policy names the remaining ways out. Set
+// collectDnt false only if you want those browser signals to skip the tracker.
 const asksNotToBeTracked = () => navigator.globalPrivacyControl === true
     || [navigator.doNotTrack, window.doNotTrack, navigator.msDoNotTrack].some(
         (signal) => signal === '1' || signal === 'yes',

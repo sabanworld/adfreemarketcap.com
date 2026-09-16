@@ -2469,6 +2469,151 @@
   text-wrap: pretty;
 }
 
+/* ChangeNOW swap embed. Layout follows the miners block so the two affiliate
+   surfaces read as one family. The iframe only mounts after Accept; a theme
+   change remounts it with darkMode/backgroundColor flipped. */
+.afmc-exchange {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--surface-brand-soft);
+  border: 1px solid var(--amber-300);
+  border-radius: var(--radius-md);
+}
+
+.afmc-exchange__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.afmc-exchange__eyebrow {
+  font: var(--type-eyebrow);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-brand);
+}
+
+.afmc-exchange__badge {
+  font: var(--weight-semibold) var(--text-2xs) / 1.4 var(--font-sans);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-brand);
+  text-align: right;
+}
+
+.afmc-exchange__body {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 640px;
+}
+
+.afmc-exchange__title {
+  margin: 0;
+  font: var(--weight-bold) var(--text-lg) / 1.2 var(--font-display);
+  letter-spacing: var(--tracking-snug);
+  color: var(--text-strong);
+  text-wrap: balance;
+}
+
+.afmc-exchange__lead {
+  margin: 0;
+  font: var(--type-body-sm);
+  color: var(--text-body);
+  text-wrap: pretty;
+}
+
+.afmc-exchange__placeholder {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 205px;
+  padding: var(--space-5);
+  border: 1px solid var(--amber-300);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+}
+
+.afmc-exchange__placeholder-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-brand-soft);
+  color: var(--text-brand);
+  border: 1px solid var(--amber-300);
+}
+
+.afmc-exchange__placeholder-copy {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.afmc-exchange__placeholder-title {
+  margin: 0;
+  font: var(--weight-semibold) var(--text-base) / 1.3 var(--font-display);
+  letter-spacing: var(--tracking-snug);
+  color: var(--text-strong);
+}
+
+.afmc-exchange__placeholder-body {
+  margin: 0;
+  max-width: 42rem;
+  font: var(--type-body-sm);
+  color: var(--text-muted);
+  text-wrap: pretty;
+}
+
+.afmc-exchange__cta {
+  flex: none;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .afmc-exchange__placeholder {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+  }
+
+  .afmc-exchange__cta {
+    grid-column: 1 / -1;
+  }
+}
+
+.afmc-exchange__frame {
+  min-height: 205px;
+  /* ChangeNOW paints a rounded white frame on a light document, with a square
+     black panel inside, so the four corner wedges show white. Clip to the same
+     radius and fill behind with the theme canvas so those wedges disappear. */
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.afmc-exchange__frame[data-theme='dark'] {
+  background: #000;
+}
+
+.afmc-exchange__iframe {
+  display: block;
+  width: 100%;
+  height: 205px;
+  border: 0;
+  background: #fff;
+  color-scheme: light;
+}
+
+.afmc-exchange__frame[data-theme='dark'] .afmc-exchange__iframe {
+  background: #000;
+  color-scheme: dark;
+}
+
 .afmc-footer {
   border-top: 2px solid var(--ink-900);
   background: var(--surface-sunken);
@@ -4038,6 +4183,7 @@ button.afmc-tag:hover:not(.is-active) {
   .afmc-btn,
   .afmc-link,
   .afmc-mining__block-link,
+  .afmc-exchange__cta,
   .afmc-nav__item,
   .afmc-chip,
   .afmc-check,

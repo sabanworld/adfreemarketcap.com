@@ -34,6 +34,19 @@ class CopyStyleTest extends TestCase
         'ranking cannot be bought',
         'rankings cannot be bought',
         'cannot be bought',
+        // Defensive anti-payola asides bolted onto widgets, cookie bars, or notes.
+        // Name the commission or partnership and stop; do not reassure about rankings.
+        'not a paid placement',
+        'not paid placements',
+        'none of them are paid placements',
+        'nothing in the rankings',
+        'changes nothing about the rankings',
+        'changes nothing about the pages',
+        'nobody pays to appear',
+        'nobody can pay to',
+        'rankings and the rest of the site keep working',
+        'rankings never change',
+        'rankings changes because',
         // Product copy names the person (config('company.person')); legal pages
         // name the operating company. "The creator" belongs to neither voice.
         'our creator',

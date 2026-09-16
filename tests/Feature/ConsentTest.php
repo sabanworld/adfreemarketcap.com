@@ -13,10 +13,11 @@ use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * The Google Ads tag is the only thing on this site that writes to a visitor's
- * device without being strictly necessary, so these tests guard the promise the
- * cookie and privacy policies make about it: nothing reaches Google before the
- * visitor says yes, and refusing is no harder than accepting.
+ * Optional third-party contact (Google Ads and/or ChangeNOW) is the only thing
+ * on this site that writes to a visitor's device or reaches another company
+ * from the browser without being strictly necessary, so these tests guard the
+ * promise the cookie and privacy policies make about it: nothing reaches those
+ * hosts before the visitor says yes, and refusing is no harder than accepting.
  */
 class ConsentTest extends TestCase
 {
@@ -234,6 +235,23 @@ class ConsentTest extends TestCase
         $response->assertOk();
         $response->assertSee('2027-01-01', false);
         $response->assertSee('stored.version === VERSION', false);
+        $response->assertSee('stored.optional === true', false);
+    }
+
+    public function test_exchange_widget_alone_requires_consent_without_loading_google(): void
+    {
+        config([
+            'exchange-widget.enabled' => true,
+            'exchange-widget.link_id' => '2511974805bd4d',
+        ]);
+
+        $response = $this->get(route('home'));
+
+        $response->assertOk();
+        $response->assertSee('Reject</button>', false);
+        $response->assertSee('Accept</button>', false);
+        $response->assertDontSee('googletagmanager.com', false);
+        $response->assertSee('afmc-consent-changed', false);
     }
 
     private function coin(string $slug, string $symbol, int $rank): Coin

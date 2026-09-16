@@ -77,7 +77,7 @@
                 class="afmc-footer__cookie-btn"
                 x-data
                 @click="$dispatch('afmc-cookie-notice')"
-            ><x-afmc.icon name="cookie" size="15px" />{{ $consent->advertisingEnabled() ? __('Cookie preferences') : __('Cookie notice') }}</button>
+            ><x-afmc.icon name="cookie" size="15px" />{{ $consent->required() ? __('Cookie preferences') : __('Cookie notice') }}</button>
         </div>
     </div>
 </footer>

@@ -62,7 +62,7 @@
                 <x-afmc.icon name="arrow_outward" size="16px" />
             </a>
             <p class="afmc-mining__note">
-                {{ __('A pool pays out only when it finds a block, so treat the sats you spend as spent. :person has a strategic partnership with :partner. This is not a paid placement and we take no commission.', [
+                {{ __('A pool pays out only when it finds a block, so treat the sats you spend as spent. :person has a strategic partnership with :partner, and we take no commission.', [
                     'person' => config('company.person'),
                     'partner' => $partner['name'],
                 ]) }}

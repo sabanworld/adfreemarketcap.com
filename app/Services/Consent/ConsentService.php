@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Services\Consent;
 
 /**
- * One answer to "does this site load a tag that needs opt-in", shared by every
- * surface that has to agree on it: the head script, the cookie bar, the footer
- * control, the privacy policy, and the cookie policy. If those drift apart, the
- * pages describe a site the visitor is not on, which is the defect this class
- * exists to prevent.
+ * One answer to "does this site load anything that needs opt-in", shared by
+ * every surface that has to agree on it: the head script, the cookie bar, the
+ * footer control, the privacy policy, the cookie policy, the Why ad-free page,
+ * and the exchange widget placeholder. If those drift apart, the pages describe
+ * a site the visitor is not on, which is the defect this class exists to prevent.
  */
 class ConsentService
 {
@@ -18,9 +18,28 @@ class ConsentService
         return (bool) config('google-ads.enabled') && filled($this->conversionId());
     }
 
+    public function exchangeWidgetEnabled(): bool
+    {
+        return (bool) config('exchange-widget.enabled') && filled($this->exchangeLinkId());
+    }
+
+    /**
+     * True when any non-essential third-party contact ships in this build.
+     * The cookie bar becomes a choice rather than a notice whenever this is true.
+     */
+    public function required(): bool
+    {
+        return $this->advertisingEnabled() || $this->exchangeWidgetEnabled();
+    }
+
     public function conversionId(): string
     {
         return (string) config('google-ads.conversion_id');
+    }
+
+    public function exchangeLinkId(): string
+    {
+        return (string) config('exchange-widget.link_id');
     }
 
     /**
@@ -30,6 +49,45 @@ class ConsentService
     public function scriptUrl(): string
     {
         return config('google-ads.script_url') . '?id=' . $this->conversionId();
+    }
+
+    public function exchangeConnectorScriptUrl(): string
+    {
+        return (string) config('exchange-widget.connector_script_url');
+    }
+
+    public function exchangeWidgetBaseUrl(): string
+    {
+        return (string) config('exchange-widget.widget_base_url');
+    }
+
+    /**
+     * Default query params for the ChangeNOW iframe, without from/to/amount so
+     * a Blade call site can override the pair per page.
+     *
+     * @return array<string, scalar>
+     */
+    public function exchangeWidgetDefaults(): array
+    {
+        $defaults = config('exchange-widget.defaults', []);
+
+        return [
+            'FAQ' => (bool) ($defaults['faq'] ?? true),
+            'amount' => (string) ($defaults['amount'] ?? '0.01'),
+            'amountFiat' => '',
+            'backgroundColor' => (string) ($defaults['background_color_light'] ?? 'FFFFFF'),
+            'darkMode' => false,
+            'from' => (string) ($defaults['from'] ?? 'btc'),
+            'horizontal' => (bool) ($defaults['horizontal'] ?? true),
+            'isFiat' => (bool) ($defaults['is_fiat'] ?? false),
+            'lang' => (string) ($defaults['lang'] ?? 'en-US'),
+            'link_id' => $this->exchangeLinkId(),
+            'locales' => (bool) ($defaults['locales'] ?? true),
+            'logo' => (bool) ($defaults['logo'] ?? false),
+            'primaryColor' => (string) ($defaults['primary_color'] ?? '00C26F'),
+            'to' => (string) ($defaults['to'] ?? 'eth'),
+            'toTheMoon' => (bool) ($defaults['to_the_moon'] ?? false),
+        ];
     }
 
     /**

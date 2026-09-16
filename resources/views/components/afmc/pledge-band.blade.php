@@ -12,7 +12,7 @@
         <div>
             <h2 class="afmc-pledge__statement">{{ __('No ads. No paid rankings. No sponsored listings.') }}</h2>
             <p class="afmc-pledge__detail">
-                {{ $detail ?? __(':person pays for this site out of his own pocket. Nobody can pay to show up here, to move up the table, or to lose a risk flag.', ['person' => $person]) }}
+                {{ $detail ?? __(':person pays for this site out of his own pocket.', ['person' => $person]) }}
             </p>
         </div>
     </div>

@@ -8,13 +8,19 @@
     $logDays = $company['retention']['server_log_days'];
     $nostrDays = $company['retention']['nostr_note_days'] ?? 30;
     $advertising = $consent->advertisingEnabled();
+    $exchange = $consent->exchangeWidgetEnabled();
+    $required = $consent->required();
 
-    // Google is only a recipient while the tag is actually shipped, so a build
-    // without it must not name a company that never sees anything.
+    // A processor row only appears while that contact actually ships, so a build
+    // without the tag or the widget must not name a company that never sees anything.
     $processors = $company['processors'];
 
     if (! $advertising) {
         unset($processors['advertising']);
+    }
+
+    if (! $exchange) {
+        unset($processors['exchange']);
     }
 
     $processing = [
@@ -70,6 +76,15 @@
             'retention' => __('The cookie lasts 90 days on your device. Google keeps the reporting under its own retention rules'),
         ];
     }
+
+    if ($exchange) {
+        $processing[] = [
+            'data' => __('Your IP address and the page address, sent to ChangeNOW when their swap widget loads, plus any cookies they set on their own domain'),
+            'purpose' => __('Running the optional ChangeNOW exchange widget on the home page and coin pages'),
+            'basis' => __('Your consent, article 6(1)(a) GDPR, given in the cookie bar and withdrawable at any time'),
+            'retention' => __('ChangeNOW keeps what it receives under its own retention rules. Rejecting removes the widget from this site'),
+        ];
+    }
 @endphp
 
 <p>{{ __('Last updated: :date', ['date' => $company['policies_updated_at']]) }}</p>
@@ -119,22 +134,31 @@
 <p>{{ __('You can browse the market pages without an account. An account only needs an email address and a password, and giving us those is voluntary. Without them we cannot offer a watchlist.') }}</p>
 
 <h2>{{ __('Visitor statistics') }}</h2>
-@if ($advertising)
+@if ($required)
     <p>{{ __('We count page views with Plausible, an Estonian service that works without cookies and keeps its data in Germany. The counting code is part of our own bundle, so your browser fetches no file from them.') }}</p>
 @else
     <p>{{ __('We count page views with Plausible, an Estonian service that works without cookies and keeps its data in Germany. The counting code is part of our own bundle, so your browser fetches no file from them and the count itself is the only request that leaves this site.') }}</p>
 @endif
 <p>{{ __('Each page view sends the address of the page without its query string, apart from campaign parameters such as utm_source, the page you came from, and your device, operating system, and browser. Clicks on links leading off this site, file downloads, and the fact that a form was submitted are counted the same way, without anything you typed into it. How far down a page you scrolled and how long it stayed open are sent as well. No cookie is set, nothing is written to your device, and no profile is built across pages or sites.') }}</p>
     <p>{{ __('The request that carries the count also carries your IP address, the way any request your browser makes does. Plausible reads your country, region, and city from it and then drops it, so it is never written to their logs, their database, or a disk. To count you once a day without a cookie, they hash your IP address and browser together with a salt that is deleted every 24 hours, which leaves nothing that can be traced back to you or matched to the next day.') }}</p>
-<p>{{ __('Our basis is the legitimate interest in knowing which pages get read, under article 6(1)(f) GDPR. Since nothing is stored on your device, this counter needs no consent under article 5(3) of the ePrivacy Directive. Three ways to stay out of the count: switch on Do Not Track or Global Privacy Control in your browser and the counter never starts, set plausible_ignore to true in local storage for this site, or block requests to plausible.io. Each one leaves the site fully usable.') }}</p>
+<p>{{ __('Our basis is the legitimate interest in knowing which pages get read, under article 6(1)(f) GDPR. Since nothing is stored on your device, this counter needs no consent under article 5(3) of the ePrivacy Directive. Do Not Track and Global Privacy Control do not stop the count. Two ways to stay out of it: set plausible_ignore to true in local storage for this site, or block requests to plausible.io. Each one leaves the site fully usable.') }}</p>
 
 @if ($advertising)
     <h2>{{ __('Advertising measurement') }}</h2>
-    <p>{{ __('We buy adverts on Google to bring people to this site. There are no adverts on the site itself and no space on it is for sale, so nothing in the rankings, on a coin page, or on DexScan is affected by this.') }}</p>
+    <p>{{ __('We buy adverts on Google to bring people to this site. There are no adverts on the site itself and no space on it is for sale.') }}</p>
     <p>{{ __('To see which adverts are worth the money, we use the Google Ads conversion tag. It only runs if you choose Accept in the cookie bar. Until then your browser requests nothing from Google, because the tag starts with Google consent mode set to denied and the script is never placed on the page.') }}</p>
     <p>{{ __('Once you accept, Google writes a cookie on this domain that holds an advertising identifier, and receives your IP address and the address of the page you are on, the way any request your browser makes does. Google reports to us in totals, such as how many people an advert brought and how many of them created an account. We receive no list of individuals and we do not combine this with your account.') }}</p>
     <p>{{ __('Our legal basis is your consent, under article 6(1)(a) GDPR and article 11.7a of the Dutch Telecommunications Act. You can withdraw it in the footer under "Cookie preferences", which costs nothing, takes one click, and deletes the Google cookies from your browser. Withdrawal does not affect measuring that already happened.') }}</p>
     <p>{{ __('Google LLC is in the United States. Google Ireland Limited acts as our counterparty in the EU, the Google Ads data processing terms apply, and transfers rest on the European Commission standard contractual clauses together with the EU-US Data Privacy Framework, under which Google LLC is certified. The Cookie policy lists each cookie by name and how long it lasts.') }}</p>
+@endif
+
+@if ($exchange)
+    <h2>{{ __('ChangeNOW swap widget') }}</h2>
+    <p>{{ __('The home page and every coin page can show a ChangeNOW exchange widget. Completing a swap there may earn :person a commission. The widget and the Disclosure of interests page both name that interest.', [
+        'person' => $company['person'],
+    ]) }}</p>
+    <p>{{ __('The widget only loads if you choose Accept in the cookie bar. Until then the page shows a placeholder, and your browser requests nothing from changenow.io. Once you accept, your browser loads an iframe and a connector script from ChangeNOW, which receives your IP address and the page address the way any browser request does, and may set cookies on their own domain.') }}</p>
+    <p>{{ __('Our legal basis is your consent, under article 6(1)(a) GDPR and article 11.7a of the Dutch Telecommunications Act. You can withdraw it under "Cookie preferences" in the footer. That removes the widget from this site straight away. Cookies ChangeNOW already set on changenow.io stay until you clear them in your browser, because we cannot delete another site\'s cookies from here.') }}</p>
 @endif
 
 <h2>{{ __('What we do not do') }}</h2>
@@ -142,11 +166,17 @@
     <li>{{ __('We do not sell, rent, or trade personal data.') }}</li>
     @if ($advertising)
         <li>{{ __('We show no adverts on this site, sell no space on it, and run no ad network. We advertise the site elsewhere, and the Advertising measurement section above covers what that means for you.') }}</li>
-        <li>{{ __('We use no fingerprinting, no session recording, no heat maps, and no tag manager.') }}</li>
-        <li>{{ __('Fonts, styles, and icons come from our own domain, so the only requests that leave this site are the visitor counter and, if you accept it, the Google tag.') }}</li>
     @else
         <li>{{ __('We run no advertising and no ad networks.') }}</li>
-        <li>{{ __('We use no fingerprinting and no cross-site tracking, and nothing follows you to another website.') }}</li>
+    @endif
+    <li>{{ __('We use no fingerprinting, no session recording, no heat maps, and no tag manager.') }}</li>
+    @if ($advertising && $exchange)
+        <li>{{ __('Fonts, styles, and icons come from our own domain, so the only requests that leave this site without your say-so are the visitor counter. Google and ChangeNOW load only after you accept.') }}</li>
+    @elseif ($advertising)
+        <li>{{ __('Fonts, styles, and icons come from our own domain, so the only requests that leave this site are the visitor counter and, if you accept it, the Google tag.') }}</li>
+    @elseif ($exchange)
+        <li>{{ __('Fonts, styles, and icons come from our own domain, so the only requests that leave this site without your say-so are the visitor counter. ChangeNOW loads only after you accept.') }}</li>
+    @else
         <li>{{ __('Fonts, styles, and icons come from our own domain, so the visitor counter above is the only request that leaves this site.') }}</li>
     @endif
     <li>{{ __('We build no behavioural profiles and take no automated decisions that have legal effects for you, in the sense of article 22 GDPR.') }}</li>
@@ -156,8 +186,12 @@
 
 <h2>{{ __('Who else can see the data') }}</h2>
 <p>{{ __('We use a small number of service providers. The ones that handle personal data for us do so on our instructions, under a data processing agreement as article 28 GDPR requires, and may only use the data to deliver their service to us. Plausible is one of them: your IP address reaches it while a page view is counted, and its data processing agreement at plausible.io/dpa sets out what it may do with it.') }}</p>
-@if ($advertising)
+@if ($advertising && $exchange)
+    <p>{{ __('Google and ChangeNOW are the exceptions to that pattern. Each decides some of its own purposes once your browser contacts them, so we name them as recipients and rely on your consent. They appear in the table for the same reason the others do: you should be able to see who is involved.') }}</p>
+@elseif ($advertising)
     <p>{{ __('Google is the exception to that pattern. For advert measurement it decides some of its own purposes rather than acting only on our instructions, so we name it as a recipient and rely on your consent. It appears in the table for the same reason the others do: you should be able to see who is involved.') }}</p>
+@elseif ($exchange)
+    <p>{{ __('ChangeNOW is the exception to that pattern. Once the swap widget loads, it decides some of its own purposes rather than acting only on our instructions, so we name it as a recipient and rely on your consent. It appears in the table for the same reason the others do: you should be able to see who is involved.') }}</p>
 @endif
 <div class="afmc-table-wrap">
 <table class="afmc-legal-table">
@@ -184,8 +218,12 @@
 <p>{{ __('We also disclose data when the law requires it, for example to a court or a supervisory authority. Where a provider processes data outside the European Economic Area, we rely on the European Commission standard contractual clauses or an adequacy decision, and you can ask us for a copy of the safeguard we use.') }}</p>
 
 <h2>{{ __('Cookies and local storage') }}</h2>
-@if ($advertising)
+@if ($advertising && $exchange)
+    <p>{{ __('Everything the service needs is set without asking, because it is strictly necessary. Optional third-party contact waits for Accept: Google advertising cookies, and the ChangeNOW swap widget. The Cookie policy lists every item by name, says how long it lasts, and marks which ones wait for your consent.') }}
+@elseif ($advertising)
     <p>{{ __('Everything the service needs is set without asking, because it is strictly necessary. The advertising cookies are the only optional ones, and they are written only after you accept. The Cookie policy lists every item by name, says how long it lasts, and marks which ones wait for your consent.') }}
+@elseif ($exchange)
+    <p>{{ __('Everything the service needs is set without asking, because it is strictly necessary. The ChangeNOW swap widget is the only optional third-party contact, and it loads only after you accept. The Cookie policy lists every item by name, says how long it lasts, and marks which ones wait for your consent.') }}
 @else
     <p>{{ __('We only set storage that the service needs, and optional storage would need your consent first. The Cookie policy lists every item by name.') }}
 @endif

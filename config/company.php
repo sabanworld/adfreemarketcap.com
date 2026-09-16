@@ -89,7 +89,7 @@ return [
     |
     */
 
-    'policies_updated_at' => env('COMPANY_POLICIES_UPDATED_AT', '15 September 2026'),
+    'policies_updated_at' => env('COMPANY_POLICIES_UPDATED_AT', '16 September 2026'),
 
     /*
     |--------------------------------------------------------------------------
@@ -144,9 +144,10 @@ return [
     'processors' => [
         'hosting' => [
             'category' => 'Hosting, database, and backups',
-            'name' => env('COMPANY_HOSTING_PROVIDER', 'DigitalOcean, LLC'),
-            'location' => env('COMPANY_HOSTING_LOCATION', 'Amsterdam, the Netherlands (AMS3), with support access from the United States'),
-            'transfer' => env('COMPANY_HOSTING_TRANSFER', 'EU standard contractual clauses and the EU-US Data Privacy Framework'),
+            'name' => env('COMPANY_HOSTING_PROVIDER', 'OVH SAS (OVHcloud)'),
+            'location' => env('COMPANY_HOSTING_LOCATION', 'Limburg, Germany (eu-west-lim)'),
+            // EEA provider and EEA region: no third-country transfer safeguard.
+            'transfer' => env('COMPANY_HOSTING_TRANSFER'),
         ],
         'server_management' => [
             'category' => 'Server provisioning, deployment, and monitoring',
@@ -179,6 +180,13 @@ return [
             'name' => env('COMPANY_ADVERTISING_PROVIDER', 'Google Ireland Limited, with Google LLC'),
             'location' => env('COMPANY_ADVERTISING_LOCATION', 'Ireland, with processing by Google LLC in the United States'),
             'transfer' => env('COMPANY_ADVERTISING_TRANSFER', 'EU standard contractual clauses and the EU-US Data Privacy Framework'),
+        ],
+        // Rendered only while the ChangeNOW exchange widget ships.
+        'exchange' => [
+            'category' => 'Non-custodial swap widget, only after you accept',
+            'name' => env('COMPANY_EXCHANGE_PROVIDER', 'ChangeNOW (ChangeNOW Ltd / Change Group)'),
+            'location' => env('COMPANY_EXCHANGE_LOCATION', 'Outside the EEA; your browser contacts changenow.io directly once you accept'),
+            'transfer' => env('COMPANY_EXCHANGE_TRANSFER', 'Your browser sends the request straight to ChangeNOW after you accept; see their privacy policy for how they handle it'),
         ],
         'error_monitoring' => [
             'category' => 'Application error reporting',

@@ -108,19 +108,20 @@ class LegalPagesTest extends TestCase
     {
         $this->get(route('legal.show', 'privacy-policy'))
             ->assertOk()
-            ->assertSee('DigitalOcean, LLC', false)
-            ->assertSee('Amsterdam, the Netherlands (AMS3)', false)
+            ->assertSee('OVH SAS (OVHcloud)', false)
+            ->assertSee('Limburg, Germany (eu-west-lim)', false)
             ->assertSee('Ploi (WebBuilds B.V.)', false)
             ->assertSee('Functional Software, Inc. (Sentry)', false)
             ->assertSee('Application error reporting', false)
             ->assertSee('Divine Nostr gateway', false)
             ->assertSee('Public Nostr note indexing for community remarks', false)
-            // A US provider needs its transfer safeguard named, even with EU storage.
+            // Cloudflare and Sentry still need their transfer safeguard named.
             ->assertSee('EU standard contractual clauses and the EU-US Data Privacy Framework', false);
 
         $this->get(route('legal.show', 'imprint'))
             ->assertOk()
-            ->assertSee('DigitalOcean, LLC', false);
+            ->assertSee('OVH SAS (OVHcloud)', false)
+            ->assertSee('Limburg, Germany (eu-west-lim)', false);
     }
 
     public function test_imprint_omits_hosting_while_no_provider_is_configured(): void
@@ -152,8 +153,31 @@ class LegalPagesTest extends TestCase
         $disclosure->assertOk();
         // Policy pages name the operating company, not the person behind it.
         $disclosure->assertSee("Trezor (trezor.io): {$legal} uses this product and has no commercial partnership", false);
+        $disclosure->assertSee("ChangeNOW (changenow.io): {$legal} may earn a commission", false);
         $disclosure->assertSee("Rigly (rigly.io): {$legal} has a strategic partnership with this company", false);
         $disclosure->assertDontSee('our creator', false);
+    }
+
+    public function test_a_pick_with_an_affiliate_relationship_carries_the_commission_badge(): void
+    {
+        config(['picks' => [
+            [
+                'name' => 'Example Swap',
+                'kind' => 'Swap',
+                'url' => 'https://example.test',
+                'note' => 'A pick used only by this test.',
+                'relationship' => 'affiliate',
+            ],
+        ]]);
+
+        $response = $this->get(route('home'));
+
+        $response->assertOk();
+        $person = (string) config('company.person');
+
+        $response->assertSee('afmc-pick__badge afmc-pick__badge--interest', false);
+        $response->assertSee("{$person} earns a commission", false);
+        $response->assertDontSee("{$person} uses this", false);
     }
 
     public function test_a_pick_with_a_partner_relationship_carries_the_partner_badge(): void
@@ -217,8 +241,9 @@ class LegalPagesTest extends TestCase
         $response->assertSee('Clicks on links leading off this site, file downloads, and the fact that a form was submitted', false);
         $response->assertSee('a salt that is deleted every 24 hours', false);
         $response->assertSee('Legitimate interests in measuring use of the site, article 6(1)(f) GDPR', false);
-        $response->assertSee('Do Not Track or Global Privacy Control in your browser and the counter never starts', false);
+        $response->assertSee('Do Not Track and Global Privacy Control do not stop the count', false);
         $response->assertSee('plausible_ignore', false);
+        $response->assertSee('block requests to plausible.io', false);
     }
 
     public function test_cookie_policy_stays_silent_about_advertising_while_no_tag_ships(): void
@@ -280,6 +305,44 @@ class LegalPagesTest extends TestCase
         $response->assertOk();
         $response->assertDontSee('Google', false);
         $response->assertSee('the count itself is the only request that leaves this site', false);
+    }
+
+    public function test_privacy_and_cookie_policies_cover_the_exchange_widget_when_it_ships(): void
+    {
+        config([
+            'exchange-widget.enabled' => true,
+            'exchange-widget.link_id' => '2511974805bd4d',
+        ]);
+
+        $privacy = $this->get(route('legal.show', 'privacy-policy'));
+        $cookies = $this->get(route('legal.show', 'cookie-policy'));
+
+        $privacy->assertOk();
+        $privacy->assertSee('ChangeNOW swap widget', false);
+        $privacy->assertSee('Your consent, article 6(1)(a) GDPR', false);
+        $privacy->assertSee('Non-custodial swap widget, only after you accept', false);
+        $privacy->assertDontSee('the count itself is the only request that leaves this site', false);
+
+        $cookies->assertOk();
+        $cookies->assertSee('ChangeNOW swap widget', false);
+        $cookies->assertSee('Cookies on changenow.io', false);
+        $cookies->assertSee('Only after you accept', false);
+        $cookies->assertSee('we cannot delete another site', false);
+    }
+
+    public function test_why_ad_free_covers_the_swap_widget_when_it_ships(): void
+    {
+        config([
+            'exchange-widget.enabled' => true,
+            'exchange-widget.link_id' => '2511974805bd4d',
+        ]);
+
+        $response = $this->get(route('why-ad-free'));
+
+        $response->assertOk();
+        $response->assertSee('The swap widget', false);
+        $response->assertSee('ChangeNOW exchange widget', false);
+        $response->assertDontSee('One third-party request on the whole site', false);
     }
 
     public function test_why_ad_free_separates_adverts_on_the_site_from_adverts_pointing_at_it(): void

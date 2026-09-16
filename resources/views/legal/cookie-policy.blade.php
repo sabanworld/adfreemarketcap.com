@@ -5,6 +5,8 @@
     $sessionCookie = (string) config('session.cookie');
     $sessionMinutes = (int) config('session.lifetime');
     $advertising = $consent->advertisingEnabled();
+    $exchange = $consent->exchangeWidgetEnabled();
+    $required = $consent->required();
 
     $items = [
         [
@@ -36,9 +38,9 @@
             'consent' => __('Strictly necessary'),
         ],
         [
-            'name' => $advertising ? $consent->storageKey() : 'afmc-cookies',
+            'name' => $required ? $consent->storageKey() : 'afmc-cookies',
             'kind' => __('Local storage'),
-            'purpose' => $advertising
+            'purpose' => $required
                 ? __('Records the answer you gave in the cookie bar, so we honour it and stop asking')
                 : __('Records the choice you made in the cookie bar so we stop asking'),
             'expiry' => __('Until you clear site data in your browser'),
@@ -63,6 +65,16 @@
             'consent' => __('Only after you accept'),
         ];
     }
+
+    if ($exchange) {
+        $items[] = [
+            'name' => __('Cookies on changenow.io'),
+            'kind' => __('Cookie, set by ChangeNOW on their domain'),
+            'purpose' => __('Whatever ChangeNOW needs to run the swap widget inside their iframe after you accept. We do not set these on our domain and we cannot read them'),
+            'expiry' => __('Set by ChangeNOW under their own rules'),
+            'consent' => __('Only after you accept'),
+        ];
+    }
 @endphp
 
 <p>{{ __('Last updated: :date', ['date' => $company['policies_updated_at']]) }}</p>
@@ -71,10 +83,16 @@
     'product' => $company['product_name'],
 ]) }}</p>
 
-@if ($advertising)
+@if ($required)
     <h2>{{ __('Two kinds of storage') }}</h2>
     <p>{{ __('Most of what this site stores is strictly necessary to deliver the pages you ask for, to keep you signed in, or to remember a choice you made. Storage of that kind does not need consent under article 5(3) of the ePrivacy Directive.') }}</p>
-    <p>{{ __('One thing is different. We advertise this site on Google, and measuring which adverts brought people here means letting Google write a cookie to your device. That is not necessary to run the site, so it happens only if you choose Accept in the cookie bar. Until you do, no file is requested from Google and no advertising cookie exists. Choosing Reject is one click, in a button the same size and colour as Accept, and it leaves the site working exactly as it did.') }}</p>
+    @if ($advertising && $exchange)
+        <p>{{ __('Two things are different. Measuring Google adverts that pointed people here means letting Google write a cookie on this domain, and the ChangeNOW swap widget loads from their servers, where they may set cookies of their own. Neither is necessary to read rankings or a coin page, so both happen only if you choose Accept in the cookie bar. Until you do, no file is requested from Google or ChangeNOW. Choosing Reject is one click, in a button the same size and colour as Accept, and it leaves the rest of the site working exactly as it did.') }}</p>
+    @elseif ($advertising)
+        <p>{{ __('One thing is different. We advertise this site on Google, and measuring which adverts brought people here means letting Google write a cookie to your device. That is not necessary to run the site, so it happens only if you choose Accept in the cookie bar. Until you do, no file is requested from Google and no advertising cookie exists. Choosing Reject is one click, in a button the same size and colour as Accept, and it leaves the site working exactly as it did.') }}</p>
+    @else
+        <p>{{ __('One thing is different. The ChangeNOW swap widget on the home page and on coin pages loads from their servers. That is not necessary to read rankings or a coin page, so it happens only if you choose Accept in the cookie bar. Until you do, no file is requested from ChangeNOW. Choosing Reject is one click, in a button the same size and colour as Accept, and it leaves the rest of the site working exactly as it did.') }}</p>
+    @endif
 @else
     <h2>{{ __('Only what the service needs') }}</h2>
     <p>{{ __('Everything below is strictly necessary to deliver the pages you ask for, to keep you signed in, or to remember a choice you made. Storage of that kind does not need consent under article 5(3) of the ePrivacy Directive, so the bar you saw is a notice rather than a request.') }}</p>
@@ -89,7 +107,7 @@
             <th scope="col">{{ __('Kind') }}</th>
             <th scope="col">{{ __('Purpose') }}</th>
             <th scope="col">{{ __('Expires') }}</th>
-            @if ($advertising)
+            @if ($required)
                 <th scope="col">{{ __('Needs consent') }}</th>
             @endif
         </tr>
@@ -101,7 +119,7 @@
                 <td>{{ $item['kind'] }}</td>
                 <td>{{ $item['purpose'] }}</td>
                 <td>{{ $item['expiry'] }}</td>
-                @if ($advertising)
+                @if ($required)
                     <td>{{ $item['consent'] }}</td>
                 @endif
             </tr>
@@ -109,8 +127,12 @@
     </tbody>
 </table>
 </div>
-@if ($advertising)
+@if ($advertising && $exchange)
+    <p>{{ __('The Google cookies sit on this domain. The ChangeNOW cookies sit on changenow.io. Other websites cannot read either set from here, but each company can use what it holds for its own service.') }}</p>
+@elseif ($advertising)
     <p>{{ __('All of these sit on this domain. The Google cookies are written by Google code running on our pages, which means other websites cannot read them, but Google can use what they hold to report on its own adverts.') }}</p>
+@elseif ($exchange)
+    <p>{{ __('Everything we set ourselves sits on this domain. ChangeNOW cookies sit on changenow.io after you accept, and we cannot read or delete them from here.') }}</p>
 @else
     <p>{{ __('All of these are first-party items set by this domain. None of them are readable by another company.') }}</p>
 @endif
@@ -118,7 +140,7 @@
 <h2>{{ __('Statistics without cookies') }}</h2>
 <p>{{ __('We count page views with Plausible, a European service. It sets no cookie, writes nothing to local storage, and builds no fingerprint, so it adds no item to the table above. Storage is what article 5(3) of the ePrivacy Directive asks consent for, and this counter uses none, which is why it runs for everyone.') }}</p>
 <p>{{ __('One thing it does read from local storage is a key named plausible_ignore, which exists only if you put it there yourself to opt out. It is never written by us or by the counter.') }}</p>
-@if ($advertising)
+@if ($required)
     <p>{{ __('The Privacy policy sets out what the counter measures, what happens to your IP address, and how to stay out of the count.') }}</p>
 @else
     <p>{{ __('The counting code is bundled with our own scripts, so the only request that leaves this site is the count itself. Fonts, styles, and icons are served from our own domain. The Privacy policy sets out what the counter measures, what happens to your IP address, and how to stay out of the count.') }}</p>
@@ -126,14 +148,24 @@
 
 @if ($advertising)
     <h2>{{ __('Advertising measurement') }}</h2>
-    <p>{{ __('We buy adverts on Google to bring people to this site. There are no adverts on the site itself, no space is for sale on it, and nothing in the rankings or on a coin page changes because of this.') }}</p>
+    <p>{{ __('We buy adverts on Google to bring people to this site. There are no adverts on the site itself, and no space is for sale on it.') }}</p>
     <p>{{ __('If you accept, your browser loads the Google tag from googletagmanager.com and Google writes the cookies listed above. They let Google report that someone who followed one of our adverts reached the site and did something we count, such as creating an account. Google receives your IP address and the address of the page you are on, because that is what any request your browser makes carries.') }}</p>
     <p>{{ __('Two things stay true whatever you choose. The tag runs with Google consent mode set to denied by default, so the first page load requests nothing from Google. And if you reject after having accepted, we delete the Google cookies from your browser rather than only stopping the next measurement.') }}</p>
     <p>{{ __('Our legal basis is your consent, under article 6(1)(a) GDPR and article 11.7a of the Dutch Telecommunications Act. You can take it back at any time, which costs you nothing and does not affect the measuring that already happened. The Privacy policy names Google as a recipient and covers the transfer of data to the United States.') }}</p>
 @endif
 
+@if ($exchange)
+    <h2>{{ __('ChangeNOW swap widget') }}</h2>
+    <p>{{ __('The home page and every coin page can show a ChangeNOW exchange widget. Completing a swap there may earn :person a commission. That interest is labelled on the widget and on the Disclosure of interests page.', [
+        'person' => $company['person'],
+    ]) }}</p>
+    <p>{{ __('If you accept, your browser loads an iframe and a small connector script from changenow.io. ChangeNOW then receives your IP address and the address of the page you are on, the way any request your browser makes does, and may set cookies on their own domain. Until you accept, the page shows a placeholder instead, and no request leaves for ChangeNOW.') }}</p>
+    <p>{{ __('If you reject after having accepted, we remove the iframe and the connector script straight away. Cookies ChangeNOW already wrote on changenow.io stay until you clear them in your browser, because we cannot delete another site\'s cookies from here.') }}</p>
+    <p>{{ __('Our legal basis is your consent, under article 6(1)(a) GDPR and article 11.7a of the Dutch Telecommunications Act. You can take it back at any time under "Cookie preferences" in the footer. The Privacy policy names ChangeNOW as a recipient.') }}</p>
+@endif
+
 <h2>{{ __('Managing what is stored') }}</h2>
-@if ($advertising)
+@if ($required)
     <p>{{ __('Select "Cookie preferences" in the footer to see the bar again and change your answer in either direction. Whatever you pick is recorded straight away and applies from that moment. Your browser can also block or delete cookies and local storage for this site. Blocking the session cookie means you cannot sign in, but the market pages keep working.') }}</p>
 @else
     <p>{{ __('There are no optional cookies to switch off, so the footer has no preference panel. Select "Cookie notice" in the footer to read the notice again. Your browser can also block or delete cookies and local storage for this site. Blocking the session cookie means you cannot sign in, but the market pages keep working.') }}</p>

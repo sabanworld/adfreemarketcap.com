@@ -1,52 +1,47 @@
 @inject('consent', 'App\Services\Consent\ConsentService')
 
-@if ($consent->advertisingEnabled())
+@if ($consent->required())
     {{--
-        Google Ads conversion measurement, opt-in only.
+        Non-essential third-party contact, opt-in only.
 
-        Nothing is requested from Google and no advertising cookie exists until
-        the visitor chooses Accept in the cookie bar. Consent Mode v2 starts at
-        denied, the script tag is built in JavaScript rather than written into
-        the markup, and withdrawing deletes what an earlier acceptance wrote.
-        The privacy and cookie policies describe exactly this behaviour.
+        Today that is Google Ads conversion measurement and/or the ChangeNOW
+        exchange widget. Nothing is requested from either host and no optional
+        cookie exists until the visitor chooses Accept in the cookie bar. The
+        Google tag uses Consent Mode v2 starting at denied; the ChangeNOW iframe
+        and connector script are built in JavaScript rather than written into
+        the markup. Withdrawing stops both and deletes Google cookies we wrote
+        on this domain. ChangeNOW cookies live on changenow.io, which we cannot
+        clear from here. The privacy and cookie policies describe exactly this.
     --}}
     <script>
         (() => {
             const KEY = @json($consent->storageKey());
             const VERSION = @json($consent->version());
-            const SRC = @json($consent->scriptUrl());
-            const ID = @json($consent->conversionId());
+            const ADVERTISING = @json($consent->advertisingEnabled());
+            const EXCHANGE = @json($consent->exchangeWidgetEnabled());
+            const SRC = @json($consent->advertisingEnabled() ? $consent->scriptUrl() : '');
+            const ID = @json($consent->advertisingEnabled() ? $consent->conversionId() : '');
             const CONVERSIONS = @json((object) $consent->conversions());
-
-            window.dataLayer = window.dataLayer || [];
-            function gtag() { dataLayer.push(arguments); }
-            window.gtag = gtag;
-
-            gtag('consent', 'default', {
-                ad_storage: 'denied',
-                ad_user_data: 'denied',
-                ad_personalization: 'denied',
-                analytics_storage: 'denied',
-                wait_for_update: 500,
-            });
+            const CONNECTOR = @json($consent->exchangeWidgetEnabled() ? $consent->exchangeConnectorScriptUrl() : '');
 
             // A stored answer only counts for the purposes it was given for, so
-            // a version bump sends the visitor back to the bar.
+            // a version bump sends the visitor back to the bar. `optional` is the
+            // single yes/no for every non-essential purpose in this build.
             const read = () => {
                 try {
                     const stored = JSON.parse(localStorage.getItem(KEY) || 'null');
 
-                    return stored && stored.version === VERSION ? stored.advertising === true : null;
+                    return stored && stored.version === VERSION ? stored.optional === true : null;
                 } catch (error) {
                     return null;
                 }
             };
 
-            const save = (advertising) => {
+            const save = (optional) => {
                 try {
                     localStorage.setItem(KEY, JSON.stringify({
                         version: VERSION,
-                        advertising: advertising,
+                        optional: optional,
                         at: new Date().toISOString(),
                     }));
                 } catch (error) {
@@ -54,14 +49,35 @@
                 }
             };
 
-            let loaded = false;
+            const notify = (granted) => {
+                window.dispatchEvent(new CustomEvent('afmc-consent-changed', {
+                    detail: { granted: granted },
+                }));
+            };
 
-            const load = () => {
-                if (loaded) {
+            let googleLoaded = false;
+            let connectorLoaded = false;
+
+            if (ADVERTISING) {
+                window.dataLayer = window.dataLayer || [];
+                function gtag() { dataLayer.push(arguments); }
+                window.gtag = gtag;
+
+                gtag('consent', 'default', {
+                    ad_storage: 'denied',
+                    ad_user_data: 'denied',
+                    ad_personalization: 'denied',
+                    analytics_storage: 'denied',
+                    wait_for_update: 500,
+                });
+            }
+
+            const loadGoogle = () => {
+                if (! ADVERTISING || googleLoaded || ! SRC || ! ID) {
                     return;
                 }
 
-                loaded = true;
+                googleLoaded = true;
                 gtag('js', new Date());
                 gtag('config', ID);
 
@@ -71,9 +87,34 @@
                 document.head.appendChild(tag);
             };
 
+            // The connector is shared by every exchange mount on the page. Load
+            // it once after Accept; widgets invent their own iframes.
+            const loadConnector = () => {
+                if (! EXCHANGE || connectorLoaded || ! CONNECTOR) {
+                    return;
+                }
+
+                if (document.querySelector('script[data-afmc-changenow-connector]')) {
+                    connectorLoaded = true;
+                    return;
+                }
+
+                connectorLoaded = true;
+                const tag = document.createElement('script');
+                tag.defer = true;
+                tag.src = CONNECTOR;
+                tag.dataset.afmcChangenowConnector = '1';
+                document.head.appendChild(tag);
+            };
+
             // Google writes _gcl_* on our own domain, so withdrawing has to clear
             // them. Stopping the next measurement is not the same as undoing it.
-            const forget = () => {
+            // ChangeNOW cookies sit on changenow.io and are outside our reach.
+            const forgetGoogle = () => {
+                if (! ADVERTISING) {
+                    return;
+                }
+
                 const host = window.location.hostname;
                 const scopes = ['', host, '.' + host, '.' + host.split('.').slice(-2).join('.')];
 
@@ -91,26 +132,50 @@
                 }
             };
 
-            const update = (advertising) => gtag('consent', 'update', {
-                ad_storage: advertising ? 'granted' : 'denied',
-                ad_user_data: advertising ? 'granted' : 'denied',
-                ad_personalization: advertising ? 'granted' : 'denied',
-                analytics_storage: advertising ? 'granted' : 'denied',
-            });
+            const unloadExchange = () => {
+                document.querySelectorAll('[data-afmc-exchange-host]').forEach((host) => {
+                    host.replaceChildren();
+                });
+
+                document.querySelectorAll('script[data-afmc-changenow-connector]').forEach((tag) => {
+                    tag.remove();
+                });
+
+                connectorLoaded = false;
+            };
+
+            const updateGoogle = (optional) => {
+                if (! ADVERTISING || typeof gtag !== 'function') {
+                    return;
+                }
+
+                gtag('consent', 'update', {
+                    ad_storage: optional ? 'granted' : 'denied',
+                    ad_user_data: optional ? 'granted' : 'denied',
+                    ad_personalization: optional ? 'granted' : 'denied',
+                    analytics_storage: optional ? 'granted' : 'denied',
+                });
+            };
 
             window.afmcConsent = {
                 required: true,
+                advertising: ADVERTISING,
+                exchange: EXCHANGE,
                 answered: () => read() !== null,
                 granted: () => read() === true,
                 accept() {
                     save(true);
-                    update(true);
-                    load();
+                    updateGoogle(true);
+                    loadGoogle();
+                    loadConnector();
+                    notify(true);
                 },
                 reject() {
                     save(false);
-                    update(false);
-                    forget();
+                    updateGoogle(false);
+                    forgetGoogle();
+                    unloadExchange();
+                    notify(false);
                 },
                 // Reported by name, so a label that is not configured yet and a
                 // visitor who never accepted both end the same way: nothing sent.
@@ -121,8 +186,13 @@
                         return;
                     }
 
-                    load();
+                    loadGoogle();
                     gtag('event', 'conversion', { send_to: sendTo });
+                },
+                ensureExchangeConnector() {
+                    if (read() === true) {
+                        loadConnector();
+                    }
                 },
             };
 
@@ -134,7 +204,8 @@
             });
 
             if (read() === true) {
-                load();
+                loadGoogle();
+                loadConnector();
             }
         })();
     </script>
@@ -144,6 +215,8 @@
         // needs, so there is nothing to consent to and the bar stays a notice.
         window.afmcConsent = {
             required: false,
+            advertising: false,
+            exchange: false,
             answered() {
                 try {
                     return localStorage.getItem('afmc-cookies') !== null;
@@ -161,6 +234,7 @@
             },
             reject() {},
             conversion() {},
+            ensureExchangeConnector() {},
         };
     </script>
 @endif

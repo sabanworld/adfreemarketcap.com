@@ -44,19 +44,19 @@ class AnalyticsTest extends TestCase
         $this->get(route('home'))->assertDontSee('src="https://plausible.io', false);
     }
 
-    public function test_do_not_track_is_honoured_unless_configuration_says_otherwise(): void
+    public function test_do_not_track_is_ignored_unless_configuration_says_otherwise(): void
     {
         config(['analytics.enabled' => true]);
 
-        // Plausible has no Do Not Track check, so resources/js/analytics.js skips
-        // the tracker itself. The privacy policy promises it, and this flag is
-        // what would take it away.
-        $this->assertFalse(config('analytics.collect_dnt'));
-        $this->get(route('home'))->assertSee('"collectDnt":false', false);
-
-        config(['analytics.collect_dnt' => true]);
-
+        // Default is to count even when the browser sends Do Not Track or Global
+        // Privacy Control. The privacy policy says so. Flipping the flag is how
+        // you honour those signals again.
+        $this->assertTrue(config('analytics.collect_dnt'));
         $this->get(route('home'))->assertSee('"collectDnt":true', false);
+
+        config(['analytics.collect_dnt' => false]);
+
+        $this->get(route('home'))->assertSee('"collectDnt":false', false);
     }
 
     public function test_what_is_captured_matches_what_the_privacy_policy_says(): void

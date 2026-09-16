@@ -10,12 +10,13 @@ return [
     |--------------------------------------------------------------------------
     |
     | Companies named in the "Picks, not ads" section on the home page. Nothing
-    | here is paid for, and none of it is commission based. `relationship` drives
-    | the badge on the card and the disclosure sentence on the Disclosure of
-    | interests page, so both stay in step:
+    | here is a paid placement. `relationship` drives the badge on the card and
+    | the disclosure sentence on the Disclosure of interests page, so both stay
+    | in step:
     |
-    |   uses    = he uses the product, and has no partnership
-    |   partner = he has a strategic partnership with the company
+    |   uses       = he uses the product, and has no commercial interest
+    |   partner    = he has a strategic partnership with the company
+    |   affiliate  = he may earn a commission when a reader uses the product
     |
     | "He" is config('company.person'). A note may use the `:person` placeholder
     | and the card fills it in, so the name lives in one place.
@@ -36,8 +37,8 @@ return [
         'name' => 'ChangeNOW',
         'kind' => 'Swap',
         'url' => 'https://changenow.io',
-        'note' => 'Non-custodial swaps with low KYC that still meets AML rules properly, a fast system, and the best conversion prices :person has found so far.',
-        'relationship' => 'uses',
+        'note' => 'Non-custodial swaps with low KYC that still meets AML rules properly. :person uses it himself, and may earn a commission when you complete a swap through the widget on this site.',
+        'relationship' => 'affiliate',
     ],
     [
         'name' => 'Rigly',

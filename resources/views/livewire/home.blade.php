@@ -247,7 +247,7 @@
 
     <x-afmc.pledge-band
         style="margin-top:var(--space-10)"
-        :detail="__(':person pays for this site out of his own pocket. Nobody can pay to show up here, to move up the table, or to lose a risk flag. The picks below are companies he uses or has a partnership with. Every card says which, and none of them are paid placements.', ['person' => config('company.person')])"
+        :detail="__(':person pays for this site out of his own pocket. The picks below are companies he uses, partners with, or may earn a commission from. Every card says which.', ['person' => config('company.person')])"
     />
 
     <p style="margin:var(--space-3) 0 0;font:var(--type-body-sm);color:var(--text-muted)">
@@ -259,12 +259,18 @@
     <section id="picks" style="margin-top:var(--space-10)">
         <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:var(--space-3);gap:var(--space-3);flex-wrap:wrap">
             <h2 style="margin:0;font:var(--type-h2)">{{ __('Picks, not ads') }}</h2>
-            <span style="font:var(--type-body-sm);color:var(--text-faint)">{{ __('Companies we like · any partnership is disclosed') }}</span>
+            <span style="font:var(--type-body-sm);color:var(--text-faint)">{{ __('Companies we like · any interest is disclosed') }}</span>
         </div>
         <div class="afmc-grid afmc-grid--picks">
             @foreach (config('picks') as $pick)
                 @php
                     $isPartner = $pick['relationship'] === 'partner';
+                    $isAffiliate = $pick['relationship'] === 'affiliate';
+                    $badge = match ($pick['relationship']) {
+                        'partner' => __(':person is a partner', ['person' => config('company.person')]),
+                        'affiliate' => __(':person earns a commission', ['person' => config('company.person')]),
+                        default => __(':person uses this', ['person' => config('company.person')]),
+                    };
                 @endphp
                 <a
                     class="afmc-pick"
@@ -274,7 +280,7 @@
                 >
                     <div class="afmc-pick__head">
                         <span class="afmc-pick__kind">{{ __($pick['kind']) }}</span>
-                        <span class="afmc-pick__badge{{ $isPartner ? ' afmc-pick__badge--interest' : '' }}">{{ __($isPartner ? ':person is a partner' : ':person uses this', ['person' => config('company.person')]) }}</span>
+                        <span class="afmc-pick__badge{{ ($isPartner || $isAffiliate) ? ' afmc-pick__badge--interest' : '' }}">{{ $badge }}</span>
                     </div>
                     <h3 class="afmc-pick__title">{{ $pick['name'] }}</h3>
                     <p class="afmc-pick__note">{{ __($pick['note'], ['person' => config('company.person')]) }}</p>
@@ -283,7 +289,9 @@
                         <x-afmc.icon name="arrow_outward" size="14px" />
                     </div>
                 </a>
-            @endforeach
+                    @endforeach
         </div>
     </section>
+
+    <x-afmc.exchange-widget style="margin-top:var(--space-10)" />
 </main>

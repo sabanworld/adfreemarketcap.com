@@ -1,7 +1,19 @@
 @inject('consent', 'App\Services\Consent\ConsentService')
 
 @php
-    $required = $consent->advertisingEnabled();
+    $required = $consent->required();
+    $advertising = $consent->advertisingEnabled();
+    $exchange = $consent->exchangeWidgetEnabled();
+
+    if ($advertising && $exchange) {
+        $body = __('We store what the site needs either way: your session if you sign in, your theme, and this choice. Separately, measuring Google adverts that pointed people here, and loading the ChangeNOW swap widget, each mean letting another company talk to your browser. That part is up to you, and you can switch it off again at any time.');
+    } elseif ($advertising) {
+        $body = __('We store what the site needs either way: your session if you sign in, your theme, and this choice. Separately, we advertise this site on Google, and measuring which ads worked means letting Google write a cookie to your device. That part is up to you, and you can switch it off again at any time.');
+    } elseif ($exchange) {
+        $body = __('We store what the site needs either way: your session if you sign in, your theme, and this choice. Separately, the ChangeNOW swap widget on coin pages and the home page loads from their servers, which is optional. That part is up to you, and you can switch it off again at any time.');
+    } else {
+        $body = __('We store only what the site needs: your session if you sign in, your theme, and this choice. Page views are counted without cookies and without anything written to your device, and there is no advertising, so there is nothing here to opt out of.');
+    }
 @endphp
 
 <div
@@ -11,8 +23,8 @@
     tabindex="-1"
     x-data="{
         open: ! window.afmcConsent.answered(),
-        choose(advertising) {
-            advertising ? window.afmcConsent.accept() : window.afmcConsent.reject();
+        choose(optional) {
+            optional ? window.afmcConsent.accept() : window.afmcConsent.reject();
             this.open = false;
         },
     }"
@@ -23,15 +35,7 @@
 >
     <div>
         <p class="afmc-cookie__title">{{ __('Cookies on this site') }}</p>
-        @if ($required)
-            <p class="afmc-cookie__body">
-                {{ __('We store what the site needs either way: your session if you sign in, your theme, and this choice. Separately, we advertise this site on Google, and measuring which ads worked means letting Google write a cookie to your device. That part is up to you, it changes nothing about the pages you see, and you can switch it off again at any time.') }}
-            </p>
-        @else
-            <p class="afmc-cookie__body">
-                {{ __('We store only what the site needs: your session if you sign in, your theme, and this choice. Page views are counted without cookies and without anything written to your device, and there is no advertising, so there is nothing here to opt out of.') }}
-            </p>
-        @endif
+        <p class="afmc-cookie__body">{{ $body }}</p>
     </div>
     <div class="afmc-cookie__actions">
         <a

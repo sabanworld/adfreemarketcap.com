@@ -13,7 +13,7 @@ A principle that never costs anything is decoration, so most of this page is abo
 It is not a promise on a page. The page only describes what the code already does.
 
 - **Collect nothing without a named use.** Every row in the privacy policy table exists because something in `app/` reads it. A field with no reader is deleted, not documented.
-- **Keep the number of parties a browser talks to as close to one as possible.** Today it is us, a cookieless counter, and, only after the visitor accepts, Google.
+- **Keep the number of parties a browser talks to as close to one as possible.** Today it is us, a cookieless counter, and, only after the visitor accepts, Google and/or ChangeNOW.
 - **Non-essential storage waits for opt-in.** Withdrawing is one click, sits in the same place as accepting, and deletes what was already written rather than only stopping the next write.
 - **Server side beats client side.** Market data, exchange rates, and Nostr notes are fetched by our own servers on a schedule, so a visit never reaches a provider and a provider never sees a visitor.
 - **Self-hosted beats a CDN.** Fonts, icons, styles, and scripts come from our domain, because a font request is a visitor's IP address handed to a company they never chose.
@@ -60,12 +60,13 @@ The principle is only real where a build fails without it:
 
 | Guard | Covers |
 |-------|--------|
-| `tests/Feature/ConsentTest.php` | Nothing reaches Google before Accept, consent mode defaults to denied, withdrawal deletes the cookies, both buttons carry equal weight |
+| `tests/Feature/ConsentTest.php` | Nothing reaches Google or ChangeNOW before Accept, consent mode defaults to denied, withdrawal deletes Google cookies and unloads the embed, both buttons carry equal weight |
 | `tests/Feature/LegalPagesTest.php` | Purpose, legal basis, retention, recipients, and transfer safeguards on every page, in both the tag-on and tag-off states |
-| `tests/Feature/AnalyticsTest.php` | The counter renders nothing when off, and honours Do Not Track as the policy describes |
+| `tests/Feature/ExchangeWidgetTest.php` | Placeholder without iframe, affiliate disclosure, coin/home placement |
+| `tests/Feature/AnalyticsTest.php` | The counter renders nothing when off, and `collect_dnt` matches what the privacy policy says about browser signals |
 | `tests/Feature/CopyStyleTest.php` | Machine-sounding copy and hollow slogans across views, `lang/`, `docs/`, and `README.md` |
 | `tests/Feature/SeoTest.php` | Admin and Livewire internals stay out of the sitemap and robots |
-| [`AGENTS.md`](../AGENTS.md) | The two-third-party-request ceiling, the consent rules, and the writing rules |
+| [`AGENTS.md`](../AGENTS.md) | The consent-gated third-party rules, and the writing rules |
 
 ## What this page is not
 

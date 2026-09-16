@@ -431,6 +431,11 @@
             @endif
         </div>
     </div>
+
+    <x-afmc.exchange-widget
+        style="margin-top:var(--space-10)"
+        :from="$coin->symbol"
+    />
 </main>
 
 @assets
