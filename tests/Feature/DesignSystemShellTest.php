@@ -31,6 +31,20 @@ class DesignSystemShellTest extends TestCase
     }
 
     /**
+     * The server HTML always ships data-theme="light". Without re-applying the saved theme
+     * during wire:navigate's onSwap, dark mode flashes white between pages.
+     */
+    public function test_public_layout_reapplies_theme_on_livewire_navigate(): void
+    {
+        $response = $this->get(route('home'));
+
+        $response->assertOk();
+        $response->assertSee("localStorage.getItem('afmc-theme') === 'dark'", false);
+        $response->assertSee("document.addEventListener('livewire:navigating'", false);
+        $response->assertSee('event.detail?.onSwap?.(apply)', false);
+    }
+
+    /**
      * Zero is not a direction. A change that rounds to 0.00% gets neutral ink and no caret,
      * because green would read as a gain, and 0.00% is the normal state for a stablecoin.
      */

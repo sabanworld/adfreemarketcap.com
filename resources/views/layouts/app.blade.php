@@ -8,8 +8,17 @@
     <link rel="apple-touch-icon" href="{{ asset('brand/logo.svg') }}">
     <script>
         (() => {
-            const theme = localStorage.getItem('afmc-theme') === 'dark' ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', theme);
+            const apply = () => {
+                const theme = localStorage.getItem('afmc-theme') === 'dark' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+            };
+            apply();
+            // wire:navigate copies the server HTML's data-theme="light" onto <html>.
+            // Re-apply from localStorage in onSwap (same turn, after that copy, before paint)
+            // so dark mode does not flash white between pages.
+            document.addEventListener('livewire:navigating', (event) => {
+                event.detail?.onSwap?.(apply);
+            });
         })();
     </script>
     <x-afmc.consent />
@@ -26,8 +35,8 @@
         searchOpen: false,
     }"
     x-effect="
-        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
         localStorage.setItem('afmc-theme', dark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
     "
 >
     <a class="afmc-skip" href="#afmc-main">{{ __('Skip to main content') }}</a>

@@ -75,6 +75,6 @@ Laravel status views live under `resources/views/errors/` and share one AFMC lay
 
 ## Theme + cookie notice
 
-Alpine on `<body>` persists `afmc-theme` in `localStorage` and toggles `data-theme="light|dark"` for token overrides. It also owns `moreOpen` and `searchOpen` for the mobile shell.
+Alpine on `<body>` persists `afmc-theme` in `localStorage` and toggles `data-theme="light|dark"` for token overrides. It also owns `moreOpen` and `searchOpen` for the mobile shell. A blocking script in the layout head applies the saved theme before first paint, and again on `livewire:navigating` `onSwap`, because Livewire copies the server HTML's default `data-theme="light"` onto `<html>` during `wire:navigate`.
 
 The cookie notice (`resources/views/components/afmc/cookie-bar.blade.php`) owns its own state: it opens when `afmc-cookies` is missing from `localStorage`, and "Got it" writes the key. Nothing here is optional, so the footer offers no preference panel. Its "Cookie notice" button dispatches the `afmc-cookie-notice` window event, which clears the key, reopens the notice, and moves focus to it. On narrow viewports the bar sits above the tab bar.
