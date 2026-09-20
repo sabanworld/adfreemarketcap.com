@@ -43,6 +43,18 @@ Covered by `tests/Feature/AdminMfaTest.php`. PHPUnit forces `ADMIN_MFA_REQUIRED=
 - Guests who click the star are sent to login.
 - SEO: `noindex` on Watchlist; `/login`, `/register`, `/watchlist`, `/logout` in `config/seo.php` robots disallow.
 
+### Price emails
+
+Starred coins are the list. `users.price_alerts_enabled` (default on, switch on the watchlist) decides whether that list is emailed. Off deletes `watchlist_price_alerts` for the account and stops both kinds of mail.
+
+`App\Services\Watchlist\WatchlistPriceAlertService` reads `percent_change_1h`, `percent_change_24h`, and `percent_change_7d`. Marks start at 5% and then step by 5% (10, 15, 20, and so on), up and down, one window at a time. The first time a saved coin is seen, that reading is stored and nothing is sent, so a coin that is already up 15% does not email until it reaches the next mark. A later jump that passes several marks sends one email for the highest mark. Each coin and window then waits `watchlist_alerts.cooldown_minutes` (60) before another email for that same window, which is what stops a 15% move from producing a 5% note, a 10% note, and a 15% note in the same hour.
+
+The daily recap lists every saved coin, including ones that did not move. It runs at `watchlist_alerts.recap_time` (06:00 in the app timezone, which is UTC). `users.watchlist_recap_sent_on` stops a second copy the same day.
+
+Jobs: `App\Jobs\SendWatchlistMoveAlerts` (every `WATCHLIST_ALERTS_INTERVAL` minutes, default 10) and `App\Jobs\SendWatchlistRecap`. Both no-op when `WATCHLIST_ALERTS_ENABLED` is false. Mail uses the default mailer. Production is Postmark (`POSTMARK_TOKEN`, `MAIL_MAILER=postmark`) on the `notifications` message stream; local Sail stays on Mailpit.
+
+Removing a star deletes that coin's marks. The privacy policy and the terms describe the emails, and the watchlist page states the same marks.
+
 ## DexScan
 
 - Tables: `dex_pairs` (upserted by `provider` + `external_id`), `dex_tokens`, `dex_chart_series`, `dex_trades`, `dex_token_holders`.

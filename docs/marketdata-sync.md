@@ -20,6 +20,8 @@ Public pages read rankings and coin details from MySQL only. Freshness comes fro
 | `App\Jobs\SyncCoinInsights` | every `MARKETDATA_INSIGHTS_INTERVAL_HOURS` hours (default 6) | treasury (CoinGecko) + Bitcoin Pi Cycle / halvings |
 | `App\Jobs\SyncCurrencyRates` | every `CURRENCY_RATES_INTERVAL` minutes (default 30) | `config/currency.php`, see [`docs/currency.md`](currency.md) |
 | `horizon:snapshot` | every 5 minutes | Horizon metrics |
+| `App\Jobs\SendWatchlistMoveAlerts` | every `WATCHLIST_ALERTS_INTERVAL` minutes (default 10) | Watchlist price emails, not a provider call. See [`docs/public-accounts.md`](public-accounts.md) |
+| `App\Jobs\SendWatchlistRecap` | daily at `WATCHLIST_RECAP_TIME` (default 06:00, app timezone UTC) | One summary of every saved coin |
 
 Schedule definitions live in [`routes/console.php`](../routes/console.php). Events use `withoutOverlapping()` so a slow run does not stack.
 

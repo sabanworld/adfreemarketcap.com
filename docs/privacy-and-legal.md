@@ -23,7 +23,8 @@ Pages: cookie policy, privacy policy, terms, imprint, risk disclosure, disclosur
 The policies are written against this list. Keep them in step.
 
 - **Account:** name, email, bcrypt password hash (`users`). Legal basis: contract.
-- **Watchlist:** coin references per user (`watchlist_items`). Legal basis: contract.
+- **Watchlist:** coin references per user (`watchlist_items`). Legal basis: contract. Price emails, when left on, also store the last mark emailed per coin and window (`watchlist_price_alerts`) and the date of the last daily summary (`users.watchlist_recap_sent_on`). Turning price emails off, removing the coin, or deleting the account deletes the marks.
+- **Email delivery:** Postmark (AC PM) receives the recipient address and the message (coin names, US dollar prices, percentages) in order to send watchlist price alerts. Legal basis: contract. Safeguard: EU standard contractual clauses and the EU-US Data Privacy Framework, as stated in Postmark's data processing addendum.
 - **Sessions:** database sessions, `SESSION_LIFETIME` minutes (default 120).
 - **Server logs:** IP address, user agent, URL. Claimed retention: `COMPANY_RETENTION_LOG_DAYS` (default 90).
 - **Error monitoring:** Sentry (`sentry/sentry-laravel`, `config/sentry.php`, wired in `bootstrap/app.php`). Server-side only when `SENTRY_LARAVEL_DSN` is set. Unhandled exceptions (and optional traces) can include request URL, user agent, and stack traces. `SENTRY_SEND_DEFAULT_PII` defaults to false. Legal basis: legitimate interests.

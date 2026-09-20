@@ -124,6 +124,26 @@ class LegalPagesTest extends TestCase
             ->assertSee('Limburg, Germany (eu-west-lim)', false);
     }
 
+    public function test_privacy_policy_and_terms_describe_watchlist_price_emails(): void
+    {
+        $provider = config('company.processors.mail.name');
+        $this->assertIsString($provider);
+        $this->assertNotSame('', $provider);
+
+        $this->get(route('legal.show', 'privacy-policy'))
+            ->assertOk()
+            ->assertSee($provider, false)
+            ->assertSee('Transactional email (watchlist price alerts)', false)
+            ->assertSee('one daily summary of every saved coin', false)
+            ->assertSee('5% mark over 1 hour, 24 hours, or 7 days', false)
+            ->assertSee('turn them off on the watchlist', false);
+
+        $this->get(route('legal.show', 'terms'))
+            ->assertOk()
+            ->assertSee('one summary of that list each day', false)
+            ->assertSee('turn those emails off on the watchlist', false);
+    }
+
     public function test_imprint_omits_hosting_while_no_provider_is_configured(): void
     {
         config(['company.processors.hosting.name' => null]);

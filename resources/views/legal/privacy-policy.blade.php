@@ -37,6 +37,12 @@
             'retention' => __('Until you remove the item or delete your account'),
         ],
         [
+            'data' => __('Your email address, the coins on your watchlist, their prices and percentage changes, and the price marks we have already emailed'),
+            'purpose' => __('Sending a price email when a saved coin crosses a 5% mark over 1 hour, 24 hours, or 7 days, and one daily summary of every saved coin'),
+            'basis' => __('Performance of a contract, article 6(1)(b) GDPR'),
+            'retention' => __('While price emails are on and the coin stays on your watchlist. Turning price emails off, removing the coin, or deleting the account deletes those marks. The email provider keeps the sent message under its own retention'),
+        ],
+        [
             'data' => __('IP address, user agent, requested URL, and application error details in server logs and error reports'),
             'purpose' => __('Keeping the site available, finding faults, and blocking abuse'),
             'basis' => __('Legitimate interests in a secure service, article 6(1)(f) GDPR'),
@@ -131,7 +137,7 @@
     </tbody>
 </table>
 </div>
-<p>{{ __('You can browse the market pages without an account. An account only needs an email address and a password, and giving us those is voluntary. Without them we cannot offer a watchlist.') }}</p>
+<p>{{ __('You can browse the market pages without an account. An account needs an email address and a password, and giving us those is voluntary. Without them we cannot keep a watchlist or send the price emails that go with it. Those emails stay on until you turn them off on the watchlist. A price email names the saved coin, its price in US dollars, and the percentage that crossed the mark. The daily summary lists every saved coin. We send them through :provider, which receives your email address and that message in order to deliver it.', ['provider' => ($company['processors']['mail']['name'] ?? null) ?: __('our email provider')]) }}</p>
 
 <h2>{{ __('Visitor statistics') }}</h2>
 @if ($required)

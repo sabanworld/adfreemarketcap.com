@@ -55,7 +55,8 @@ return [
 
         'postmark' => [
             'transport' => 'postmark',
-            // 'message_stream_id' => env('POSTMARK_MESSAGE_STREAM_ID'),
+            // The notifications stream, not Postmark's default outbound stream.
+            'message_stream_id' => env('POSTMARK_MESSAGE_STREAM_ID', 'notifications'),
             // 'client' => [
             //     'timeout' => 5,
             // ],

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Jobs\SendWatchlistMoveAlerts;
+use App\Jobs\SendWatchlistRecap;
 use App\Jobs\SyncCoinInsights;
 use App\Jobs\SyncCoinPlatforms;
 use App\Jobs\SyncCurrencyRates;
@@ -141,6 +143,23 @@ $sentryMonitor(
         ->cron("*/{$nostrInterval} * * * *")
         ->withoutOverlapping()
         ->name('marketdata:sync-nostr')
+);
+
+$alertInterval = max(1, min(59, (int) config('watchlist_alerts.move_interval_minutes', 10)));
+$recapTime = (string) config('watchlist_alerts.recap_time', '06:00');
+
+$sentryMonitor(
+    Schedule::job(new SendWatchlistMoveAlerts)
+        ->cron("*/{$alertInterval} * * * *")
+        ->withoutOverlapping(15)
+        ->name('watchlist:move-alerts')
+);
+
+$sentryMonitor(
+    Schedule::job(new SendWatchlistRecap)
+        ->dailyAt($recapTime)
+        ->withoutOverlapping(30)
+        ->name('watchlist:daily-recap')
 );
 
 $sentryMonitor(

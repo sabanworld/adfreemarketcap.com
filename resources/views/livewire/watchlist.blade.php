@@ -13,6 +13,17 @@
                 {{ trans_choice(':count asset|:count assets', $coins->count(), ['count' => $coins->count()]) }}
                 · {{ __('saved to your account') }}
             </span>
+            <label class="afmc-switch">
+                <input type="checkbox" role="switch" wire:model.live="priceAlertsEnabled" />
+                <span class="afmc-switch__track" aria-hidden="true"><span class="afmc-switch__thumb"></span></span>
+                <span class="afmc-switch__label">{{ __('Email me when a saved coin moves, plus one daily summary') }}</span>
+            </label>
+            @error('priceAlertsEnabled')
+                <span style="font:var(--type-body-sm);color:var(--text-down)">{{ $message }}</span>
+            @enderror
+            <span style="font:var(--type-body-sm);color:var(--text-muted);max-width:62ch">
+                {{ __('Marks start at 5%, then every 5% (10, 15, 20, and so on), for the last hour, 24 hours, and 7 days. One email per coin per window each hour, plus one daily summary of the whole list.') }}
+            </span>
         </div>
         <a href="{{ route('home') }}" wire:navigate class="afmc-btn afmc-btn--secondary afmc-btn--sm">
             <x-afmc.icon name="add" size="16px" />
@@ -25,7 +36,7 @@
             <x-afmc.icon name="info" class="afmc-callout__icon" />
             <div class="afmc-callout__content">
                 <p class="afmc-callout__title">{{ __('Nothing here yet') }}</p>
-                <p class="afmc-callout__body">{{ __('Star any coin on Markets to track it here. Your list is tied to this account.') }}</p>
+                <p class="afmc-callout__body">{{ __('Star any coin on Markets to track it here. Your list is tied to this account. The switch above turns price emails on or off.') }}</p>
             </div>
         </div>
     @else

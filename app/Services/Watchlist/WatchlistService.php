@@ -11,6 +11,8 @@ use Illuminate\Support\Collection;
 
 final class WatchlistService
 {
+    public function __construct(private WatchlistPriceAlertService $alerts) {}
+
     public function watchedCoinIds(User $user): Collection
     {
         return WatchlistItem::query()
@@ -42,6 +44,7 @@ final class WatchlistService
 
         if ($existing) {
             $existing->delete();
+            $this->alerts->forget($user, $coin);
 
             return false;
         }

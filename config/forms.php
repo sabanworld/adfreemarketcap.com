@@ -34,6 +34,11 @@ return [
         'decay_seconds' => (int) env('FORM_RATE_LIMIT_WATCH_TOGGLE_DECAY', 60),
     ],
 
+    'watchlist_emails' => [
+        'max_attempts' => (int) env('FORM_RATE_LIMIT_WATCHLIST_EMAILS', 30),
+        'decay_seconds' => (int) env('FORM_RATE_LIMIT_WATCHLIST_EMAILS_DECAY', 60),
+    ],
+
     'currency' => [
         'max_attempts' => (int) env('FORM_RATE_LIMIT_CURRENCY', 30),
         'decay_seconds' => (int) env('FORM_RATE_LIMIT_CURRENCY_DECAY', 60),

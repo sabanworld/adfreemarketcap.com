@@ -7,15 +7,48 @@ namespace App\Livewire;
 use App\Models\Coin;
 use App\Models\User;
 use App\Services\Seo\SeoService;
+use App\Services\Watchlist\WatchlistPriceAlertService;
 use App\Services\Watchlist\WatchlistService;
 use App\Support\FormRateLimiter;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 #[Layout('layouts.app')]
 class Watchlist extends Component
 {
+    public bool $priceAlertsEnabled = true;
+
+    public function mount(): void
+    {
+        /** @var User $user */
+        $user = Auth::user();
+        $this->priceAlertsEnabled = $user->price_alerts_enabled;
+    }
+
+    public function updatedPriceAlertsEnabled(bool $enabled): void
+    {
+        try {
+            FormRateLimiter::ensureIsNotRateLimited('watchlist_emails', errorKey: 'priceAlertsEnabled');
+        } catch (ValidationException $validationException) {
+            $this->priceAlertsEnabled = ! $enabled;
+
+            throw $validationException;
+        }
+
+        FormRateLimiter::hit('watchlist_emails');
+
+        /** @var User $user */
+        $user = Auth::user();
+        $user->price_alerts_enabled = $enabled;
+        $user->save();
+
+        if (! $enabled) {
+            app(WatchlistPriceAlertService::class)->forgetUser($user);
+        }
+    }
+
     public function toggleWatch(int $coinId, WatchlistService $watchlist): void
     {
         FormRateLimiter::ensureIsNotRateLimited('watch_toggle', errorKey: 'watched');

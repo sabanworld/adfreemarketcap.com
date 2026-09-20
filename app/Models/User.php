@@ -21,6 +21,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'price_alerts_enabled',
     ];
 
     protected $hidden = [
@@ -50,6 +51,8 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'price_alerts_enabled' => 'boolean',
+            'watchlist_recap_sent_on' => 'date',
         ];
     }
 }

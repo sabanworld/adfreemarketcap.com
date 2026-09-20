@@ -89,7 +89,7 @@ return [
     |
     */
 
-    'policies_updated_at' => env('COMPANY_POLICIES_UPDATED_AT', '16 September 2026'),
+    'policies_updated_at' => env('COMPANY_POLICIES_UPDATED_AT', '20 September 2026'),
 
     /*
     |--------------------------------------------------------------------------
@@ -162,10 +162,10 @@ return [
             'transfer' => 'EU standard contractual clauses and the EU-US Data Privacy Framework',
         ],
         'mail' => [
-            'category' => 'Transactional email (account and support messages)',
-            'name' => env('COMPANY_MAIL_PROVIDER'),
-            'location' => env('COMPANY_MAIL_LOCATION', 'European Union'),
-            'transfer' => null,
+            'category' => 'Transactional email (watchlist price alerts)',
+            'name' => env('COMPANY_MAIL_PROVIDER') ?: 'AC PM (Postmark)',
+            'location' => env('COMPANY_MAIL_LOCATION') ?: 'United States',
+            'transfer' => env('COMPANY_MAIL_TRANSFER') ?: 'EU standard contractual clauses and the EU-US Data Privacy Framework',
         ],
         'analytics' => [
             'category' => 'Visitor statistics, without cookies or stored IP addresses',
