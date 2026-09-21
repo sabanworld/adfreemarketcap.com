@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Services\Nostr\NostrFeedSyncService;
+use App\Support\QueueName;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -21,7 +22,9 @@ class SyncNostrFeed implements ShouldBeUnique, ShouldQueue
 
     public function __construct(
         public readonly ?string $coinSlug = null,
-    ) {}
+    ) {
+        $this->onQueue(QueueName::HEAVY);
+    }
 
     /**
      * @return list<int>

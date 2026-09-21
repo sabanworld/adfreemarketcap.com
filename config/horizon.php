@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\QueueName;
 use Illuminate\Support\Str;
 
 return [
@@ -97,7 +98,10 @@ return [
     */
 
     'waits' => [
-        'redis:default' => 60,
+        'redis:' . QueueName::MAIL => 60,
+        'redis:' . QueueName::VISIT => 30,
+        'redis:' . QueueName::SYNC => 60,
+        'redis:' . QueueName::HEAVY => 180,
     ],
 
     /*
@@ -190,16 +194,18 @@ return [
     | Queue Worker Configuration
     |--------------------------------------------------------------------------
     |
-    | Here you may define the queue worker settings used by your application
-    | in all environments. These supervisors and settings handle all your
-    | queued jobs and will be provisioned by Horizon during deployment.
+    | Local Sail runs one supervisor that drains every named queue in
+    | priority order (mail → visit → sync → heavy). Production runs one
+    | supervisor per queue so visit refreshes and mail stay off the long
+    | chart / platform workers. Every supervisor `timeout` must exceed the
+    | longest job on its queues, and Redis `retry_after` must exceed that.
     |
     */
 
     'defaults' => [
-        'supervisor-1' => [
+        'supervisor-sync' => [
             'connection' => 'redis',
-            'queue' => ['default'],
+            'queue' => [QueueName::SYNC],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses' => 1,
@@ -207,28 +213,95 @@ return [
             'maxJobs' => 0,
             'memory' => 128,
             'tries' => 3,
-            'timeout' => 120,
+            'timeout' => 200,
+            'nice' => 0,
+        ],
+
+        'supervisor-visit' => [
+            'connection' => 'redis',
+            'queue' => [QueueName::VISIT],
+            'balance' => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 128,
+            'tries' => 3,
+            'timeout' => 200,
+            'nice' => 0,
+        ],
+
+        'supervisor-heavy' => [
+            'connection' => 'redis',
+            'queue' => [QueueName::HEAVY],
+            'balance' => 'auto',
+            'autoScalingStrategy' => 'time',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 256,
+            'tries' => 2,
+            'timeout' => 630,
+            'nice' => 0,
+        ],
+
+        'supervisor-mail' => [
+            'connection' => 'redis',
+            'queue' => [QueueName::MAIL],
+            'balance' => 'simple',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 128,
+            'tries' => 3,
+            'timeout' => 330,
+            'nice' => 0,
+        ],
+
+        'supervisor-local' => [
+            'connection' => 'redis',
+            'queue' => QueueName::all(),
+            'balance' => 'simple',
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 256,
+            'tries' => 3,
+            'timeout' => 630,
             'nice' => 0,
         ],
     ],
 
     'environments' => [
         'production' => [
-            'supervisor-1' => [
-                'maxProcesses' => 5,
+            'supervisor-sync' => [
+                'maxProcesses' => 3,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
+            ],
+            'supervisor-visit' => [
+                'maxProcesses' => 4,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
+            ],
+            'supervisor-heavy' => [
+                'maxProcesses' => 2,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
+            ],
+            'supervisor-mail' => [
+                'maxProcesses' => 1,
             ],
         ],
 
         'local' => [
-            'supervisor-1' => [
+            'supervisor-local' => [
                 'maxProcesses' => 3,
             ],
         ],
 
         'testing' => [
-            'supervisor-1' => [
+            'supervisor-local' => [
                 'maxProcesses' => 1,
             ],
         ],

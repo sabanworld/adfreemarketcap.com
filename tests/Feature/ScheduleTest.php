@@ -34,6 +34,7 @@ class ScheduleTest extends TestCase
         $this->assertStringContainsString('marketdata:sync-currency-rates', $output);
         $this->assertStringContainsString('watchlist:move-alerts', $output);
         $this->assertStringContainsString('watchlist:daily-recap', $output);
+        $this->assertStringContainsString('watchlist:weekly-recap', $output);
         $this->assertStringContainsString('horizon:snapshot', $output);
     }
 

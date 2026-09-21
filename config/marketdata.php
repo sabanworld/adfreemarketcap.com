@@ -108,14 +108,18 @@ return [
     | Market-cap-weighted index of these CoinGecko slug ids (also our coin slugs
     | when the primary provider is CoinGecko). First successful sync stores the
     | basket market-cap sum as the base so the level starts near 100.
+    | The public name is afmc10_name; the panel still says AFMC10 so the
+    | figure can be matched to this basket.
     |
     */
+
+    'afmc10_name' => 'Ad-free 10',
 
     'afmc10' => array_values(array_filter(array_map(
         trim(...),
         explode(',', (string) env(
             'MARKETDATA_AFMC10',
-            'bitcoin,ethereum,dogecoin,litecoin,bitcoin-cash,ripple,binancecoin,hedera-hashgraph,near,sui',
+            'bitcoin,ethereum,dogecoin,litecoin,bitcoin-cash,ripple,binancecoin,hedera-hashgraph,uniswap,sui',
         )),
     ))),
 
@@ -184,8 +188,8 @@ return [
          * The 90-day change behind the altcoin season index costs one chart request per sampled
          * coin. The job runs hourly but only touches coins whose figure is older than the stale
          * window, so in practice one run a day does the work and the rest are no-ops. The budget
-         * caps how long a single run may spend fetching: it must stay clear of the queue's
-         * retry_after (130s for redis) or a slow run gets handed to a second worker as well.
+         * caps how long a single run may spend fetching: it must stay clear of the job's
+         * `$timeout` and the Redis `retry_after`, or a slow run gets handed to a second worker.
          * Whatever a run does not reach stays stale and is picked up an hour later.
          */
         'ninety_day_interval_minutes' => (int) env('MARKETDATA_NINETY_DAY_INTERVAL', 60),

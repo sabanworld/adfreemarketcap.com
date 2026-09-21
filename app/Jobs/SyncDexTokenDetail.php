@@ -6,6 +6,7 @@ namespace App\Jobs;
 
 use App\Models\DexToken;
 use App\Services\MarketData\DexDetailSyncService;
+use App\Support\QueueName;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -20,7 +21,10 @@ class SyncDexTokenDetail implements ShouldBeUnique, ShouldQueue
 
     public int $uniqueFor = 300;
 
-    public function __construct(public int $tokenId) {}
+    public function __construct(public int $tokenId)
+    {
+        $this->onQueue(QueueName::VISIT);
+    }
 
     public function uniqueId(): string
     {

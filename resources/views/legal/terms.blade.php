@@ -29,7 +29,7 @@
 </p>
 
 <h2>{{ __('Accounts') }}</h2>
-<p>{{ __('An account is optional and keeps a watchlist. If price emails are left on, we also send a message when a saved coin moves past a 5% mark over 1 hour, 24 hours, or 7 days, and one summary of that list each day. You can turn those emails off on the watchlist. You must be 16 or older, give a working email address, keep your password to yourself, and stay responsible for what happens under your login. Tell us if you think someone else has access.') }}</p>
+<p>{{ __('An account is optional and keeps a watchlist. New accounts start with the :index, the ten coins behind the AFMC10 index, when those coins are already on the site. If price emails are left on, we also send a message when a saved coin moves past a 5% mark over the last hour, one summary of that list each day, and one summary each week. You can turn those emails off on the watchlist. You must be 16 or older, give a working email address, keep your password to yourself, and stay responsible for what happens under your login. Tell us if you think someone else has access.', ['index' => config('marketdata.afmc10_name')]) }}</p>
 <p>{{ __('You can delete your account at any time by writing to :email, and we then erase it as described in the Privacy policy. We may suspend or close an account that breaks these terms, attacks the service, or is used for unlawful purposes, and we tell you why unless the law prevents us.', [
     'email' => $company['contact_email'],
 ]) }}</p>

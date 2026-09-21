@@ -16,13 +16,13 @@
             <label class="afmc-switch">
                 <input type="checkbox" role="switch" wire:model.live="priceAlertsEnabled" />
                 <span class="afmc-switch__track" aria-hidden="true"><span class="afmc-switch__thumb"></span></span>
-                <span class="afmc-switch__label">{{ __('Email me when a saved coin moves, plus one daily summary') }}</span>
+                <span class="afmc-switch__label">{{ __('Email me hourly moves, plus a daily and a weekly summary') }}</span>
             </label>
             @error('priceAlertsEnabled')
                 <span style="font:var(--type-body-sm);color:var(--text-down)">{{ $message }}</span>
             @enderror
             <span style="font:var(--type-body-sm);color:var(--text-muted);max-width:62ch">
-                {{ __('Marks start at 5%, then every 5% (10, 15, 20, and so on), for the last hour, 24 hours, and 7 days. One email per coin per window each hour, plus one daily summary of the whole list.') }}
+                {{ __('Marks start at 5%, then every 5% (10, 15, 20, and so on), for the last hour. One email per coin each hour. A daily summary and a weekly summary list the whole watchlist, including coins that did not move.') }}
             </span>
         </div>
         <a href="{{ route('home') }}" wire:navigate class="afmc-btn afmc-btn--secondary afmc-btn--sm">

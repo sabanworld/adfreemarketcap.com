@@ -68,7 +68,9 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 130),
+            // Floor is 660 so SyncHotCoinCharts (timeout 600) is never re-reserved mid-run,
+            // even when an older .env still pins REDIS_QUEUE_RETRY_AFTER=130.
+            'retry_after' => max(660, (int) env('REDIS_QUEUE_RETRY_AFTER', 660)),
             'block_for' => null,
             'after_commit' => false,
         ],

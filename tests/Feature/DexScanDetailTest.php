@@ -67,6 +67,11 @@ class DexScanDetailTest extends TestCase
             ->assertSee('Buy', false);
     }
 
+    /**
+     * Axis labels are formatted in the browser, not here. The server hands over epoch
+     * milliseconds plus the range key so `dex-chart.js` can render them in the visitor's
+     * timezone; a date formatted server side would be UTC and wrong for most readers.
+     */
     public function test_seed_pair_detail_shows_chart_without_dispatching_sync(): void
     {
         Queue::fake();
@@ -79,19 +84,21 @@ class DexScanDetailTest extends TestCase
         ]);
 
         $start = now()->subDay();
+        $end = now();
 
         app(DexChartService::class)->upsertSeriesFor($pair, [
             DexChartSeries::SERIES_SHORT => [
                 [$start->getTimestampMs(), 1.1],
-                [now()->getTimestampMs(), 1.2],
+                [$end->getTimestampMs(), 1.2],
             ],
         ]);
 
         $this->get(route('dexscan.pair', $pair))
             ->assertOk()
             ->assertSee('id="dex-chart"', false)
-            ->assertSee($start->format('M j'), false)
-            ->assertDontSee((string) $start->getTimestampMs(), false)
+            ->assertSee((string) $start->getTimestampMs(), false)
+            ->assertSee((string) $end->getTimestampMs(), false)
+            ->assertDontSee($start->format('M j'), false)
             ->assertDontSee('Chart data will appear after the next sync.', false);
 
         Queue::assertNotPushed(SyncDexPairDetail::class);

@@ -138,6 +138,7 @@ class MarketStatusAndNetworksTest extends TestCase
         Livewire::test(Home::class)
             ->assertSee('Market status')
             ->assertSee('Greed')
+            ->assertSee('Ad-free 10')
             ->assertSee('AFMC10')
             ->assertSee('24h')
             ->assertSee('7d')

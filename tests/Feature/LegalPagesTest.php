@@ -135,12 +135,15 @@ class LegalPagesTest extends TestCase
             ->assertSee($provider, false)
             ->assertSee('Transactional email (watchlist price alerts)', false)
             ->assertSee('one daily summary of every saved coin', false)
-            ->assertSee('5% mark over 1 hour, 24 hours, or 7 days', false)
+            ->assertSee('one weekly summary', false)
+            ->assertSee('5% mark over the last hour', false)
             ->assertSee('turn them off on the watchlist', false);
 
         $this->get(route('legal.show', 'terms'))
             ->assertOk()
             ->assertSee('one summary of that list each day', false)
+            ->assertSee('one summary each week', false)
+            ->assertSee('Ad-free 10', false)
             ->assertSee('turn those emails off on the watchlist', false);
     }
 

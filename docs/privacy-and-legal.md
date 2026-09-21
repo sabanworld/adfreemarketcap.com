@@ -23,7 +23,7 @@ Pages: cookie policy, privacy policy, terms, imprint, risk disclosure, disclosur
 The policies are written against this list. Keep them in step.
 
 - **Account:** name, email, bcrypt password hash (`users`). Legal basis: contract.
-- **Watchlist:** coin references per user (`watchlist_items`). Legal basis: contract. Price emails, when left on, also store the last mark emailed per coin and window (`watchlist_price_alerts`) and the date of the last daily summary (`users.watchlist_recap_sent_on`). Turning price emails off, removing the coin, or deleting the account deletes the marks.
+- **Watchlist:** coin references per user (`watchlist_items`). Legal basis: contract. Price emails, when left on, also store the last hourly mark emailed per coin (`watchlist_price_alerts`), the date of the last daily summary (`users.watchlist_recap_sent_on`), and the Monday of the last weekly summary (`users.watchlist_weekly_recap_sent_on`). Turning price emails off, removing the coin, or deleting the account deletes the marks.
 - **Email delivery:** Postmark (AC PM) receives the recipient address and the message (coin names, US dollar prices, percentages) in order to send watchlist price alerts. Legal basis: contract. Safeguard: EU standard contractual clauses and the EU-US Data Privacy Framework, as stated in Postmark's data processing addendum.
 - **Sessions:** database sessions, `SESSION_LIFETIME` minutes (default 120).
 - **Server logs:** IP address, user agent, URL. Claimed retention: `COMPANY_RETENTION_LOG_DAYS` (default 90).

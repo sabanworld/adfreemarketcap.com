@@ -35,6 +35,34 @@ final class WatchlistService
             ->exists();
     }
 
+    public function seedBasket(User $user): int
+    {
+        $slugs = config('marketdata.afmc10', []);
+
+        if (! is_array($slugs) || $slugs === []) {
+            return 0;
+        }
+
+        $coins = Coin::query()
+            ->whereIn('slug', array_values(array_filter($slugs, is_string(...))))
+            ->get();
+
+        $created = 0;
+
+        foreach ($coins as $coin) {
+            $item = WatchlistItem::query()->firstOrCreate([
+                'user_id' => $user->id,
+                'coin_id' => $coin->id,
+            ]);
+
+            if ($item->wasRecentlyCreated) {
+                $created++;
+            }
+        }
+
+        return $created;
+    }
+
     public function toggle(User $user, Coin $coin): bool
     {
         $existing = WatchlistItem::query()

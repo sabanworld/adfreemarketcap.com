@@ -148,8 +148,8 @@ return [
         'hedera-hashgraph' => [
             'hashtags' => ['hbar', 'hedera'],
         ],
-        'near' => [
-            'hashtags' => ['near', 'nearprotocol'],
+        'uniswap' => [
+            'hashtags' => ['uni', 'uniswap'],
         ],
         'sui' => [
             'hashtags' => ['sui'],

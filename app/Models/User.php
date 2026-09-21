@@ -29,6 +29,16 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    /**
+     * Mirrors the column default. `create()` does not read defaults back, so without this a
+     * freshly registered user carries null here and the watchlist's bool property rejects it.
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'price_alerts_enabled' => true,
+    ];
+
     public function watchlistItems(): HasMany
     {
         return $this->hasMany(WatchlistItem::class);
@@ -53,6 +63,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'price_alerts_enabled' => 'boolean',
             'watchlist_recap_sent_on' => 'date',
+            'watchlist_weekly_recap_sent_on' => 'date',
         ];
     }
 }

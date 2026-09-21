@@ -48,29 +48,29 @@ class WatchlistPriceAlertTest extends TestCase
         $this->travelTo('2026-09-20 10:00:00');
 
         $user = User::factory()->create(['email' => 'ada@example.com']);
-        $coin = $this->coin(['percent_change_24h' => 1]);
+        $coin = $this->coin(['percent_change_1h' => 1]);
         $user->watchedCoins()->attach($coin);
 
         $alerts = app(WatchlistPriceAlertService::class);
         $this->assertSame(0, $alerts->sendMoveAlerts());
         Mail::assertNothingSent();
-        $this->assertSame(0, $this->alert($user, $coin, '24h')->notified_percent);
+        $this->assertSame(0, $this->alert($user, $coin, '1h')->notified_percent);
 
-        $coin->update(['percent_change_24h' => 15.4]);
+        $coin->update(['percent_change_1h' => 15.4]);
 
         $this->assertSame(1, $alerts->sendMoveAlerts());
 
         Mail::assertSent(WatchlistMoveMail::class, function (WatchlistMoveMail $mail) use ($user): bool {
             $html = $mail->render();
 
-            $this->assertSame('Bitcoin is up 15% over 24 hours', $mail->subjectLine);
+            $this->assertSame('Bitcoin is up 15% over the last hour', $mail->subjectLine);
             $this->assertTrue($mail->hasTo($user->email));
             $this->assertCount(1, $mail->alerts);
             $this->assertCount(1, $mail->alerts[0]->lines);
             $this->assertSame(15, $mail->alerts[0]->lines[0]->band);
-            $this->assertSame('24h', $mail->alerts[0]->lines[0]->window);
+            $this->assertSame('1h', $mail->alerts[0]->lines[0]->window);
             $this->assertStringContainsString('+15.40%', $html);
-            $this->assertStringContainsString('over 24 hours, past the 15% mark', $html);
+            $this->assertStringContainsString('over the last hour, past the 15% mark', $html);
             $this->assertStringNotContainsString('past the 5% mark', $html);
             $this->assertStringNotContainsString('past the 10% mark', $html);
             $this->assertStringContainsString('$65,000.00', $html);
@@ -78,9 +78,9 @@ class WatchlistPriceAlertTest extends TestCase
             return true;
         });
 
-        $this->assertSame(15, $this->alert($user, $coin, '24h')->notified_percent);
+        $this->assertSame(15, $this->alert($user, $coin, '1h')->notified_percent);
 
-        $coin->update(['percent_change_24h' => 22]);
+        $coin->update(['percent_change_1h' => 22]);
         $this->assertSame(0, $alerts->sendMoveAlerts());
         Mail::assertSentTimes(WatchlistMoveMail::class, 1);
 
@@ -88,16 +88,15 @@ class WatchlistPriceAlertTest extends TestCase
         $this->assertSame(1, $alerts->sendMoveAlerts());
 
         Mail::assertSent(WatchlistMoveMail::class, function (WatchlistMoveMail $mail): bool {
-            return $mail->subjectLine === 'Bitcoin is up 20% over 24 hours'
+            return $mail->subjectLine === 'Bitcoin is up 20% over the last hour'
                 && $mail->alerts[0]->lines[0]->band === 20;
         });
-        $this->assertSame(20, $this->alert($user, $coin, '24h')->notified_percent);
+        $this->assertSame(20, $this->alert($user, $coin, '1h')->notified_percent);
     }
 
-    public function test_other_windows_can_still_email_inside_the_same_hour(): void
+    public function test_day_and_week_moves_do_not_email(): void
     {
         Mail::fake();
-        $this->travelTo('2026-09-20 10:00:00');
 
         $user = User::factory()->create();
         $coin = $this->coin();
@@ -105,19 +104,18 @@ class WatchlistPriceAlertTest extends TestCase
         $alerts = app(WatchlistPriceAlertService::class);
         $alerts->sendMoveAlerts();
 
-        $coin->update(['percent_change_24h' => 15.4]);
-        $alerts->sendMoveAlerts();
-        Mail::assertSentTimes(WatchlistMoveMail::class, 1);
+        $coin->update([
+            'percent_change_24h' => 15.4,
+            'percent_change_7d' => 11,
+        ]);
 
-        $coin->update(['percent_change_1h' => 6.2]);
-        $this->assertSame(1, $alerts->sendMoveAlerts());
-
-        Mail::assertSent(WatchlistMoveMail::class, function (WatchlistMoveMail $mail): bool {
-            return $mail->subjectLine === 'Bitcoin is up 5% over the last hour';
-        });
+        $this->assertSame(0, $alerts->sendMoveAlerts());
+        Mail::assertNothingSent();
+        $this->assertNull(WatchlistPriceAlert::query()->where('window', '24h')->first());
+        $this->assertNull(WatchlistPriceAlert::query()->where('window', '7d')->first());
     }
 
-    public function test_several_windows_crossed_together_are_one_email(): void
+    public function test_a_longer_window_does_not_add_a_second_line(): void
     {
         Mail::fake();
 
@@ -136,13 +134,10 @@ class WatchlistPriceAlertTest extends TestCase
         $this->assertSame(1, $alerts->sendMoveAlerts());
 
         Mail::assertSent(WatchlistMoveMail::class, function (WatchlistMoveMail $mail): bool {
-            $bands = array_map(
-                static fn ($line): int => $line->band,
-                $mail->alerts[0]->lines,
-            );
-
-            return $mail->subjectLine === 'Bitcoin moved on your watchlist'
-                && $bands === [5, 15, 10];
+            return $mail->subjectLine === 'Bitcoin is up 5% over the last hour'
+                && count($mail->alerts[0]->lines) === 1
+                && $mail->alerts[0]->lines[0]->band === 5
+                && $mail->alerts[0]->lines[0]->window === '1h';
         });
     }
 
@@ -157,11 +152,11 @@ class WatchlistPriceAlertTest extends TestCase
         $alerts = app(WatchlistPriceAlertService::class);
         $alerts->sendMoveAlerts();
 
-        $coin->update(['percent_change_24h' => 6]);
+        $coin->update(['percent_change_1h' => 6]);
         $alerts->sendMoveAlerts();
         Mail::assertSentTimes(WatchlistMoveMail::class, 1);
 
-        $coin->update(['percent_change_24h' => -12]);
+        $coin->update(['percent_change_1h' => -12]);
         $this->assertSame(0, $alerts->sendMoveAlerts());
         Mail::assertSentTimes(WatchlistMoveMail::class, 1);
 
@@ -169,7 +164,7 @@ class WatchlistPriceAlertTest extends TestCase
         $this->assertSame(1, $alerts->sendMoveAlerts());
 
         Mail::assertSent(WatchlistMoveMail::class, function (WatchlistMoveMail $mail): bool {
-            return $mail->subjectLine === 'Bitcoin is down 10% over 24 hours'
+            return $mail->subjectLine === 'Bitcoin is down 10% over the last hour'
                 && $mail->alerts[0]->lines[0]->band === 10;
         });
     }
@@ -185,20 +180,20 @@ class WatchlistPriceAlertTest extends TestCase
         $alerts = app(WatchlistPriceAlertService::class);
         $alerts->sendMoveAlerts();
 
-        $coin->update(['percent_change_24h' => 16]);
+        $coin->update(['percent_change_1h' => 16]);
         $alerts->sendMoveAlerts();
-        $this->assertSame(15, $this->alert($user, $coin, '24h')->notified_percent);
+        $this->assertSame(15, $this->alert($user, $coin, '1h')->notified_percent);
 
-        $coin->update(['percent_change_24h' => 8]);
+        $coin->update(['percent_change_1h' => 8]);
         $this->assertSame(0, $alerts->sendMoveAlerts());
-        $this->assertSame(5, $this->alert($user, $coin, '24h')->notified_percent);
+        $this->assertSame(5, $this->alert($user, $coin, '1h')->notified_percent);
 
-        $coin->update(['percent_change_24h' => 16]);
+        $coin->update(['percent_change_1h' => 16]);
         $this->assertSame(0, $alerts->sendMoveAlerts());
 
         $this->travelTo('2026-09-20 11:01:00');
         $this->assertSame(1, $alerts->sendMoveAlerts());
-        $this->assertSame(15, $this->alert($user, $coin, '24h')->notified_percent);
+        $this->assertSame(15, $this->alert($user, $coin, '1h')->notified_percent);
     }
 
     public function test_the_first_reading_of_an_existing_move_is_a_baseline(): void
@@ -206,15 +201,15 @@ class WatchlistPriceAlertTest extends TestCase
         Mail::fake();
 
         $user = User::factory()->create();
-        $coin = $this->coin(['percent_change_24h' => 18]);
+        $coin = $this->coin(['percent_change_1h' => 18]);
         $user->watchedCoins()->attach($coin);
 
         $alerts = app(WatchlistPriceAlertService::class);
         $this->assertSame(0, $alerts->sendMoveAlerts());
         Mail::assertNothingSent();
-        $this->assertSame(15, $this->alert($user, $coin, '24h')->notified_percent);
+        $this->assertSame(15, $this->alert($user, $coin, '1h')->notified_percent);
 
-        $coin->update(['percent_change_24h' => 21]);
+        $coin->update(['percent_change_1h' => 21]);
         $this->assertSame(1, $alerts->sendMoveAlerts());
         Mail::assertSent(WatchlistMoveMail::class, function (WatchlistMoveMail $mail): bool {
             return $mail->alerts[0]->lines[0]->band === 20;
@@ -254,7 +249,7 @@ class WatchlistPriceAlertTest extends TestCase
             $this->assertStringContainsString('Bitcoin', $html);
             $this->assertStringContainsString('Ethereum', $html);
             $this->assertStringContainsString('0.00%', $html);
-            $this->assertStringContainsString('whether it moved or not', $html);
+            $this->assertStringContainsString('moved or not', $html);
 
             return true;
         });
@@ -265,6 +260,61 @@ class WatchlistPriceAlertTest extends TestCase
         $this->travelTo('2026-09-21 06:00:00');
         $this->assertSame(1, $alerts->sendDailyRecaps());
         Mail::assertSentTimes(WatchlistRecapMail::class, 2);
+    }
+
+    /**
+     * The weekly goes out on Sunday evening and is dated by the Monday that began the week it
+     * covers, so it reads as the week just finished rather than the one about to start.
+     */
+    public function test_weekly_recap_sends_once_per_week_on_sunday(): void
+    {
+        Mail::fake();
+        $this->travelTo('2026-09-27 18:00:00');
+
+        $user = User::factory()->create();
+        $coin = $this->coin();
+        $user->watchedCoins()->attach($coin);
+
+        $alerts = app(WatchlistPriceAlertService::class);
+        $this->assertSame(1, $alerts->sendWeeklyRecaps());
+
+        Mail::assertSent(WatchlistRecapMail::class, function (WatchlistRecapMail $mail): bool {
+            $html = $mail->render();
+
+            return $mail->subjectLine === 'Your watchlist for the week of 21 September 2026'
+                && $mail->period === 'weekly'
+                && str_contains($html, 'Weekly recap')
+                && str_contains($html, 'each week');
+        });
+
+        $this->assertSame(0, $alerts->sendWeeklyRecaps());
+
+        $this->travelTo('2026-10-04 18:00:00');
+        $this->assertSame(1, $alerts->sendWeeklyRecaps());
+        Mail::assertSentTimes(WatchlistRecapMail::class, 2);
+    }
+
+    /**
+     * An hourly figure says nothing about a week, so the weekly stops at 24 hours and 7 days.
+     */
+    public function test_the_weekly_recap_drops_the_hourly_column(): void
+    {
+        $user = User::factory()->create();
+        $coins = collect([$this->coin()]);
+
+        $daily = new WatchlistRecapMail($user, $coins);
+        $weekly = new WatchlistRecapMail($user, $coins, 'weekly');
+
+        $this->assertSame(['1h', '24h', '7d'], array_keys($daily->windows));
+        $this->assertSame(['24h', '7d'], array_keys($weekly->windows));
+
+        $this->assertStringContainsString('1 hour', $daily->render());
+        $this->assertStringNotContainsString('1 hour', $weekly->render());
+
+        foreach ([$daily, $weekly] as $mail) {
+            $this->assertStringContainsString('24 hours', $mail->render());
+            $this->assertStringContainsString('7 days', $mail->render());
+        }
     }
 
     public function test_price_emails_can_be_turned_off(): void
@@ -290,9 +340,10 @@ class WatchlistPriceAlertTest extends TestCase
         $this->assertFalse($user->price_alerts_enabled);
         $this->assertSame(0, WatchlistPriceAlert::query()->where('user_id', $user->id)->count());
 
-        $coin->update(['percent_change_24h' => 30]);
+        $coin->update(['percent_change_1h' => 30]);
         $this->assertSame(0, $alerts->sendMoveAlerts());
         $this->assertSame(0, $alerts->sendDailyRecaps());
+        $this->assertSame(0, $alerts->sendWeeklyRecaps());
         Mail::assertNothingSent();
     }
 
@@ -315,7 +366,7 @@ class WatchlistPriceAlertTest extends TestCase
 
         $this->assertSame(0, WatchlistPriceAlert::query()->where('coin_id', $coin->id)->count());
 
-        $coin->update(['percent_change_24h' => 40]);
+        $coin->update(['percent_change_1h' => 40]);
         $this->assertSame(0, $alerts->sendMoveAlerts());
         Mail::assertNothingSent();
     }
@@ -382,12 +433,12 @@ class WatchlistPriceAlertTest extends TestCase
         $user->watchedCoins()->attach($coin);
         app(WatchlistPriceAlertService::class)->sendMoveAlerts();
 
-        $coin->update(['percent_change_7d' => 12]);
+        $coin->update(['percent_change_1h' => 12]);
 
         (new SendWatchlistMoveAlerts)->handle(app(WatchlistPriceAlertService::class));
 
         Mail::assertSent(WatchlistMoveMail::class, function (WatchlistMoveMail $mail): bool {
-            return $mail->subjectLine === 'Bitcoin is up 10% over 7 days';
+            return $mail->subjectLine === 'Bitcoin is up 10% over the last hour';
         });
     }
 
@@ -403,6 +454,7 @@ class WatchlistPriceAlertTest extends TestCase
         $alerts = app(WatchlistPriceAlertService::class);
         $this->assertSame(0, $alerts->sendMoveAlerts());
         $this->assertSame(0, $alerts->sendDailyRecaps());
+        $this->assertSame(0, $alerts->sendWeeklyRecaps());
         Mail::assertNothingSent();
     }
 

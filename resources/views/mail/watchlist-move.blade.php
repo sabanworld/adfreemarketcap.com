@@ -9,7 +9,7 @@
 <x-mail.layout :title="$subjectLine" :preheader="$subjectLine">
     <p class="afmc-ink-muted" style="margin:0 0 4px;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#666A5C">{{ __('Watchlist alert') }}</p>
     <h1 class="afmc-ink-strong" style="margin:0 0 12px;font-family:Archivo,'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:24px;line-height:1.2;font-weight:800;letter-spacing:-0.02em;color:#0E0F0C">{{ $headline }}</h1>
-    <p class="afmc-ink" style="margin:0 0 20px;color:#1F211C">{{ __('Hello :name, a coin you saved crossed a price mark.', ['name' => $user->name]) }}</p>
+    <p class="afmc-ink" style="margin:0 0 20px;color:#1F211C">{{ __('Hello :name, prices are in US dollars and come from the last sync, not a live feed.', ['name' => $user->name]) }}</p>
 
     @foreach ($alerts as $alert)
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" class="afmc-panel" style="border-collapse:collapse;margin:0 0 16px;background:#FFFFFF;border:1px solid #C2C7BA;border-radius:10px">
@@ -44,5 +44,5 @@
         <x-mail.button :href="route('watchlist')">{{ __('Open your watchlist') }}</x-mail.button>
     </p>
 
-    <p class="afmc-ink-muted" style="margin:0;font-size:13px;line-height:1.6;color:#666A5C">{{ __('Marks start at 5%, then every 5% after that (10, 15, 20, and so on), counted separately for the last hour, 24 hours, and 7 days. Each coin and window waits an hour before the next email, so a jump past several marks arrives once, naming the highest one.') }}</p>
+    <p class="afmc-ink-muted" style="margin:0;font-size:13px;line-height:1.6;color:#666A5C">{{ __('Marks start at 5% and step every 5%. One email per coin an hour, naming the highest mark it passed.') }}</p>
 </x-mail.layout>

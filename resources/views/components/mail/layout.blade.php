@@ -59,7 +59,7 @@
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse">
                                 <tr>
                                     <td class="afmc-rule" style="padding-top:20px;border-top:1px solid #E2E5DD;font-family:'Public Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;line-height:1.6;color:#666A5C">
-                                        <p class="afmc-ink-muted" style="margin:0 0 6px;color:#666A5C">{{ __('You get this because price emails are on for your watchlist. The switch on that page turns them off, and nothing else about your account changes.') }}</p>
+                                        <p class="afmc-ink-muted" style="margin:0 0 6px;color:#666A5C">{{ __('You get this because price emails are on for your watchlist. The switch on that page turns them off.') }}</p>
                                         <p style="margin:0 0 6px">
                                             <a href="{{ route('watchlist') }}" style="color:#AD4D00;text-decoration:underline">{{ __('Your watchlist') }}</a>
                                             <span class="afmc-ink-muted" style="color:#9AA08F"> · </span>

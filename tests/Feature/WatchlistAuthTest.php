@@ -39,6 +39,49 @@ class WatchlistAuthTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'ada@example.com']);
     }
 
+    public function test_a_new_account_starts_with_the_ad_free_ten(): void
+    {
+        config(['marketdata.afmc10' => ['bitcoin', 'uniswap']]);
+
+        $bitcoin = Coin::query()->create([
+            'slug' => 'bitcoin',
+            'symbol' => 'btc',
+            'name' => 'Bitcoin',
+            'rank' => 1,
+            'price' => 1,
+        ]);
+        $uniswap = Coin::query()->create([
+            'slug' => 'uniswap',
+            'symbol' => 'uni',
+            'name' => 'Uniswap',
+            'rank' => 20,
+            'price' => 1,
+        ]);
+        $near = Coin::query()->create([
+            'slug' => 'near',
+            'symbol' => 'near',
+            'name' => 'NEAR Protocol',
+            'rank' => 21,
+            'price' => 1,
+        ]);
+
+        Livewire::test(Register::class)
+            ->set('name', 'Ada')
+            ->set('email', 'ada@example.com')
+            ->set('password', 'password123')
+            ->set('password_confirmation', 'password123')
+            ->set('altcha', (string) config('altcha.testing_bypass'))
+            ->call('register')
+            ->assertRedirect(route('watchlist'));
+
+        $user = User::query()->where('email', 'ada@example.com')->firstOrFail();
+        $watchlist = app(WatchlistService::class);
+
+        $this->assertTrue($watchlist->isWatched($user, $bitcoin));
+        $this->assertTrue($watchlist->isWatched($user, $uniswap));
+        $this->assertFalse($watchlist->isWatched($user, $near));
+    }
+
     public function test_user_can_login(): void
     {
         $user = User::factory()->create([

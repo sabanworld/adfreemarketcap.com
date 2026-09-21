@@ -6,6 +6,7 @@ namespace App\Livewire\Auth;
 
 use App\Models\User;
 use App\Rules\ValidAltcha;
+use App\Services\Watchlist\WatchlistService;
 use App\Support\FormRateLimiter;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rules\Password;
@@ -27,7 +28,7 @@ class Register extends Component
 
     public string $altcha = '';
 
-    public function register(): void
+    public function register(WatchlistService $watchlist): void
     {
         FormRateLimiter::ensureIsNotRateLimited('register');
         FormRateLimiter::hit('register');
@@ -42,6 +43,7 @@ class Register extends Component
         unset($validated['altcha']);
 
         $user = User::query()->create($validated);
+        $watchlist->seedBasket($user);
 
         FormRateLimiter::clear('register');
         Auth::login($user);

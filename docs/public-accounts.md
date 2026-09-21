@@ -39,17 +39,20 @@ Covered by `tests/Feature/AdminMfaTest.php`. PHPUnit forces `ADMIN_MFA_REQUIRED=
 
 - Table: `watchlist_items` (`user_id`, `coin_id`, unique pair).
 - Service: `App\Services\Watchlist\WatchlistService`.
+- A new account is seeded with the AFMC10 basket (`config('marketdata.afmc10')`) for coins that already exist. Missing slugs are skipped. Later stars and unstars are the visitor's own.
 - UI: `/watchlist` Livewire page; star toggle via parent Livewire actions (`Home` / `Watchlist`) and `<x-afmc.watch-star>` on Markets and Watchlist.
 - Guests who click the star are sent to login.
 - SEO: `noindex` on Watchlist; `/login`, `/register`, `/watchlist`, `/logout` in `config/seo.php` robots disallow.
 
 ### Price emails
 
-Starred coins are the list. `users.price_alerts_enabled` (default on, switch on the watchlist) decides whether that list is emailed. Off deletes `watchlist_price_alerts` for the account and stops both kinds of mail.
+Starred coins are the list. `users.price_alerts_enabled` (default on, switch on the watchlist) decides whether that list is emailed. Off deletes `watchlist_price_alerts` for the account and stops the hourly notes and both recaps.
 
-`App\Services\Watchlist\WatchlistPriceAlertService` reads `percent_change_1h`, `percent_change_24h`, and `percent_change_7d`. Marks start at 5% and then step by 5% (10, 15, 20, and so on), up and down, one window at a time. The first time a saved coin is seen, that reading is stored and nothing is sent, so a coin that is already up 15% does not email until it reaches the next mark. A later jump that passes several marks sends one email for the highest mark. Each coin and window then waits `watchlist_alerts.cooldown_minutes` (60) before another email for that same window, which is what stops a 15% move from producing a 5% note, a 10% note, and a 15% note in the same hour.
+`App\Services\Watchlist\WatchlistPriceAlertService` reads `percent_change_1h` only. Marks start at 5% and then step by 5% (10, 15, 20, and so on), up and down. The first time a saved coin is seen, that reading is stored and nothing is sent, so a coin that is already up 15% over the last hour does not email until it reaches the next mark. A later jump that passes several marks sends one email for the highest mark. Each coin then waits `watchlist_alerts.cooldown_minutes` (60) before another email, which is what stops a 15% move from producing a 5% note, a 10% note, and a 15% note in the same hour. Moves over 24 hours or 7 days are not emailed.
 
-The daily recap lists every saved coin, including ones that did not move. It runs at `watchlist_alerts.recap_time` (06:00 in the app timezone, which is UTC). `users.watchlist_recap_sent_on` stops a second copy the same day.
+The daily recap lists every saved coin, including ones that did not move, with 1 hour, 24 hour, and 7 day columns. It runs at `watchlist_alerts.recap_time` (06:00 in the app timezone, which is UTC). `users.watchlist_recap_sent_on` stops a second copy the same day.
+
+The weekly recap is the same list with the 1 hour column dropped, because an hourly figure says nothing about a week. It goes out on **Sunday** at `watchlist_alerts.weekly_recap_time` (18:00 UTC), so the week in review arrives before the week starts rather than beside Monday's daily. `users.watchlist_weekly_recap_sent_on` stores the Monday that began the week it covers and stops a second copy that week. `App\Mail\WatchlistRecapMail::$windows` owns which columns each period renders; the Blade views never hardcode them.
 
 Jobs: `App\Jobs\SendWatchlistMoveAlerts` (every `WATCHLIST_ALERTS_INTERVAL` minutes, default 10) and `App\Jobs\SendWatchlistRecap`. Both no-op when `WATCHLIST_ALERTS_ENABLED` is false. Mail uses the default mailer. Production is Postmark (`POSTMARK_TOKEN`, `MAIL_MAILER=postmark`) on the `notifications` message stream; local Sail stays on Mailpit.
 

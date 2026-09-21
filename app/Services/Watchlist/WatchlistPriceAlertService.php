@@ -78,29 +78,42 @@ final class WatchlistPriceAlertService
 
     public function sendDailyRecaps(): int
     {
+        return $this->sendRecaps('daily');
+    }
+
+    public function sendWeeklyRecaps(): int
+    {
+        return $this->sendRecaps('weekly');
+    }
+
+    private function sendRecaps(string $period): int
+    {
         if (! config('watchlist_alerts.enabled')) {
             return 0;
         }
 
-        $today = now()->toDateString();
+        $column = $period === 'weekly' ? 'watchlist_weekly_recap_sent_on' : 'watchlist_recap_sent_on';
+        $stamp = $period === 'weekly'
+            ? now()->copy()->startOfWeek(Carbon::MONDAY)->toDateString()
+            : now()->toDateString();
         $sent = 0;
 
         User::query()
             ->where('price_alerts_enabled', true)
             ->whereHas('watchlistItems')
-            ->where(function ($query) use ($today): void {
-                $query->whereNull('watchlist_recap_sent_on')
-                    ->orWhere('watchlist_recap_sent_on', '<', $today);
+            ->where(function ($query) use ($column, $stamp): void {
+                $query->whereNull($column)
+                    ->orWhere($column, '<', $stamp);
             })
             ->with(['watchedCoins'])
             ->lazyById()
-            ->each(function (User $user) use ($today, &$sent): void {
+            ->each(function (User $user) use ($column, $stamp, $period, &$sent): void {
                 if ($user->watchedCoins->isEmpty()) {
                     return;
                 }
 
-                Mail::to($user)->send(new WatchlistRecapMail($user, $user->watchedCoins));
-                $user->watchlist_recap_sent_on = $today;
+                Mail::to($user)->send(new WatchlistRecapMail($user, $user->watchedCoins, $period));
+                $user->{$column} = $stamp;
                 $user->save();
                 $sent++;
             });

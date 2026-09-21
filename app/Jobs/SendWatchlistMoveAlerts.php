@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Services\Watchlist\WatchlistPriceAlertService;
+use App\Support\QueueName;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -18,6 +19,11 @@ class SendWatchlistMoveAlerts implements ShouldBeUnique, ShouldQueue
     public int $timeout = 300;
 
     public int $uniqueFor = 600;
+
+    public function __construct()
+    {
+        $this->onQueue(QueueName::MAIL);
+    }
 
     /**
      * @return list<int>

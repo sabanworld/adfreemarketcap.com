@@ -20,8 +20,8 @@ Public pages read rankings and coin details from MySQL only. Freshness comes fro
 | `App\Jobs\SyncCoinInsights` | every `MARKETDATA_INSIGHTS_INTERVAL_HOURS` hours (default 6) | treasury (CoinGecko) + Bitcoin Pi Cycle / halvings |
 | `App\Jobs\SyncCurrencyRates` | every `CURRENCY_RATES_INTERVAL` minutes (default 30) | `config/currency.php`, see [`docs/currency.md`](currency.md) |
 | `horizon:snapshot` | every 5 minutes | Horizon metrics |
-| `App\Jobs\SendWatchlistMoveAlerts` | every `WATCHLIST_ALERTS_INTERVAL` minutes (default 10) | Watchlist price emails, not a provider call. See [`docs/public-accounts.md`](public-accounts.md) |
-| `App\Jobs\SendWatchlistRecap` | daily at `WATCHLIST_RECAP_TIME` (default 06:00, app timezone UTC) | One summary of every saved coin |
+| `App\Jobs\SendWatchlistMoveAlerts` | every `WATCHLIST_ALERTS_INTERVAL` minutes (default 10) | Hourly 5% marks only. See [`docs/public-accounts.md`](public-accounts.md) |
+| `App\Jobs\SendWatchlistRecap` | daily at `WATCHLIST_RECAP_TIME` (default 06:00 UTC), and Sundays at `WATCHLIST_WEEKLY_RECAP_TIME` (default 18:00 UTC) | Daily summary; the Sunday one is the week in review |
 
 Schedule definitions live in [`routes/console.php`](../routes/console.php). Events use `withoutOverlapping()` so a slow run does not stack.
 
@@ -47,9 +47,20 @@ Each outbound HTTP attempt (including retries) increments `provider_call_hours`.
 
 ## Queue workers (Horizon)
 
-Horizon processes the Redis queue (`QUEUE_CONNECTION=redis`). Dashboard: `/horizon` (disallowed in `robots.txt`; local open, elsewhere a Filament admin session). The admin panel sidebar links to it under System → Horizon.
+Horizon processes Redis (`QUEUE_CONNECTION=redis`) across four named queues (`App\Support\QueueName`):
 
-Local Sail runs Horizon and cron inside the app container via Supervisor after a image rebuild (`./vendor/bin/sail build --no-cache && ./vendor/bin/sail up -d`).
+| Queue | Purpose | Examples |
+|-------|---------|----------|
+| `mail` | Watchlist emails | `SendWatchlistMoveAlerts`, `SendWatchlistRecap` |
+| `visit` | On-page freshness | `SyncCoinDetail`, `SyncCoinTickers`, `SyncCoinCharts`, Dex detail |
+| `sync` | Scheduled rankings and lists | `SyncMarketData`, `SyncDexPairs`, `SyncHotCoinTickers`, currency |
+| `heavy` | Long or bursty provider work | `SyncHotCoinCharts`, platforms, Nostr, 90-day changes |
+
+**Local / testing:** one supervisor (`supervisor-local`) drains every queue in that priority order, with a timeout high enough for chart jobs (630s). **Production:** one supervisor per queue so a chart pass cannot starve a visit sync or a watchlist email. Redis `retry_after` defaults to 660s so the longest job (`SyncHotCoinCharts` at 600s) is not re-reserved mid-run.
+
+Dashboard: `/horizon` (disallowed in `robots.txt`; local open, elsewhere a Filament admin session). The admin panel sidebar links to it under System → Horizon.
+
+Local Sail runs Horizon and cron inside the app container via Supervisor after a image rebuild (`./vendor/bin/sail build --no-cache && ./vendor/bin/sail up -d`). Restart Horizon after queue changes (`php artisan horizon:terminate`).
 
 Manual one-shot:
 
@@ -74,7 +85,7 @@ Manual one-shot:
 `SyncMarketStatus` writes `market_status_snapshots` for the homepage Market Status card:
 
 - **Fear & Greed** from Alternative.me (`ALTERNATIVE_ME_BASE_URL`). Credit Alternative.me in the widget. Server-side only.
-- **AFMC10** is a market-cap-weighted index of the configured basket (`MARKETDATA_AFMC10`, default BTC/ETH/DOGE/LTC/BCH/XRP/BNB/HBAR/NEAR/SUI). The first successful basket sum is the base so the level starts near 100. Period returns (24h, 7d, 1m/30d, 6m via CoinGecko’s 200d, 1y) are market-cap-weighted averages of each constituent’s matching `percent_change_*` column from the markets sync.
+- **AFMC10**, named **Ad-free 10** on the homepage, is a market-cap-weighted index of the configured basket (`MARKETDATA_AFMC10`, default BTC/ETH/DOGE/LTC/BCH/XRP/BNB/HBAR/UNI/SUI). The first successful basket sum is the base so the level starts near 100. Period returns (24h, 7d, 1m/30d, 6m via CoinGecko’s 200d, 1y) are market-cap-weighted averages of each constituent’s matching `percent_change_*` column from the markets sync. The panel caption lists the basket symbols so the name can be checked against the coins.
 - **Altcoin season** = share of the sampled alts whose `percent_change_90d` beats Bitcoin's. `App\Services\MarketData\AltcoinSeasonSampler` owns membership (top `MARKETDATA_ALTCOIN_SEASON_TOP_N` ranked coins, default 50, excluding Bitcoin and the `MARKETDATA_ALTCOIN_SEASON_EXCLUDE` symbols, which are stables and wrapped or staked derivatives). Thresholds in the UI: below 25 leans Bitcoin season, above 75 leans altcoin season.
 
 ### Where the 90-day change comes from
@@ -84,7 +95,7 @@ Manual one-shot:
 `App\Services\MarketData\NinetyDayChangeSyncService` derives the column instead: one `market_chart?days=90` request per sampled coin, oldest point against newest. Consequences worth knowing:
 
 - **It costs one HTTP request per coin** (about 51 for Bitcoin plus a top-50 sample), so it only fetches coins whose figure is older than `MARKETDATA_NINETY_DAY_STALE_HOURS` (default 20). The job is scheduled hourly and nearly every run does nothing: in practice one run a day refreshes the sample and the other 23 are a couple of DB queries.
-- **A run works to a time budget** (`MARKETDATA_NINETY_DAY_BUDGET_SECONDS`, default 90) and leaves whatever it did not reach for the next hour. That budget and the job's `$timeout` of 110s must both stay under the queue's `retry_after` (130s for redis in `config/queue.php`). A job that outruns `retry_after` is re-reserved and run by a second worker while the first is still going, which here would mean two workers making the same fifty requests. `tests/Feature/NinetyDayChangeSyncTest.php` asserts that ordering. Setting the budget to 0 pauses fetching without touching the schedule.
+- **A run works to a time budget** (`MARKETDATA_NINETY_DAY_BUDGET_SECONDS`, default 90) and leaves whatever it did not reach for the next hour. That budget and the job's `$timeout` of 110s must both stay under Redis `retry_after` (`config/queue.php`, default 660s so longer chart jobs fit too). A job that outruns `retry_after` is re-reserved and run by a second worker while the first is still going, which here would mean two workers making the same fifty requests. `tests/Feature/NinetyDayChangeSyncTest.php` asserts that ordering. Setting the budget to 0 pauses fetching without touching the schedule.
 - **A coin needs a near-full window to qualify.** Under `MARKETDATA_ALTCOIN_SEASON_MIN_HISTORY_DAYS` days of history (default 80) it is left out of the index rather than compared on a shorter period. Recent listings therefore shrink `altcoin_season_sample_size`, which the card states in its caption.
 - **The markets sync must never write this column.** It fills every other `percent_change_*` field, so listing this one would overwrite the derived figure with null every ten minutes. `tests/Feature/NinetyDayChangeSyncTest.php` guards both that and the request parameter.
 - Order matters when running by hand: `--only-season` before `--only-status`, or the snapshot scores yesterday's numbers. Passing both to one command already runs them in that order.

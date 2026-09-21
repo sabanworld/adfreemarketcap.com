@@ -147,6 +147,7 @@ $sentryMonitor(
 
 $alertInterval = max(1, min(59, (int) config('watchlist_alerts.move_interval_minutes', 10)));
 $recapTime = (string) config('watchlist_alerts.recap_time', '06:00');
+$weeklyRecapTime = (string) config('watchlist_alerts.weekly_recap_time', '18:00');
 
 $sentryMonitor(
     Schedule::job(new SendWatchlistMoveAlerts)
@@ -160,6 +161,14 @@ $sentryMonitor(
         ->dailyAt($recapTime)
         ->withoutOverlapping(30)
         ->name('watchlist:daily-recap')
+);
+
+// Sunday evening, so the week in review does not land beside Monday's daily recap.
+$sentryMonitor(
+    Schedule::job(new SendWatchlistRecap('weekly'))
+        ->weeklyOn(0, $weeklyRecapTime)
+        ->withoutOverlapping(30)
+        ->name('watchlist:weekly-recap')
 );
 
 $sentryMonitor(

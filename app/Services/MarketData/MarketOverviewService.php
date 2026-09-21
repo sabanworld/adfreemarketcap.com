@@ -196,6 +196,40 @@ class MarketOverviewService
     }
 
     /**
+     * Symbols of the Ad-free 10 basket, in config order. A slug with no coin
+     * row yet is left as the slug so the caption does not invent a ticker.
+     */
+    public function afmc10Symbols(): string
+    {
+        $slugs = config('marketdata.afmc10', []);
+
+        if (! is_array($slugs)) {
+            return '';
+        }
+
+        $slugs = array_values(array_filter($slugs, static fn (mixed $slug): bool => is_string($slug) && $slug !== ''));
+
+        if ($slugs === []) {
+            return '';
+        }
+
+        $symbols = Coin::query()
+            ->whereIn('slug', $slugs)
+            ->pluck('symbol', 'slug');
+
+        $labels = [];
+
+        foreach ($slugs as $slug) {
+            $symbol = $symbols->get($slug);
+            $labels[] = is_string($symbol) && $symbol !== ''
+                ? strtoupper($symbol)
+                : $slug;
+        }
+
+        return implode(', ', $labels);
+    }
+
+    /**
      * Keep the first and last reading and spread the rest evenly: the endpoints carry the
      * direction the percentage beside the line states, so neither may be dropped.
      *

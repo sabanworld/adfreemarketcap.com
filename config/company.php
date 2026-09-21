@@ -89,7 +89,7 @@ return [
     |
     */
 
-    'policies_updated_at' => env('COMPANY_POLICIES_UPDATED_AT', '20 September 2026'),
+    'policies_updated_at' => env('COMPANY_POLICIES_UPDATED_AT', '21 September 2026'),
 
     /*
     |--------------------------------------------------------------------------

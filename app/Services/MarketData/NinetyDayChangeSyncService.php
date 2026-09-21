@@ -17,11 +17,11 @@ use Throwable;
  * 30d, 200d and 1y, and silently drops anything else, so the figure has to come from price
  * history: one 90-day chart per coin, first point against last.
  *
- * That is one HTTP call per coin, so a full pass is far too long to hold a queue worker: the Redis
- * connection re-reserves a job after `retry_after` (130s), and a job that outruns that window gets
- * processed twice. So a run works to a time budget under that window, skips coins whose figure is
- * still fresh, and leaves the rest to the next run. The schedule is hourly and almost every run is
- * a no-op, because a 90-day change only needs refreshing once a day.
+ * That is one HTTP call per coin, so a full pass is far too long to hold a queue worker: Redis
+ * re-reserves a job after `retry_after`, and a job that outruns that window gets processed twice.
+ * So a run works to a time budget under the job `$timeout`, skips coins whose figure is still
+ * fresh, and leaves the rest to the next run. The schedule is hourly and almost every run is a
+ * no-op, because a 90-day change only needs refreshing once a day.
  */
 class NinetyDayChangeSyncService
 {

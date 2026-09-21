@@ -6,6 +6,7 @@ namespace App\Jobs;
 
 use App\Models\Coin;
 use App\Services\MarketData\MarketSyncService;
+use App\Support\QueueName;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -22,7 +23,9 @@ class SyncCoinDetail implements ShouldBeUnique, ShouldQueue
 
     public function __construct(
         public int $coinId,
-    ) {}
+    ) {
+        $this->onQueue(QueueName::VISIT);
+    }
 
     public function uniqueId(): string
     {

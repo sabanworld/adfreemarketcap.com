@@ -93,7 +93,7 @@
         </div>
 
         <div class="afmc-status-panel">
-            <p class="afmc-status-panel__label">{{ __('AFMC10') }}</p>
+            <p class="afmc-status-panel__label">{{ config('marketdata.afmc10_name') }}</p>
             <div class="afmc-status-panel__body">
                 <p class="afmc-status-panel__figure afmc-status-panel__figure--mono">
                     @if ($status?->afmc10_value !== null)
@@ -115,7 +115,10 @@
                  the sentence has to match MarketStatusCalculator: a fixed basket, market-cap
                  weighted, based on the first sum we recorded. --}}
             <p class="afmc-status-panel__caption">
-                {{ __('A fixed basket of ten major coins, weighted by market cap and set to 100 the first time we measured it.') }}
+                {{ __(':name (AFMC10) is :basket, weighted by market cap and set to 100 the first time we measured it.', [
+                    'name' => config('marketdata.afmc10_name'),
+                    'basket' => $overview->afmc10Symbols(),
+                ]) }}
             </p>
         </div>
     </div>

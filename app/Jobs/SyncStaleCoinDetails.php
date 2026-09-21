@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Jobs;
 
 use App\Models\Coin;
+use App\Support\QueueName;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -24,6 +25,11 @@ class SyncStaleCoinDetails implements ShouldBeUnique, ShouldQueue
     public int $timeout = 60;
 
     public int $uniqueFor = 300;
+
+    public function __construct()
+    {
+        $this->onQueue(QueueName::HEAVY);
+    }
 
     public function handle(): int
     {
