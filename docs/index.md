@@ -18,6 +18,8 @@ Ad-free cryptocurrency market rankings and coin detail pages.
 - Market data via provider strategy: CoinGecko (primary) → CoinPaprika (failover); Crypto APIs supplies the 1h and 7d percentages, which CoinGecko rounds to 0.1
 - Homepage Market Status (Fear & Greed, AFMC10, altcoin season), Markets network filter, and optional Nostr community notes on coin pages; see [`docs/marketdata-sync.md`](marketdata-sync.md)
 - Public pages read from the database only; scheduled/queued jobs sync providers ([`docs/marketdata-sync.md`](marketdata-sync.md))
+- Sibling price feed for solochance.io: `GET /api/sibling/prices` (Bearer token, reads local `coins`, see [`docs/sibling-api.md`](sibling-api.md))
+
 
 ## Local runtime
 

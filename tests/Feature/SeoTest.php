@@ -40,6 +40,7 @@ class SeoTest extends TestCase
         $response->assertSee('Disallow: /register', false);
         $response->assertSee('Disallow: /watchlist', false);
         $response->assertSee('Disallow: /altcha', false);
+        $response->assertSee('Disallow: /api', false);
         $response->assertSee('Sitemap: ' . route('sitemap'), false);
     }
 

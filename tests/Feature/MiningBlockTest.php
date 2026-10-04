@@ -44,6 +44,16 @@ class MiningBlockTest extends TestCase
         $response->assertSee('pays out only when it finds a block', false);
     }
 
+    public function test_home_page_refers_to_solochance(): void
+    {
+        $response = $this->get(route('home'));
+
+        $response->assertOk();
+        $response->assertSee('Check your odds of finding a block on solochance.io', false);
+        $response->assertSee('Also ad-free', false);
+        $response->assertSee('href="https://solochance.io"', false);
+    }
+
     public function test_miners_block_can_be_switched_off(): void
     {
         config(['mining.enabled' => false]);

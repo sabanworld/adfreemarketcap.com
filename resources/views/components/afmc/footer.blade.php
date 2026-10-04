@@ -38,6 +38,17 @@
                     <a class="afmc-footer__link" href="{{ route('legal.show', 'imprint') }}" wire:navigate>{{ __('Imprint') }}</a>
                 </nav>
 
+                @if (filled($company['sister_sites'] ?? null))
+                    <nav aria-label="{{ __('Also ad-free') }}">
+                        <span class="afmc-footer__col-title">{{ __('Also ad-free') }}</span>
+                        @foreach ($company['sister_sites'] as $site)
+                            <a class="afmc-footer__link" href="{{ $site['url'] }}" rel="noopener" target="_blank">
+                                {{ $site['name'] }}<span class="afmc-visually-hidden">, {{ __($site['label']) }}{{ __(', opens in a new tab') }}</span>
+                            </a>
+                        @endforeach
+                    </nav>
+                @endif
+
                 <nav aria-label="{{ __('Legal') }}">
                     <span class="afmc-footer__col-title">{{ __('Legal') }}</span>
                     <a class="afmc-footer__link" href="{{ route('legal.show', 'privacy-policy') }}" wire:navigate>{{ __('Privacy policy') }}</a>

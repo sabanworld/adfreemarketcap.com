@@ -51,6 +51,15 @@ return [
 
     'product_name' => env('APP_NAME', 'adfreemarketcap.com'),
 
+    // Other ad-free sites by the same person, linked from the footer.
+    'sister_sites' => [
+        'solochance' => [
+            'name' => 'solochance.io',
+            'url' => env('SISTER_SOLOCHANCE_URL', 'https://solochance.io'),
+            'label' => 'Solo mining calculator',
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | The person behind the product

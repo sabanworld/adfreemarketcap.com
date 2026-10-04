@@ -42,6 +42,7 @@ Full reasoning, the trade-offs already taken, the pre-PR checklist, and the test
   - `php artisan horizon` (if not started via Sail Supervisor)
   - `php artisan schedule:work` (local alternative to container cron)
 - Reach sibling services by their **compose service name**, not `localhost` from the host's point of view: `mysql`, `redis`, `meilisearch`, `mailpit`. Host port forwards (`FORWARD_*`) do not apply inside the network.
+- **Sibling price feed** for solochance.io: `GET /api/sibling/prices` behind `SIBLING_API_TOKEN` (`config/sibling_api.php`, [`docs/sibling-api.md`](docs/sibling-api.md)). It reads the local `coins` table only. Keep `/api` in robots `disallow`.
 
 - **Viewing the running site.** Two different URLs, and which one you want depends on which side of the container you are on:
  - **Browser tools and screenshots: `http://localhost:8080/`.** This is the host's published port for the app container, so it is the URL the browser tooling can actually reach. Use it to check layout, capture screenshots, and drive the UI for real (clicking a consent button, toggling a theme, walking a form). `APP_PORT` in the user's `.env` sets it, which is why it is 8080 here even though `.env.example` ships `8888`.

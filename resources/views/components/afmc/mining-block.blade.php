@@ -67,6 +67,12 @@
                     'partner' => $partner['name'],
                 ]) }}
             </p>
+            @if ($solochance = config('company.sister_sites.solochance'))
+                <p class="afmc-mining__note">
+                    {{ __('Running your own miner?') }}
+                    <a href="{{ $solochance['url'] }}" rel="noopener" target="_blank">{{ __('Check your odds of finding a block on :site', ['site' => $solochance['name']]) }}<span class="afmc-visually-hidden">{{ __(', opens in a new tab') }}</span></a>.
+                </p>
+            @endif
         </div>
     </section>
 @endif
