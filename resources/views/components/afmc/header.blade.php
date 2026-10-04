@@ -65,7 +65,7 @@
         <button
             type="button"
             class="afmc-icon-btn"
-            @click="dark = !dark"
+            @click="themeChosen = true; dark = !dark"
             :aria-label="dark ? '{{ __('Switch to light theme') }}' : '{{ __('Switch to dark theme') }}'"
         >
             <x-afmc.icon name="light_mode" x-show="dark" x-cloak />

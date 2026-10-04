@@ -39,7 +39,8 @@ class DesignSystemShellTest extends TestCase
         $response = $this->get(route('home'));
 
         $response->assertOk();
-        $response->assertSee("localStorage.getItem('afmc-theme') === 'dark'", false);
+        $response->assertSee('prefers-color-scheme: dark', false);
+        $response->assertSee("localStorage.getItem('afmc-theme')", false);
         $response->assertSee("document.addEventListener('livewire:navigating'", false);
         $response->assertSee('event.detail?.onSwap?.(apply)', false);
     }

@@ -6,6 +6,7 @@ namespace App\Providers\Filament;
 
 use App\Http\Middleware\EnsureAdminMultiFactorAuthenticationIsEnabled;
 use Filament\Auth\MultiFactor\App\AppAuthentication;
+use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -48,6 +49,7 @@ class AdminPanelProvider extends PanelProvider
                 isRequired: true,
             )
             ->multiFactorAuthenticationRequiredMiddlewareName(EnsureAdminMultiFactorAuthenticationIsEnabled::class)
+            ->defaultThemeMode(ThemeMode::System)
             ->colors([
                 'primary' => Color::Teal,
             ])

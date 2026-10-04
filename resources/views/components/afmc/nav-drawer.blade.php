@@ -106,7 +106,7 @@
                         type="checkbox"
                         role="switch"
                         :checked="dark"
-                        @change="dark = !dark"
+                        @change="themeChosen = true; dark = !dark"
                     />
                     <span class="afmc-switch__track" aria-hidden="true"><span class="afmc-switch__thumb"></span></span>
                     <span class="afmc-switch__label">{{ __('Dark theme') }}</span>

@@ -9,12 +9,15 @@
     <script>
         (() => {
             const apply = () => {
-                const theme = localStorage.getItem('afmc-theme') === 'dark' ? 'dark' : 'light';
+                const stored = localStorage.getItem('afmc-theme');
+                const theme = stored === 'dark' || stored === 'light'
+                    ? stored
+                    : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
                 document.documentElement.setAttribute('data-theme', theme);
             };
             apply();
             // wire:navigate copies the server HTML's data-theme="light" onto <html>.
-            // Re-apply from localStorage in onSwap (same turn, after that copy, before paint)
+            // Re-apply the resolved theme in onSwap (same turn, after that copy, before paint)
             // so dark mode does not flash white between pages.
             document.addEventListener('livewire:navigating', (event) => {
                 event.detail?.onSwap?.(apply);
@@ -30,13 +33,30 @@
 <body
     style="min-height:100vh;background:var(--surface-page);color:var(--text-body);margin:0"
     x-data="{
-        dark: localStorage.getItem('afmc-theme') === 'dark',
+        dark: (() => {
+            const stored = localStorage.getItem('afmc-theme');
+            if (stored === 'dark' || stored === 'light') {
+                return stored === 'dark';
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches;
+        })(),
+        themeChosen: (() => {
+            const stored = localStorage.getItem('afmc-theme');
+            return stored === 'dark' || stored === 'light';
+        })(),
         moreOpen: false,
         searchOpen: false,
     }"
+    x-init="
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        const onChange = (event) => { if (! themeChosen) dark = event.matches; };
+        media.addEventListener('change', onChange);
+    "
     x-effect="
-        localStorage.setItem('afmc-theme', dark ? 'dark' : 'light');
         document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        if (themeChosen) {
+            localStorage.setItem('afmc-theme', dark ? 'dark' : 'light');
+        }
     "
 >
     <a class="afmc-skip" href="#afmc-main">{{ __('Skip to main content') }}</a>

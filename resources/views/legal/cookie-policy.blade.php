@@ -33,7 +33,7 @@
         [
             'name' => 'afmc-theme',
             'kind' => __('Local storage'),
-            'purpose' => __('Remembers whether you chose the light or the dark theme'),
+            'purpose' => __('Remembers a light or dark theme choice. Until you choose, the site follows your system setting'),
             'expiry' => __('Until you clear site data in your browser'),
             'consent' => __('Strictly necessary'),
         ],

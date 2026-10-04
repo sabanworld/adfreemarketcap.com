@@ -27,7 +27,10 @@
     <link rel="apple-touch-icon" href="{{ asset('brand/logo.svg') }}">
     <script>
         (() => {
-            const theme = localStorage.getItem('afmc-theme') === 'dark' ? 'dark' : 'light';
+            const stored = localStorage.getItem('afmc-theme');
+            const theme = stored === 'dark' || stored === 'light'
+                ? stored
+                : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
@@ -85,18 +88,20 @@
                 return;
             }
 
-            const apply = (dark) => {
+            const apply = (dark, persist = true) => {
                 root.setAttribute('data-theme', dark ? 'dark' : 'light');
-                try {
-                    localStorage.setItem('afmc-theme', dark ? 'dark' : 'light');
-                } catch (error) {}
+                if (persist) {
+                    try {
+                        localStorage.setItem('afmc-theme', dark ? 'dark' : 'light');
+                    } catch (error) {}
+                }
                 button.setAttribute(
                     'aria-label',
                     dark ? @json(__('Switch to light theme')) : @json(__('Switch to dark theme'))
                 );
             };
 
-            apply(root.getAttribute('data-theme') === 'dark');
+            apply(root.getAttribute('data-theme') === 'dark', false);
             button.addEventListener('click', () => {
                 apply(root.getAttribute('data-theme') !== 'dark');
             });
