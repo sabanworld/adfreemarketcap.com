@@ -49,9 +49,30 @@ class MiningBlockTest extends TestCase
         $response = $this->get(route('home'));
 
         $response->assertOk();
-        $response->assertSee('Check your odds of finding a block on solochance.io', false);
+        $response->assertSee('solochance.io turns your hashrate into the odds of finding a whole block solo', false);
+        $response->assertSee('Work out your odds', false);
         $response->assertSee('Also ad-free', false);
         $response->assertSee('href="https://solochance.io"', false);
+    }
+
+    public function test_primary_navigation_links_to_solochance(): void
+    {
+        $url = config('company.sister_sites.solochance.url');
+
+        $response = $this->get(route('home'));
+
+        $response->assertOk();
+        // Amber primary CTA inside the desktop nav, not another muted market tab. The visible
+        // label says what the visitor gets (mining odds); the site name stays in the accessible name.
+        $this->assertMatchesRegularExpression(
+            '#data-afmc-nav[^>]*>.*href="' . preg_quote($url, '#') . '"[^>]*class="[^"]*afmc-btn--primary[^"]*afmc-nav__cta[^"]*"[^>]*>.*Your odds of mining a block.*, on solochance\.io.*</nav>#s',
+            $response->getContent(),
+        );
+        // Same CTA leads the mobile More drawer, with a line saying what the calculator does.
+        $this->assertMatchesRegularExpression(
+            '#id="afmc-nav-drawer"[^>]*>.*href="' . preg_quote($url, '#') . '"[^>]*class="[^"]*afmc-btn--primary[^"]*"[^>]*>.*Your odds of mining a block.*Put in your hashrate and solochance\.io shows how likely you are to find a block#s',
+            $response->getContent(),
+        );
     }
 
     public function test_miners_block_can_be_switched_off(): void

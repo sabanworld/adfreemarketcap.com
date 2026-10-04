@@ -168,6 +168,27 @@
   margin-left: var(--space-3);
 }
 
+/* Sister-site CTA: amber primary so it reads as an action, not another market tab. */
+.afmc-nav__cta {
+  margin-left: var(--space-2);
+}
+
+/* The full label and its arrow need a 1220px header (search field included); any narrower
+   and currency and Sign in wrap onto a second row. */
+.afmc-nav__cta .afmc-nav__cta-short {
+  display: none;
+}
+
+@media (max-width: 1240px) {
+  .afmc-nav__cta .afmc-nav__cta-full {
+    display: none;
+  }
+
+  .afmc-nav__cta .afmc-nav__cta-short {
+    display: inline;
+  }
+}
+
 .afmc-nav__item {
   all: unset;
   box-sizing: border-box;
@@ -2952,6 +2973,20 @@
   margin: 0;
   font: var(--weight-semibold) var(--text-base) / 1.2 var(--font-display);
   color: var(--text-strong);
+}
+
+.afmc-drawer__cta {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+}
+
+.afmc-drawer__cta-hint {
+  margin: 0;
+  font: var(--type-body-sm);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-wrap: pretty;
 }
 
 .afmc-drawer__section {

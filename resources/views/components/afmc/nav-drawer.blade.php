@@ -46,6 +46,26 @@
                 </button>
             </div>
 
+            @if ($solochance = ($company['sister_sites']['solochance'] ?? null))
+                <div class="afmc-drawer__cta">
+                    <a
+                        href="{{ $solochance['url'] }}"
+                        rel="noopener"
+                        target="_blank"
+                        class="afmc-btn afmc-btn--primary afmc-btn--full"
+                        @click="moreOpen = false"
+                    >
+                        <x-afmc.icon name="hardware" size="18px" />
+                        {{ __('Your odds of mining a block') }}
+                        <x-afmc.icon name="arrow_outward" size="16px" />
+                        <span class="afmc-visually-hidden">{{ __(', on :site', ['site' => $solochance['name']]) }}{{ __(', opens in a new tab') }}</span>
+                    </a>
+                    <p class="afmc-drawer__cta-hint">
+                        {{ __('Put in your hashrate and :site shows how likely you are to find a block on your own.', ['site' => $solochance['name']]) }}
+                    </p>
+                </div>
+            @endif
+
             <div class="afmc-drawer__section">
                 <span class="afmc-drawer__eyebrow">{{ __('Markets') }}</span>
                 <span class="afmc-drawer__row is-disabled" title="{{ __('Coming soon') }}">

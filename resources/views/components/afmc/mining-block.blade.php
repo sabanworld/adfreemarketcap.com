@@ -69,8 +69,8 @@
             </p>
             @if ($solochance = config('company.sister_sites.solochance'))
                 <p class="afmc-mining__note">
-                    {{ __('Running your own miner?') }}
-                    <a href="{{ $solochance['url'] }}" rel="noopener" target="_blank">{{ __('Check your odds of finding a block on :site', ['site' => $solochance['name']]) }}<span class="afmc-visually-hidden">{{ __(', opens in a new tab') }}</span></a>.
+                    {{ __('If you mine on your own hardware, :site turns your hashrate into the odds of finding a whole block solo, and lists the bitcoin blocks solo miners have already hit.', ['site' => $solochance['name']]) }}
+                    <a href="{{ $solochance['url'] }}" rel="noopener" target="_blank">{{ __('Work out your odds') }}<span class="afmc-visually-hidden">{{ __(' on :site, opens in a new tab', ['site' => $solochance['name']]) }}</span></a>.
                 </p>
             @endif
         </div>

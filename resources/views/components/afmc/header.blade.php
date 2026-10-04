@@ -6,6 +6,8 @@
         ['label' => __('Watchlist'), 'href' => route('watchlist'), 'active' => request()->routeIs('watchlist')],
     ];
 
+    $solochance = config('company.sister_sites.solochance');
+
     if (request()->routeIs('coins.show')) {
         $nav[0]['active'] = true;
     }
@@ -30,6 +32,22 @@
                 </span>
             @endif
         @endforeach
+
+        @if ($solochance)
+            <a
+                href="{{ $solochance['url'] }}"
+                rel="noopener"
+                target="_blank"
+                class="afmc-btn afmc-btn--primary afmc-btn--sm afmc-nav__cta"
+                title="{{ __('Solo mining calculator on :site', ['site' => $solochance['name']]) }}"
+            >
+                <x-afmc.icon name="hardware" size="16px" />
+                <span class="afmc-nav__cta-full">{{ __('Your odds of mining a block') }}</span>
+                <span class="afmc-nav__cta-short">{{ __('Mining odds') }}</span>
+                <x-afmc.icon name="arrow_outward" size="14px" class="afmc-nav__cta-full" />
+                <span class="afmc-visually-hidden">{{ __(', on :site', ['site' => $solochance['name']]) }}{{ __(', opens in a new tab') }}</span>
+            </a>
+        @endif
     </nav>
 
     <span class="afmc-header__spacer" aria-hidden="true"></span>
